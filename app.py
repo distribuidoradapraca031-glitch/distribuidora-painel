@@ -105,10 +105,11 @@ def api_pagar():
     return jsonify(cached("pagar", 60, build))
 
 # ---- mapeamentos: potes (conta+forma) e categorias de gasto ----
+RESERVA_CONTA = os.environ.get("RESERVA_CONTA_ID", "696747")  # trocar p/ conta RESERVA quando existir
 POTES = {
-    "Caixa":    {"conta": "696747", "forma": "6055919"},  # gaveta + Dinheiro
-    "Dinheiro": {"conta": "696747", "forma": "6055919"},  # reserva (por ora = CAIXA)
-    "PIX":      {"conta": "681760", "forma": "6055931"},  # conta bancária + PIX
+    "Caixa":    {"conta": "696747", "forma": "6055919"},        # gaveta + Dinheiro
+    "Dinheiro": {"conta": RESERVA_CONTA, "forma": "6055919"},   # reserva (notas altas) + Dinheiro
+    "PIX":      {"conta": "681760", "forma": "6055931"},        # conta bancária + PIX
 }
 CATS = {
     "Lanche": "33015662", "Almoço": "33015662", "Padaria": "33015662",

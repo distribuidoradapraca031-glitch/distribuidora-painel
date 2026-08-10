@@ -38,6 +38,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .fres{font-size:.85rem;font-weight:600;margin-top:10px}
 .ok{color:#2E7D4F}.bad{color:#B3403A}
 @media(prefers-color-scheme:dark){.ok{color:#5BB98C}.bad{color:#E5716A}}
+.dengrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-top:8px}
+.den{display:flex;flex-direction:column;gap:3px;font-size:.72rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.den input{font:inherit;font-size:.95rem;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);text-align:right}
+.den .dv{font-size:.66rem;color:var(--accent);font-weight:600}
+.subttl{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 2px}
+.fechtot{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:.95rem;font-weight:700}
+.fechtot span.v{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -125,6 +132,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
       <button id="i-salvar">Salvar contagem</button>
     </div>
     <div id="i-msg" class="fres"></div>
+  </section>
+
+  <section class="card">
+    <h2 style="font-size:1rem;margin:0 0 8px">💰 Fechamento de caixa</h2>
+    <p class="muted" style="margin:0 0 6px">Conte a gaveta (cédulas e moedas). Eu somo tudo e já separo: <b>notas de R$50, R$100 e R$200 vão pra reserva</b>; o resto fica no caixa.</p>
+    <div class="subttl">Cédulas</div>
+    <div id="fech-notas" class="dengrid"></div>
+    <div class="subttl">Moedas</div>
+    <div id="fech-moedas" class="dengrid"></div>
+    <div class="fechtot" id="fech-tot"></div>
   </section>
 </div>
 <script>
@@ -262,6 +279,30 @@ document.getElementById('i-salvar').addEventListener('click',()=>{
      else { m.className='fres bad'; m.textContent='❌ '+(res.erro||'falhou'); }
    }).catch(()=>{btn.disabled=false;btn.textContent='Salvar contagem';m.className='fres bad';m.textContent='❌ erro de conexão';});
 });
+
+// ===== FECHAMENTO DE CAIXA (contagem da gaveta) =====
+(function(){
+  const NOTAS=[200,100,50,20,10,5,2], MOEDAS=[1,0.5,0.25,0.1,0.05], RESERVA=new Set([200,100,50]);
+  const key=v=>'den-'+String(v).replace('.','_');
+  const cell=v=>{const lbl=v>=1?('R$ '+v):(Math.round(v*100)+' centavos');
+    return '<label class="den">'+lbl+'<input type="number" min="0" step="1" inputmode="numeric" id="'+key(v)+'" placeholder="0"><span class="dv" id="dv-'+key(v)+'">R$ 0,00</span></label>';};
+  document.getElementById('fech-notas').innerHTML=NOTAS.map(cell).join('');
+  document.getElementById('fech-moedas').innerHTML=MOEDAS.map(cell).join('');
+  function calc(){
+    let tot=0,res=0;
+    NOTAS.concat(MOEDAS).forEach(v=>{
+      const el=document.getElementById(key(v)); const q=parseInt(el.value)||0; const sub=q*v; tot+=sub;
+      if(RESERVA.has(v)) res+=sub;
+      document.getElementById('dv-'+key(v)).textContent='R$ '+fmt(sub);
+    });
+    document.getElementById('fech-tot').innerHTML=
+      'Total contado: <span class="v">R$ '+fmt(tot)+'</span>'+
+      ' &nbsp;·&nbsp; → Reserva (50/100/200): <span class="v">R$ '+fmt(res)+'</span>'+
+      ' &nbsp;·&nbsp; → Caixa: <span class="v">R$ '+fmt(tot-res)+'</span>';
+  }
+  NOTAS.concat(MOEDAS).forEach(v=>document.getElementById(key(v)).addEventListener('input',calc));
+  calc();
+})();
 </script>
 </body>
 </html>
