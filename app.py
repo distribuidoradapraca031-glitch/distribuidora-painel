@@ -210,6 +210,28 @@ def api_catalogo():
         return {"produtos": produtos, "fornecedores": fornecedores}
     return jsonify(cached("catalogo", 120, build))
 
+@app.route("/api/hoje")
+@login_required
+def api_hoje():
+    """Vendas do balcão de hoje, ao vivo, com quebra por forma de pagamento."""
+    def build():
+        h = _hoje()
+        vendas = gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": h, "data_fim": h})
+        tot = dinheiro = pix = cartao = outros = 0.0
+        for v in vendas:
+            tot += _num(v.get("valor_total"))
+            for wrap in v.get("pagamentos") or []:
+                p = wrap.get("pagamento", wrap)
+                val = _num(p.get("valor")); nome = (p.get("nome_forma_pagamento") or "").upper()
+                if "DINHEIRO" in nome: dinheiro += val
+                elif "PIX" in nome: pix += val
+                elif "CART" in nome: cartao += val
+                else: outros += val
+        return {"n": len(vendas), "total": round(tot, 2), "dinheiro": round(dinheiro, 2),
+                "pix": round(pix, 2), "cartao": round(cartao, 2), "outros": round(outros, 2),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("hoje", 60, build))
+
 def _proximo_codigo_compra():
     """Código na faixa manual (< 1.000.000), separada dos automáticos (~13 mi)."""
     try:

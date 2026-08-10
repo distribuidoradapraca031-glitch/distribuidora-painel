@@ -67,6 +67,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
     <div class="kpi"><div class="lbl">Valor em estoque (custo)</div><div class="val" id="k-val">…</div></div>
     <div class="kpi"><div class="lbl">Itens com estoque negativo</div><div class="val" id="k-neg">…</div></div>
     <div class="kpi"><div class="lbl">Contas a pagar em aberto</div><div class="val" id="k-pagar">…</div></div>
+    <div class="kpi"><div class="lbl">Vendas hoje (balcão)</div><div class="val" id="k-hoje">…</div><div class="lbl" id="k-hoje-sub" style="margin-top:3px;text-transform:none;letter-spacing:0"></div></div>
   </div>
 
   <section class="card">
@@ -157,6 +158,16 @@ function carregaResumo(fresh){
   }).catch(e=>{ document.getElementById('stamp').textContent='erro ao ler o sistema'; });
 }
 carregaResumo();
+let HOJE_DINHEIRO = 0;
+function carregaHoje(fresh){
+  return fetch('/api/hoje'+q(fresh)).then(r=>r.json()).then(d=>{
+    document.getElementById('k-hoje').textContent = 'R$ '+fmt(d.total);
+    document.getElementById('k-hoje-sub').textContent = d.n+' vendas · 💵 '+fmt(d.dinheiro)+' · PIX '+fmt(d.pix)+' · 💳 '+fmt(d.cartao);
+    HOJE_DINHEIRO = d.dinheiro;
+    if(window.atualizaFechRef) window.atualizaFechRef();
+  }).catch(e=>{});
+}
+carregaHoje();
 const FORMAS = ['Caixa','Dinheiro','PIX'];
 function carregaPagar(fresh){
   return fetch('/api/pagar'+q(fresh)).then(r=>r.json()).then(d=>{
@@ -217,7 +228,7 @@ carregaCatalogo();
 // botão Atualizar: repuxa TUDO do CRM na hora (ignora cache)
 document.getElementById('btn-refresh').addEventListener('click',()=>{
   const b=document.getElementById('btn-refresh'); b.disabled=true; b.textContent='atualizando…';
-  Promise.all([carregaResumo(true),carregaPagar(true),carregaCatalogo(true)])
+  Promise.all([carregaResumo(true),carregaPagar(true),carregaCatalogo(true),carregaHoje(true)])
     .finally(()=>{ b.disabled=false; b.textContent='↻ Atualizar'; });
 });
 document.getElementById('c-unid').addEventListener('change',()=>{
@@ -295,11 +306,16 @@ document.getElementById('i-salvar').addEventListener('click',()=>{
       if(RESERVA.has(v)) res+=sub;
       document.getElementById('dv-'+key(v)).textContent='R$ '+fmt(sub);
     });
+    let ref='';
+    if(HOJE_DINHEIRO>0){
+      ref='<div style="margin-top:8px;font-weight:400;font-size:.85rem;color:var(--muted)">💵 Vendas em dinheiro hoje (sistema): <b>R$ '+fmt(HOJE_DINHEIRO)+'</b> — some com o troco de abertura pra comparar com o que você contou.</div>';
+    }
     document.getElementById('fech-tot').innerHTML=
       'Total contado: <span class="v">R$ '+fmt(tot)+'</span>'+
       ' &nbsp;·&nbsp; → Reserva (50/100/200): <span class="v">R$ '+fmt(res)+'</span>'+
-      ' &nbsp;·&nbsp; → Caixa: <span class="v">R$ '+fmt(tot-res)+'</span>';
+      ' &nbsp;·&nbsp; → Caixa: <span class="v">R$ '+fmt(tot-res)+'</span>'+ref;
   }
+  window.atualizaFechRef=calc;
   NOTAS.concat(MOEDAS).forEach(v=>document.getElementById(key(v)).addEventListener('input',calc));
   calc();
 })();
