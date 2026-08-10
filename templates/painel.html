@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel — Distribuidora da Praça</title>
+<style>
+:root{--bg:#F4F2ED;--surface:#FFF;--ink:#26241F;--muted:#6E6A60;--line:#DDD8CC;--accent:#A66A12}
+@media(prefers-color-scheme:dark){:root{--bg:#16181D;--surface:#1E2128;--ink:#E8E6E1;--muted:#9A9DA6;--line:#333845;--accent:#E0A33E}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;padding:16px}
+.wrap{max-width:1060px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:1.25rem;margin:0}
+.muted{color:var(--muted);font-size:.8rem}
+a.logout{color:var(--muted);font-size:.82rem;text-decoration:none;border:1px solid var(--line);padding:6px 12px;border-radius:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi .val{font-size:1.5rem;font-weight:700;margin-top:3px}
+.badge{display:inline-block;margin-top:14px;background:#E3F0E8;color:#2E7D4F;border-radius:999px;padding:4px 12px;font-size:.78rem;font-weight:600}
+@media(prefers-color-scheme:dark){.badge{background:#1E332A;color:#5BB98C}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px}
+.card h2{margin:0}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 9px;border-top:1px solid var(--line)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fform{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.fform label{display:flex;flex-direction:column;gap:3px;font-size:.72rem;color:var(--muted)}
+.fform input,.fform select{font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.fform input{width:130px}
+.fform button,.baixar-btn{font:inherit;font-size:.85rem;font-weight:700;border:0;background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer}
+.baixar-btn{font-size:.74rem;padding:5px 10px}
+.rowform{display:inline-flex;gap:5px;align-items:center}
+.rowform select{font:inherit;font-size:.76rem;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.fres{font-size:.85rem;font-weight:600;margin-top:10px}
+.ok{color:#2E7D4F}.bad{color:#B3403A}
+@media(prefers-color-scheme:dark){.ok{color:#5BB98C}.bad{color:#E5716A}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🍺 Distribuidora da Praça — Painel</h1>
+      <div class="muted" id="stamp">carregando do sistema…</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="btn-refresh" class="logout" style="cursor:pointer;background:var(--surface)">↻ Atualizar</button>
+      <a class="logout" href="/logout">Sair</a>
+    </div>
+  </header>
+
+  <span class="badge">✅ Conectado ao sistema — dados ao vivo</span>
+
+  <div class="kpis" id="kpis" style="margin-top:14px">
+    <div class="kpi"><div class="lbl">Produtos ativos</div><div class="val" id="k-prod">…</div></div>
+    <div class="kpi"><div class="lbl">Valor em estoque (custo)</div><div class="val" id="k-val">…</div></div>
+    <div class="kpi"><div class="lbl">Itens com estoque negativo</div><div class="val" id="k-neg">…</div></div>
+    <div class="kpi"><div class="lbl">Contas a pagar em aberto</div><div class="val" id="k-pagar">…</div></div>
+  </div>
+
+  <section class="card">
+    <h2 style="font-size:1rem;margin:0 0 8px">Contas a pagar em aberto</h2>
+    <p class="muted" style="margin:0 0 8px">Escolha como pagou e toque em <b>baixar</b> — grava na hora no sistema.</p>
+    <div class="tblwrap"><table id="t-pagar"><thead><tr><th>Vence</th><th>Conta</th><th class="num">Valor</th><th>Baixar</th></tr></thead><tbody><tr><td colspan="4" class="muted">carregando…</td></tr></tbody></table></div>
+    <div id="pagar-msg" class="fres"></div>
+  </section>
+
+  <section class="card">
+    <h2 style="font-size:1rem;margin:0 0 8px">➕ Lançar um gasto</h2>
+    <p class="muted" style="margin:0 0 10px">Lanche, almoço, papelaria… grava direto como despesa paga, na categoria e no pote certo.</p>
+    <div class="fform">
+      <label>Categoria
+        <select id="g-cat">
+          <option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
+          <option>Combustível</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
+          <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Água / luz / internet</option>
+          <option>Retirada do sócio</option><option>Outros</option>
+        </select>
+      </label>
+      <label>Descrição (opcional)<input id="g-desc" type="text" placeholder="ex.: pão + frios"></label>
+      <label>Valor (R$)<input id="g-valor" type="number" step="0.01" inputmode="decimal" placeholder="0,00"></label>
+      <label>Pagou com<select id="g-forma"><option>Caixa</option><option>Dinheiro</option><option>PIX</option></select></label>
+      <label>Data<input id="g-data" type="date"></label>
+      <button id="g-add">Lançar gasto</button>
+    </div>
+    <div id="g-msg" class="fres"></div>
+  </section>
+
+  <section class="card">
+    <h2 style="font-size:1rem;margin:0 0 8px">🧾 Registrar compra (sem nota)</h2>
+    <p class="muted" style="margin:0 0 10px">Escolha o fornecedor, vá somando os itens (fardo/caixa vira unidades) e o valor pago. Ao registrar, <b>entra no estoque</b>, <b>atualiza o custo</b> e <b>paga do pote</b>.</p>
+    <div class="fform">
+      <label>Fornecedor<select id="c-forn" style="min-width:200px"><option value="">carregando…</option></select></label>
+      <label>Data<input id="c-data" type="date"></label>
+      <label>Pagou com<select id="c-forma"><option>Caixa</option><option>Dinheiro</option><option>PIX</option></select></label>
+    </div>
+    <div class="fform" style="margin-top:10px;border-top:1px dashed var(--line);padding-top:10px">
+      <label>Produto<input id="c-prod" list="dl-prod" placeholder="digite pra buscar…" style="min-width:220px"></label>
+      <label>Qtd<input id="c-qtd" type="number" step="0.01" inputmode="decimal" placeholder="0" style="width:70px"></label>
+      <label>Unidade<select id="c-unid"><option value="UN">Unidade</option><option value="CX">Caixa</option><option value="FD">Fardo</option><option value="DZ">Dúzia</option></select></label>
+      <label>Un. por emb.<input id="c-mult" type="number" step="1" inputmode="numeric" placeholder="1" style="width:100px"></label>
+      <label>Valor pago (R$)<input id="c-valor" type="number" step="0.01" inputmode="decimal" placeholder="0,00" style="width:120px"></label>
+      <button id="c-add">Adicionar item</button>
+    </div>
+    <div id="c-itemmsg" class="fres"></div>
+    <div class="tblwrap"><table id="t-compra"></table></div>
+    <div class="fform" style="margin-top:10px">
+      <button id="c-registrar">Registrar compra</button>
+    </div>
+    <div id="c-msg" class="fres"></div>
+    <datalist id="dl-prod"></datalist>
+  </section>
+
+  <section class="card">
+    <h2 style="font-size:1rem;margin:0 0 8px">📦 Inventário (acertar estoque)</h2>
+    <p class="muted" style="margin:0 0 10px">Escolha o produto, veja quanto o sistema tem e digite quanto você <b>contou</b>. Ao salvar, o estoque do sistema passa a ser exatamente o que você contou.</p>
+    <div class="fform">
+      <label>Produto<input id="i-prod" list="dl-prod" placeholder="digite pra buscar…" style="min-width:220px"></label>
+      <label>No sistema<input id="i-sistema" type="text" readonly placeholder="—" style="width:100px"></label>
+      <label>Contei<input id="i-contei" type="number" step="1" inputmode="numeric" placeholder="0" style="width:100px"></label>
+      <button id="i-salvar">Salvar contagem</button>
+    </div>
+    <div id="i-msg" class="fres"></div>
+  </section>
+</div>
+<script>
+const fmt = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const dbr = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7) : '—';
+const q = fresh => fresh ? '?fresh=1' : '';
+function carregaResumo(fresh){
+  return fetch('/api/resumo'+q(fresh)).then(r=>r.json()).then(d=>{
+    document.getElementById('k-prod').textContent = d.produtos_ativos.toLocaleString('pt-BR');
+    document.getElementById('k-val').textContent = 'R$ '+fmt(d.valor_estoque);
+    document.getElementById('k-neg').textContent = d.itens_negativos.toLocaleString('pt-BR');
+    document.getElementById('stamp').textContent = 'lido do sistema em '+d.gerado_em;
+  }).catch(e=>{ document.getElementById('stamp').textContent='erro ao ler o sistema'; });
+}
+carregaResumo();
+const FORMAS = ['Caixa','Dinheiro','PIX'];
+function carregaPagar(fresh){
+  return fetch('/api/pagar'+q(fresh)).then(r=>r.json()).then(d=>{
+    document.getElementById('k-pagar').textContent = d.n+' · R$ '+fmt(d.total);
+    const tb = document.querySelector('#t-pagar tbody');
+    tb.innerHTML = d.itens.length ? d.itens.map(i=>
+      '<tr><td>'+dbr(i.venc)+'</td><td>'+i.desc+(i.fornecedor?(' <span class="muted">'+i.fornecedor+'</span>'):'')+'</td>'+
+      '<td class="num">R$ '+fmt(i.valor)+'</td>'+
+      '<td><span class="rowform"><select class="bx-forma">'+FORMAS.map(f=>'<option>'+f+'</option>').join('')+'</select>'+
+      '<button class="baixar-btn" data-id="'+i.id+'">baixar</button></span></td></tr>'
+    ).join('') : '<tr><td colspan="4" class="muted">Nada em aberto 🎉</td></tr>';
+    tb.querySelectorAll('.baixar-btn').forEach(b=>b.addEventListener('click',()=>{
+      const forma=b.closest('.rowform').querySelector('.bx-forma').value;
+      b.disabled=true; b.textContent='…';
+      fetch('/api/baixa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:b.dataset.id,forma})})
+       .then(r=>r.json()).then(res=>{
+         const m=document.getElementById('pagar-msg');
+         if(res.ok){ m.className='fres ok'; m.textContent='✅ Conta baixada no sistema ('+forma+').'; carregaPagar(); }
+         else { m.className='fres bad'; m.textContent='❌ '+(res.erro||'falhou'); b.disabled=false; b.textContent='baixar'; }
+       }).catch(()=>{b.disabled=false;b.textContent='baixar';});
+    }));
+  }).catch(e=>{});
+}
+carregaPagar();
+
+// lançar gasto
+document.getElementById('g-data').value = new Date().toISOString().slice(0,10);
+document.getElementById('g-add').addEventListener('click',()=>{
+  const m=document.getElementById('g-msg');
+  const valor=parseFloat(document.getElementById('g-valor').value);
+  if(isNaN(valor)||valor<=0){ m.className='fres bad'; m.textContent='Digite o valor.'; return; }
+  const payload={categoria:document.getElementById('g-cat').value,descricao:document.getElementById('g-desc').value,
+    valor,forma:document.getElementById('g-forma').value,data:document.getElementById('g-data').value};
+  const btn=document.getElementById('g-add'); btn.disabled=true; btn.textContent='…';
+  fetch('/api/gasto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+   .then(r=>r.json()).then(res=>{
+     btn.disabled=false; btn.textContent='Lançar gasto';
+     if(res.ok){ m.className='fres ok'; m.textContent='✅ Gasto lançado no sistema.'; document.getElementById('g-valor').value='';document.getElementById('g-desc').value=''; carregaPagar(); }
+     else { m.className='fres bad'; m.textContent='❌ '+(res.erro||'falhou'); }
+   }).catch(()=>{btn.disabled=false;btn.textContent='Lançar gasto';m.className='fres bad';m.textContent='❌ erro de conexão';});
+});
+
+// ===== COMPRA =====
+let PRODS = {};   // nome -> {id,estoque,custo}
+let CITENS = [];  // itens da compra atual
+document.getElementById('c-data').value = new Date().toISOString().slice(0,10);
+function carregaCatalogo(fresh){
+  return fetch('/api/catalogo'+q(fresh)).then(r=>r.json()).then(d=>{
+    const fs=document.getElementById('c-forn'), atual=fs.value;
+    fs.innerHTML='<option value="">— escolher —</option>'+d.fornecedores.map(f=>'<option value="'+f.id+'">'+f.nome+'</option>').join('');
+    if(atual) fs.value=atual;
+    const dl=document.getElementById('dl-prod');
+    dl.innerHTML=d.produtos.map(p=>'<option value="'+String(p.nome).replace(/"/g,'&quot;')+'" label="est '+Math.round(p.estoque)+'">').join('');
+    PRODS={}; d.produtos.forEach(p=>{PRODS[p.nome]=p;});
+  }).catch(()=>{});
+}
+carregaCatalogo();
+// botão Atualizar: repuxa TUDO do CRM na hora (ignora cache)
+document.getElementById('btn-refresh').addEventListener('click',()=>{
+  const b=document.getElementById('btn-refresh'); b.disabled=true; b.textContent='atualizando…';
+  Promise.all([carregaResumo(true),carregaPagar(true),carregaCatalogo(true)])
+    .finally(()=>{ b.disabled=false; b.textContent='↻ Atualizar'; });
+});
+document.getElementById('c-unid').addEventListener('change',()=>{
+  const u=document.getElementById('c-unid').value, m=document.getElementById('c-mult');
+  if(u==='UN')m.value=1; else if(u==='DZ')m.value=12; else if(!m.value)m.value='';
+});
+function renderCompra(){
+  const t=document.getElementById('t-compra');
+  if(!CITENS.length){t.innerHTML='';return;}
+  let tu=0,tv=0;
+  t.innerHTML='<thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Un.</th><th class="num">Valor</th><th class="num">Custo/un</th><th></th></tr></thead><tbody>'+
+    CITENS.map((x,idx)=>{const u=x.quantidade*x.mult,cu=u?x.valor/u:0;tu+=u;tv+=x.valor;
+      return '<tr><td>'+x.nome+'</td><td class="num">'+x.quantidade+' '+x.unidade+'</td><td class="num">'+Math.round(u)+'</td><td class="num">R$ '+fmt(x.valor)+'</td><td class="num">R$ '+fmt(cu)+'</td><td><button class="baixar-btn" style="background:transparent;color:var(--muted)" data-i="'+idx+'">✕</button></td></tr>';}).join('')+
+    '</tbody><tfoot><tr><td>'+CITENS.length+' item(ns)</td><td class="num"></td><td class="num">'+Math.round(tu)+'</td><td class="num">R$ '+fmt(tv)+'</td><td colspan="2"></td></tr></tfoot>';
+  t.querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click',()=>{CITENS.splice(+b.dataset.i,1);renderCompra();}));
+}
+document.getElementById('c-add').addEventListener('click',()=>{
+  const m=document.getElementById('c-itemmsg');
+  const nome=document.getElementById('c-prod').value.trim(), p=PRODS[nome];
+  const qtd=parseFloat(document.getElementById('c-qtd').value), mult=parseFloat(document.getElementById('c-mult').value)||1, valor=parseFloat(document.getElementById('c-valor').value);
+  if(!p){m.className='fres bad';m.textContent='Escolha um produto da lista.';return;}
+  if(isNaN(qtd)||qtd<=0){m.className='fres bad';m.textContent='Digite a quantidade.';return;}
+  if(isNaN(valor)||valor<=0){m.className='fres bad';m.textContent='Digite o valor pago.';return;}
+  CITENS.push({produto_id:p.id,nome:p.nome,quantidade:qtd,unidade:document.getElementById('c-unid').value,mult:mult,valor:+valor.toFixed(2)});
+  m.textContent=''; renderCompra();
+  document.getElementById('c-prod').value='';document.getElementById('c-qtd').value='';document.getElementById('c-valor').value='';document.getElementById('c-mult').value='';document.getElementById('c-unid').value='UN';
+});
+document.getElementById('c-registrar').addEventListener('click',()=>{
+  const m=document.getElementById('c-msg'), forn=document.getElementById('c-forn').value;
+  if(!forn){m.className='fres bad';m.textContent='Escolha o fornecedor.';return;}
+  if(!CITENS.length){m.className='fres bad';m.textContent='Adicione ao menos um item.';return;}
+  const btn=document.getElementById('c-registrar'); btn.disabled=true; btn.textContent='…';
+  const payload={fornecedor_id:forn,data:document.getElementById('c-data').value,forma:document.getElementById('c-forma').value,itens:CITENS};
+  fetch('/api/compra',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+   .then(r=>r.json()).then(res=>{
+     btn.disabled=false; btn.textContent='Registrar compra';
+     if(res.ok){ m.className='fres ok'; m.textContent='✅ Compra registrada ('+res.itens+' item(ns), R$ '+fmt(res.total)+') — estoque e custo atualizados.'; CITENS=[]; renderCompra(); carregaPagar(); }
+     else { m.className='fres bad'; m.textContent='❌ '+(res.erro||'falhou'); }
+   }).catch(()=>{btn.disabled=false;btn.textContent='Registrar compra';m.className='fres bad';m.textContent='❌ erro de conexão';});
+});
+
+// ===== INVENTÁRIO =====
+const iProd=document.getElementById('i-prod'), iSis=document.getElementById('i-sistema');
+function iSync(){
+  const p=PRODS[iProd.value.trim()]; iSis.value='…';
+  if(!p){iSis.value='—';return;}
+  fetch('/api/produto?id='+encodeURIComponent(p.id)).then(r=>r.json()).then(d=>{ iSis.value = d.ok ? Math.round(d.estoque) : '—'; }).catch(()=>{iSis.value='—';});
+}
+iProd.addEventListener('change',iSync);
+document.getElementById('i-salvar').addEventListener('click',()=>{
+  const m=document.getElementById('i-msg'), p=PRODS[iProd.value.trim()], c=parseFloat(document.getElementById('i-contei').value);
+  if(!p){m.className='fres bad';m.textContent='Escolha um produto da lista.';return;}
+  if(isNaN(c)){m.className='fres bad';m.textContent='Digite quanto você contou.';return;}
+  const btn=document.getElementById('i-salvar'); btn.disabled=true; btn.textContent='…';
+  fetch('/api/inventario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({produto_id:p.id,contagem:c})})
+   .then(r=>r.json()).then(res=>{
+     btn.disabled=false; btn.textContent='Salvar contagem';
+     if(res.ok){ const dif=res.dif; m.className='fres ok'; m.textContent='✅ Estoque de '+res.nome+' ajustado pra '+res.depois+' (era '+Math.round(res.antes)+', dif '+(dif>=0?'+':'')+dif+').'; iSis.value=res.depois; if(PRODS[iProd.value.trim()])PRODS[iProd.value.trim()].estoque=res.depois; }
+     else { m.className='fres bad'; m.textContent='❌ '+(res.erro||'falhou'); }
+   }).catch(()=>{btn.disabled=false;btn.textContent='Salvar contagem';m.className='fres bad';m.textContent='❌ erro de conexão';});
+});
+</script>
+</body>
+</html>
