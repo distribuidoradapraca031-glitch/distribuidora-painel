@@ -6,6 +6,19 @@ import os, functools, time
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
 import gclient as gcapi
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def _carrega_painel_data():
+    """JSON dos gráficos (snapshot) que vai embutido no painel. `<` vira \\u003c
+    pra não quebrar o <script> onde ele é injetado."""
+    try:
+        with open(os.path.join(BASE_DIR, "painel_data.json"), encoding="utf-8") as f:
+            return f.read().replace("<", "\\u003c")
+    except FileNotFoundError:
+        return "{}"
+
+PAINEL_DATA = _carrega_painel_data()
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or gcapi._tok("FLASK_SECRET_KEY") or "troca-esta-chave"
 APP_PASSWORD = os.environ.get("APP_PASSWORD") or gcapi._tok("APP_PASSWORD") or ""
@@ -56,7 +69,9 @@ def logout():
 @app.route("/")
 @login_required
 def home():
-    return render_template("painel.html")
+    with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
+        tpl = f.read()
+    return tpl.replace("__DATA__", PAINEL_DATA)
 
 def _num(x):
     try: return float(str(x).replace(",", "."))
@@ -118,6 +133,7 @@ CATS = {
     "Manutenção / conserto": "33015656", "Água / luz / internet": "33015649",
     "Retirada do sócio": "33015638", "Outros": "33015669",
 }
+BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
 
 def _hoje():
     return time.strftime("%Y-%m-%d")
@@ -173,18 +189,31 @@ def api_gasto():
     desc = (body.get("descricao") or "").strip() or cat
     if valor <= 0:
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
-    pot = POTES.get(forma, POTES["Caixa"])
-    payload = {
-        "descricao": desc,
-        "valor": f"{valor:.2f}",
-        "data_vencimento": data,
-        "data_competencia": data,
-        "data_liquidacao": data,
-        "liquidado": "1",
-        "plano_contas_id": CATS.get(cat, CATS["Outros"]),
-        "conta_bancaria_id": pot["conta"],
-        "forma_pagamento_id": pot["forma"],
-    }
+    plano = CATS.get(cat, CATS["Outros"])
+    if forma == "Boleto":
+        # não pago: vira conta a pagar (boleto em aberto)
+        payload = {
+            "descricao": desc,
+            "valor": f"{valor:.2f}",
+            "data_vencimento": data,
+            "data_competencia": data,
+            "liquidado": "0",
+            "plano_contas_id": plano,
+            "forma_pagamento_id": BOLETO_FORMA_ID,
+        }
+    else:
+        pot = POTES.get(forma, POTES["Caixa"])
+        payload = {
+            "descricao": desc,
+            "valor": f"{valor:.2f}",
+            "data_vencimento": data,
+            "data_competencia": data,
+            "data_liquidacao": data,
+            "liquidado": "1",
+            "plano_contas_id": plano,
+            "conta_bancaria_id": pot["conta"],
+            "forma_pagamento_id": pot["forma"],
+        }
     try:
         r = gcapi.post("/pagamentos", payload)
         d = r.get("data") or {}
@@ -255,7 +284,6 @@ def api_compra():
         return jsonify({"ok": False, "erro": "escolha o fornecedor"}), 400
     if not itens:
         return jsonify({"ok": False, "erro": "adicione ao menos um item"}), 400
-    pot = POTES.get(forma, POTES["Caixa"])
     produtos, total = [], 0.0
     for it in itens:
         pid = str(it.get("produto_id") or "").strip()
@@ -272,14 +300,25 @@ def api_compra():
             "valor_custo": round(custo_unit, 4), "valor_total": round(valor, 2),
             "detalhes": "compra sem nota (painel)",
         }})
-    pagamentos = [{"pagamento": {
-        "data_vencimento": data, "valor": round(total, 2),
-        "forma_pagamento_id": pot["forma"], "plano_contas_id": "33015669",
-        "conta_bancaria_id": pot["conta"], "liquidado": "1", "data_liquidacao": data,
-    }}]
+    if forma == "Boleto":
+        # a prazo: fica em contas a pagar, não sai do caixa agora
+        pagamentos = [{"pagamento": {
+            "data_vencimento": data, "valor": round(total, 2),
+            "forma_pagamento_id": BOLETO_FORMA_ID, "plano_contas_id": "33015669",
+            "liquidado": "0",
+        }}]
+        condicao = "a_prazo"
+    else:
+        pot = POTES.get(forma, POTES["Caixa"])
+        pagamentos = [{"pagamento": {
+            "data_vencimento": data, "valor": round(total, 2),
+            "forma_pagamento_id": pot["forma"], "plano_contas_id": "33015669",
+            "conta_bancaria_id": pot["conta"], "liquidado": "1", "data_liquidacao": data,
+        }}]
+        condicao = "a_vista"
     payload = {
         "codigo": _proximo_codigo_compra(), "fornecedor_id": forn,
-        "data_emissao": data, "situacao_id": "1979927", "condicao_pagamento": "a_vista",
+        "data_emissao": data, "situacao_id": "1979927", "condicao_pagamento": condicao,
         "valor_produtos": round(total, 2), "valor_total": round(total, 2),
         "produtos": produtos, "pagamentos": pagamentos,
     }
