@@ -348,6 +348,7 @@ th.g,td.g{background:var(--accent-soft)}
 <section class="card">
   <div class="eyebrow">Contas a pagar</div>
   <h2>O que vence — sistema + boletos DDA</h2>
+  <div id="gastos-mes-box" style="margin:10px 0"></div>
   <div class="banner crit" id="venc-banner" style="display:none"></div>
   <div class="tblwrap" id="tbl-pagar"></div>
   <div id="baixa-out-box"></div>
@@ -363,7 +364,8 @@ th.g,td.g{background:var(--accent-soft)}
           <option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
           <option>Combustível</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
           <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Água / luz / internet</option>
-          <option>Retirada do sócio</option><option>Outros</option>
+          <option>Retirada do sócio (Victor)</option><option>Retirada do sócio (Igor)</option>
+          <option>Pagamento Biel</option><option>Pagamento PH Motoca</option><option>Outros</option>
         </select>
       </label>
       <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="ex-desc" placeholder="ex.: pão + frios" style="width:100%"></label>
@@ -1211,7 +1213,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       post('/api/gasto',payload).then(res=>{
         nb.disabled=false; nb.textContent='Adicionar gasto';
         if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Gasto lançado no sistema'+(payload.forma==='Boleto'?' (contas a pagar)':'')+'.</span>';
-          g('ex-valor').value=''; g('ex-desc').value=''; loadResumo(true); loadPagar(true); }
+          g('ex-valor').value=''; g('ex-desc').value=''; loadResumo(true); loadPagar(true); loadGastosMes(true); }
         else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui lançar')+'</span>'; }
       }).catch(()=>{ nb.disabled=false; nb.textContent='Adicionar gasto'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
@@ -1261,12 +1263,23 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
+  /* ---------- gastos do mês por categoria (topo do contas a pagar) ---------- */
+  function loadGastosMes(f){ return fetch('/api/gastos-mes'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('gastos-mes-box'); if(!box) return;
+    if(!d.itens||!d.itens.length){ box.innerHTML=''; return; }
+    box.innerHTML='<div class="eyebrow" style="margin-bottom:4px">Gastos do mês por categoria (além das compras) — total R$ '+fmt(d.total)+'</div>'+
+      '<div class="tblwrap"><table><thead><tr><th>Categoria</th><th class="num">No mês</th></tr></thead><tbody>'+
+      d.itens.map(i=>'<tr><td class="nome">'+esc(i.cat)+'</td><td class="num">R$ '+fmt(i.total)+'</td></tr>').join('')+
+      '<tr><td style="font-weight:700">Total gasto (fora compras)</td><td class="num" style="font-weight:700">R$ '+fmt(d.total)+'</td></tr>'+
+      '</tbody></table></div>';
+  }).catch(()=>{}); }
+
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadPagar();
+  loadResumo(); loadHoje(); loadPagar(); loadGastosMes();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true),loadGastosMes(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

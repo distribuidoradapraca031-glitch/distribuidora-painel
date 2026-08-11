@@ -131,8 +131,13 @@ CATS = {
     "Papelaria": "33015658", "Combustível": "33015633", "Motoboy / entrega": "33015664",
     "Limpeza / higiene": "33015655", "Descartáveis (copo/saco)": "33015669",
     "Manutenção / conserto": "33015656", "Água / luz / internet": "33015649",
-    "Retirada do sócio": "33015638", "Outros": "33015669",
+    "Retirada do sócio (Victor)": "33015638", "Retirada do sócio (Igor)": "33015638",
+    "Pagamento Biel": "33015664", "Pagamento PH Motoca": "33015664",
+    "Outros": "33015669",
 }
+# categorias que dividem o mesmo plano (Victor/Igor, Biel/PH) — separadas pela descrição no resumo
+SPLIT_LABELS = ["Retirada do sócio (Victor)", "Retirada do sócio (Igor)",
+                "Pagamento Biel", "Pagamento PH Motoca"]
 BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
 
 # ---- SAQUE (troca cartão -> dinheiro, vira venda + sangria) ----
@@ -381,6 +386,37 @@ def api_inventario():
                         "dif": contagem - antes, "nome": cur.get("nome")})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/gastos-mes")
+@login_required
+def api_gastos_mes():
+    """Soma dos gastos do mês por categoria (fora as compras de mercadoria) — pro
+    fechamento saber tudo que saiu além das compras."""
+    def build():
+        pgs = gcapi.get_all("/pagamentos")
+        mes = _hoje()[:7]
+        cats, total = {}, 0.0
+        for p in pgs:
+            dref = (p.get("data_competencia") or p.get("data_vencimento") or "")[:7]
+            if dref != mes:
+                continue
+            desc = (p.get("descricao") or "").strip()
+            if desc.upper().startswith("SANGRIA SAQUE"):
+                continue  # saque não é gasto, é troca de dinheiro
+            plano = p.get("nome_plano_conta") or "Outros"
+            cat = next((lbl for lbl in SPLIT_LABELS if desc.startswith(lbl)), None)
+            if not cat:
+                if plano == "Compras":
+                    continue  # mercadoria fica fora ("além das compras")
+                cat = plano
+            val = _num(p.get("valor_total")) or _num(p.get("valor"))
+            cats[cat] = cats.get(cat, 0.0) + val
+            total += val
+        itens = sorted([{"cat": k, "total": round(v, 2)} for k, v in cats.items()],
+                       key=lambda x: -x["total"])
+        return {"itens": itens, "total": round(total, 2), "mes": mes,
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("gastos_mes", 60, build))
 
 def _saque_pid(valor):
     """Acha o produto SAQUE {valor}; se não existir (valor novo), cria."""
