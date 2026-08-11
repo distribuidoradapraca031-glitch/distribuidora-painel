@@ -333,7 +333,7 @@ th.g,td.g{background:var(--accent-soft)}
 <section class="card">
   <div class="eyebrow">Contas a pagar · a pagar do mês</div>
   <h2>Provisões e atrasados — o que falta pagar</h2>
-  <p class="note">Aqui em cima ficam os <strong>provisionamentos do mês</strong> e o que está <strong>atrasado</strong> (marcado em vermelho) — tudo que <strong>ainda não foi pago</strong>. <strong>Clique na categoria</strong> pra abrir os itens e marcar o que já <strong>pagou</strong>: ele sai daqui na hora e desce pros <strong>pagos do mês</strong> (o bloco do meio, que eu fecho todo dia 10). O ✕ exclui um item lançado errado. Precisa lançar algo que não está aqui? Use o <strong>➕ Adicionar</strong>.</p>
+  <p class="note">Aqui em cima ficam os <strong>provisionamentos do mês</strong> e o que está <strong>atrasado</strong> (em vermelho) — tudo que <strong>ainda não foi pago</strong>, mês a mês. <strong>Clique na categoria</strong> pra abrir os itens; ao pagar, confira o campo <strong>"pago R$"</strong> (já vem com o previsto — se pagou com <strong>juros</strong> ou o valor veio diferente, é só ajustar ali) e clique <strong>paguei</strong>: ele sai daqui na hora, com o valor real, e desce pros <strong>pagos do mês</strong> (bloco do meio, que eu fecho todo dia 10). O ✕ exclui um item lançado errado; o <strong>➕ Adicionar</strong> lança um novo.</p>
   <div id="prev-total-box" style="margin:8px 0"></div>
   <div class="tblwrap" id="tbl-previsoes"></div>
 
@@ -1283,7 +1283,9 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           '<div style="padding:6px 12px;background:var(--bg)">'+
           c.itens.map(it=>'<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)">'+
             '<span style="font-size:.85rem">'+(it.venc?'<span'+(it.atrasado?' style="color:var(--crit);font-weight:600"':'')+'>'+dbr(it.venc)+(it.atrasado?' ⚠️':'')+'</span> · ':'')+(it.nota?esc(it.nota):'<span style="color:var(--muted)">sem obs</span>')+'</span>'+
-            '<span style="display:inline-flex;gap:6px;align-items:center"><b>R$ '+fmt(it.valor)+'</b>'+
+              '<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">'+
+              '<span style="font-size:.72rem;color:var(--muted)">previsto R$ '+fmt(it.valor)+'</span>'+
+              '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">pago R$<input class="pv-valor" type="number" step="0.01" inputmode="decimal" value="'+it.valor+'" title="valor real que você pagou (com juros, se teve)" style="width:80px;'+inp+'"></label>'+
               '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
               '<button class="pv-pay" data-id="'+it.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--good);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">paguei</button>'+
               '<button class="pv-del" data-id="'+it.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
@@ -1299,9 +1301,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(det){ det.hidden=!det.hidden; const ch=r.querySelector('.chev'); if(ch) ch.textContent=det.hidden?'▸':'▾'; }
     }));
     wrap.querySelectorAll('.pv-pay').forEach(b=>b.addEventListener('click',()=>{
-      const forma=b.parentNode.querySelector('.pv-forma').value; b.disabled=true; b.textContent='…';
-      post('/api/baixa',{id:b.dataset.id,forma}).then(res=>{
-        if(res.ok){ toast('✅ Pago ('+forma+') e descontado da previsão.'); loadPrevisoes(true); loadGastosMes(true); loadResumo(true); }
+      const box=b.parentNode;
+      const forma=box.querySelector('.pv-forma').value;
+      const valor=parseFloat(box.querySelector('.pv-valor').value)||0;
+      if(valor<=0){ toast('❌ digite o valor pago'); return; }
+      b.disabled=true; b.textContent='…';
+      post('/api/baixa',{id:b.dataset.id,forma,valor}).then(res=>{
+        if(res.ok){ toast('✅ Pago R$ '+fmt(valor)+' ('+forma+') e descontado.'); loadPrevisoes(true); loadGastosMes(true); loadResumo(true); }
         else{ b.disabled=false; b.textContent='paguei'; toast('❌ '+(res.erro||'não consegui')); }
       }).catch(()=>{ b.disabled=false; b.textContent='paguei'; toast('❌ erro de conexão'); });
     }));

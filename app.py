@@ -257,6 +257,7 @@ def api_baixa():
     body = request.get_json(force=True, silent=True) or {}
     pid = str(body.get("id") or "").strip()
     forma = body.get("forma") or "Caixa"
+    valor_real = _num(body.get("valor"))  # valor de fato pago (pode ter juros / ser variável)
     if not pid:
         return jsonify({"ok": False, "erro": "sem id"}), 400
     pot = POTES.get(forma, POTES["Caixa"])
@@ -268,7 +269,7 @@ def api_baixa():
     p = p.get("Pagamento", p) if isinstance(p, dict) else {}
     payload = {
         "descricao": p.get("descricao") or "Conta",
-        "valor": p.get("valor") or p.get("valor_total") or "0",
+        "valor": f"{valor_real:.2f}" if valor_real > 0 else (p.get("valor") or p.get("valor_total") or "0"),
         "plano_contas_id": p.get("plano_contas_id") or "",
         "data_vencimento": (p.get("data_vencimento") or _hoje())[:10],
         "data_competencia": (p.get("data_competencia") or _hoje())[:10],
