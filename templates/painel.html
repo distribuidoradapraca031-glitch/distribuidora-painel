@@ -204,6 +204,21 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
+  <div class="eyebrow">Caixa · saque (troca cartão → dinheiro)</div>
+  <h2>💸 Registrar saque</h2>
+  <p class="note">Digite quanto o cliente quer <strong>sacar</strong>. A taxa de <strong>20%</strong> entra sozinha (ele passa o valor + 20% na maquininha). Ao registrar, eu lanço a <strong>venda no cartão</strong> (entra na conta e nos relatórios, com imposto) e a <strong>sangria</strong> do dinheiro (sai do caixa, então não falta no fechamento).</p>
+  <div class="fbox">
+    <div class="fform">
+      <label>Cliente quer sacar (R$)<input type="number" step="1" inputmode="numeric" id="sq-valor" placeholder="0"></label>
+      <label>Passou no<select id="sq-tipo"><option value="debito">Débito</option><option value="credito">Crédito</option></select></label>
+      <button id="sq-registrar">Registrar saque</button>
+    </div>
+    <div class="fres" id="sq-calc" style="color:var(--muted);font-weight:400"></div>
+    <div class="fres" id="sq-msg"></div>
+  </div>
+</section>
+
+<section class="card">
   <div class="eyebrow">Notas de compra · toda segunda</div>
   <h2>Notas &amp; custos</h2>
   <p class="note">O que entrou de nota de fornecedor, os <strong>custos que mudaram</strong> e as <strong>sugestões de aumento</strong> esperando seu OK. Lembrete: o XML da nota você importa no painel do GestãoClick (parte fiscal → notas de compra); daí eu pego o resto toda segunda e atualizo aqui.</p>
@@ -433,7 +448,7 @@ const mesLow = _MN[parseInt(MA.mes.slice(5,7),10)-1]||'mês';
 const mesCap = mesLow.charAt(0).toUpperCase()+mesLow.slice(1);
 const pctBE = Math.round((MA.proj/MA.be_mes-1)*100);
 document.getElementById('kpis').innerHTML = [
- [mesCap+' até agora ('+MA.dias+' dias)','R$ '+fmt(MA.fat_mtd), 'média R$ '+fmt(MA.media_dia)+'/dia · ticket R$ '+fmt(k.ticket)],
+ [mesCap+' até agora ('+MA.dias+' dias)','R$ '+fmt(MA.fat_mtd), 'média R$ '+fmt(MA.media_dia)+'/dia · ticket R$ '+fmt(k.ticket)+(MA.pct_saque?' · '+MA.pct_saque+'% veio de saque':'')],
  ['Projeção de '+mesLow,'R$ '+fmt(MA.proj), pctBE>=0 ? '▲ '+pctBE+'% acima do equilíbrio mensal' : '▼ '+(-pctBE)+'% ABAIXO do equilíbrio'],
  ['Resultado projetado ('+mesLow+')',(MA.resultado_proj>=0?'+':'')+'R$ '+fmt(MA.resultado_proj), 'já com sua retirada de R$ 1.500 paga'],
  ['Equilíbrio do mês','R$ '+fmt0(MA.be_mes), 'R$ '+fmt0(MA.be_mes_sem_retirada)+' sem retirada de sócio'],
@@ -1219,6 +1234,30 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         if(res.ok){ const dif=res.dif; msg.innerHTML='<span style="color:var(--good)">✅ '+esc(res.nome)+' ajustado pra '+res.depois+' (era '+fmt0(res.antes)+', '+(dif>=0?'+':'')+dif+').</span>'; isis.value=res.depois; ic.value=''; loadResumo(true); }
         else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
       }).catch(()=>{ b.disabled=false; b.textContent='Salvar no sistema'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
+  /* ---------- Saque: AO VIVO (venda no cartão + sangria) ---------- */
+  (function(){
+    const vEl=g('sq-valor'), tEl=g('sq-tipo'), calc=g('sq-calc'), msg=g('sq-msg'), btn=g('sq-registrar');
+    if(!btn) return;
+    const FEE={debito:0.0085, credito:0.0314};
+    function upd(){
+      const v=parseFloat(vEl.value);
+      if(isNaN(v)||v<=0){ calc.textContent=''; return; }
+      const total=v*1.2, taxa=total*FEE[tEl.value], ganho=v*0.2-taxa;
+      calc.innerHTML='Cliente passa <b>R$ '+fmt(total)+'</b> no cartão · taxa da maquininha R$ '+fmt(taxa)+' · você <b style="color:var(--good)">ganha R$ '+fmt(ganho)+'</b> (dá R$ '+fmt(v)+' em dinheiro)';
+    }
+    vEl.addEventListener('input',upd); tEl.addEventListener('change',upd);
+    btn.addEventListener('click',()=>{
+      const v=parseFloat(vEl.value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto o cliente quer sacar.</span>'; return; }
+      btn.disabled=true; btn.textContent='gravando…';
+      post('/api/saque',{valor:v,tipo:tEl.value}).then(res=>{
+        btn.disabled=false; btn.textContent='Registrar saque';
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Saque lançado: venda R$ '+fmt(res.total)+' no cartão + sangria R$ '+fmt(res.sangria)+' do caixa. Você ganhou R$ '+fmt(res.ganho)+'.</span>'; vEl.value=''; calc.textContent=''; loadResumo(true); loadPagar(true); }
+        else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
+      }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar saque'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
   })();
 

@@ -135,6 +135,14 @@ CATS = {
 }
 BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
 
+# ---- SAQUE (troca cartão -> dinheiro, vira venda + sangria) ----
+SAQUE_FEE = {"credito": 0.0314, "debito": 0.0085}   # taxa da maquininha
+SAQUE_FORMA = {"credito": "6055920", "debito": "6055921"}
+SAQUE_CLIENTE = "55346041"          # cliente DELIVERY (consumidor)
+SAQUE_SITUACAO = "8468151"          # Concretizada
+SAQUE_SANGRIA_PLANO = "33015669"    # provisório (Outros) — dono cria plano "Saque" depois
+_saque_ids = {}                     # "SAQUE 50" -> produto_id (cache)
+
 def _hoje():
     return time.strftime("%Y-%m-%d")
 
@@ -371,6 +379,68 @@ def api_inventario():
         _invalida("resumo", "catalogo")
         return jsonify({"ok": True, "antes": antes, "depois": contagem,
                         "dif": contagem - antes, "nome": cur.get("nome")})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+def _saque_pid(valor):
+    """Acha o produto SAQUE {valor}; se não existir (valor novo), cria."""
+    nome = f"SAQUE {valor}"
+    if not _saque_ids:
+        for p in gcapi.get_all("/produtos"):
+            nm = (p.get("nome") or "").upper()
+            if nm.startswith("SAQUE "):
+                _saque_ids[nm] = str(p.get("id"))
+    pid = _saque_ids.get(nome.upper())
+    if pid:
+        return pid
+    r = gcapi.post("/produtos", {"nome": nome, "movimenta_estoque": "0", "ativo": "1",
+                                 "valor_custo": "0.00", "valor_venda": f"{valor*1.2:.2f}"})
+    pid = str((r.get("data") or {}).get("id"))
+    _saque_ids[nome.upper()] = pid
+    return pid
+
+@app.route("/api/saque", methods=["POST"])
+@login_required
+def api_saque():
+    """Saque: cliente troca cartão por dinheiro. Grava a VENDA (cartão, +20%) e a
+    SANGRIA (dinheiro que sai do caixa) — assim bate no fechamento."""
+    body = request.get_json(force=True, silent=True) or {}
+    valor = int(round(_num(body.get("valor"))))
+    tipo = (body.get("tipo") or "debito").lower()
+    if valor <= 0:
+        return jsonify({"ok": False, "erro": "valor inválido"}), 400
+    if tipo not in SAQUE_FORMA:
+        tipo = "debito"
+    total = round(valor * 1.2, 2)                 # cliente paga no cartão (+20%)
+    taxa = round(total * SAQUE_FEE[tipo], 2)      # taxa da maquininha
+    ganho = round(valor * 0.2 - taxa, 2)          # nosso lucro líquido
+    data = _hoje()
+    try:
+        pid = _saque_pid(valor)
+        venda = {
+            "tipo": "produto", "cliente_id": SAQUE_CLIENTE, "data": data,
+            "situacao_id": SAQUE_SITUACAO, "condicao_pagamento": "a_vista",
+            "observacoes": f"Saque R$ {valor} — cliente pagou R$ {total:.2f} no {tipo}",
+            "produtos": [{"produto": {"produto_id": pid, "quantidade": 1,
+                                      "valor_venda": total, "detalhes": "Saque"}}],
+            "pagamentos": [{"pagamento": {"data_vencimento": data, "valor": total,
+                                          "forma_pagamento_id": SAQUE_FORMA[tipo],
+                                          "observacao": "Saque"}}],
+        }
+        rv = gcapi.post("/vendas", venda)
+        if rv.get("status") != "success":
+            return jsonify({"ok": False, "erro": str(rv.get("data") or rv)[:200]}), 502
+        vid = (rv.get("data") or {}).get("id")
+        sangria = {
+            "descricao": f"SANGRIA SAQUE R$ {valor} — dinheiro entregue ao cliente",
+            "valor": f"{valor:.2f}", "data_vencimento": data, "data_competencia": data,
+            "data_liquidacao": data, "liquidado": "1", "plano_contas_id": SAQUE_SANGRIA_PLANO,
+            "conta_bancaria_id": "696747", "forma_pagamento_id": "6055919",
+        }
+        gcapi.post("/pagamentos", sangria)
+        _invalida("resumo", "hoje", "pagar")
+        return jsonify({"ok": True, "venda_id": vid, "total": total,
+                        "sangria": valor, "taxa": taxa, "ganho": ganho})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
