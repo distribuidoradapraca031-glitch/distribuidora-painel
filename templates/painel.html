@@ -331,9 +331,9 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
-  <div class="eyebrow">Contas a pagar · previsões do mês</div>
-  <h2>Previsões — o que falta pagar por categoria</h2>
-  <p class="note">Cada categoria começa <strong>zerada</strong>. Você adiciona o que tem pra pagar e ela vai somando. <strong>Clique na categoria</strong> pra abrir os itens em aberto e marcar o que já <strong>pagou</strong> — o valor desce na hora e entra nos <strong>pagos do mês</strong> (que eu fecho todo dia 10). O ✕ exclui um item lançado errado.</p>
+  <div class="eyebrow">Contas a pagar · a pagar do mês</div>
+  <h2>Provisões e atrasados — o que falta pagar</h2>
+  <p class="note">Aqui em cima ficam os <strong>provisionamentos do mês</strong> e o que está <strong>atrasado</strong> (marcado em vermelho) — tudo que <strong>ainda não foi pago</strong>. <strong>Clique na categoria</strong> pra abrir os itens e marcar o que já <strong>pagou</strong>: ele sai daqui na hora e desce pros <strong>pagos do mês</strong> (o bloco do meio, que eu fecho todo dia 10). O ✕ exclui um item lançado errado. Precisa lançar algo que não está aqui? Use o <strong>➕ Adicionar</strong>.</p>
   <div id="prev-total-box" style="margin:8px 0"></div>
   <div class="tblwrap" id="tbl-previsoes"></div>
 
@@ -355,15 +355,15 @@ th.g,td.g{background:var(--accent-soft)}
 
 <section class="card">
   <div class="eyebrow">Contas a pagar · pagos do mês</div>
-  <h2>Pagos do mês — pra fechar dia 10</h2>
-  <p class="note">Tudo que você já pagou no mês (previsões que você marcou + gastos do dia a dia), por categoria. É esse total que a gente usa no fechamento do dia 10 do mês seguinte.</p>
+  <h2>Pagos do mês — o que já saiu (pra fechar dia 10)</h2>
+  <p class="note">Tudo que você <strong>já pagou</strong> neste mês, fora mercadoria (provisões que você marcou lá em cima + retirada, motoca, Gabriel, lanche...). É a soma que a gente usa no fechamento do dia 10.</p>
   <div id="gastos-mes-box" style="margin:10px 0"></div>
 </section>
 
 <section class="card">
-  <div class="eyebrow">Contas a pagar · boletos</div>
-  <h2>Boletos pra pagar (compras + DDA)</h2>
-  <p class="note">Só os <strong>boletos de verdade</strong> pra pagar. O DDA você abre no <strong>seu banco</strong> e me manda o print/lista que eu carrego aqui — cada boleto tem o <strong>✕ excluir</strong>, então se vier <strong>boleto de golpe</strong> você tira da lista na hora.</p>
+  <div class="eyebrow">Contas a pagar · notas de compra</div>
+  <h2>Notas de compra (mercadoria) em aberto</h2>
+  <p class="note">Só os <strong>boletos de mercadoria</strong> (nota de compra / DDA) pra pagar — <strong>pagou, some daqui</strong>. O DDA você abre no <strong>seu banco</strong> e me manda o print/lista que eu carrego aqui; cada boleto tem o <strong>✕ excluir</strong>, então se vier <strong>boleto de golpe</strong> você tira na hora.</p>
   <div class="banner crit" id="venc-banner" style="display:none"></div>
   <div class="tblwrap" id="tbl-pagar"></div>
   <div id="baixa-out-box"></div>
@@ -1267,21 +1267,22 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const sel=g('prev-cat');
     if(sel && !sel.options.length) sel.innerHTML=d.categorias.map(c=>'<option>'+esc(c.cat)+'</option>').join('');
     const tb=g('prev-total-box');
-    if(tb) tb.innerHTML='<div class="eyebrow" style="margin:0">Falta pagar (previsões) — total <b>R$ '+fmt(d.total_aberto)+'</b></div>';
+    if(tb) tb.innerHTML='<div class="eyebrow" style="margin:0">Falta pagar — total <b>R$ '+fmt(d.total_aberto)+'</b>'+
+      (d.total_atrasado>0?' · <b style="color:var(--crit)">atrasado R$ '+fmt(d.total_atrasado)+'</b>':'')+'</div>';
     const wrap=g('tbl-previsoes'); if(!wrap) return;
     const inp='font:inherit;font-size:.76rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)';
     let rows='';
     d.categorias.forEach((c,ci)=>{
       const has=c.n>0;
       rows+='<tr class="prev-cat'+(has?' clic':'')+'" data-ci="'+ci+'" style="'+(has?'cursor:pointer':'opacity:.55')+'">'+
-        '<td class="nome">'+(has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+esc(c.cat)+'</td>'+
-        '<td class="num"'+(c.aberto>0?' style="font-weight:700"':' style="color:var(--muted)"')+'>R$ '+fmt(c.aberto)+'</td>'+
+        '<td class="nome">'+(has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+esc(c.cat)+(c.atrasado?' <span class="pill pcrit">atrasado</span>':'')+'</td>'+
+        '<td class="num"'+(c.aberto>0?(c.atrasado?' style="font-weight:700;color:var(--crit)"':' style="font-weight:700"'):' style="color:var(--muted)"')+'>R$ '+fmt(c.aberto)+'</td>'+
         '<td class="num" style="color:var(--muted);font-size:.8rem">'+(has?c.n+' em aberto':'—')+'</td></tr>';
       if(has){
         rows+='<tr class="prev-det" data-ci="'+ci+'" hidden><td colspan="3" style="padding:0">'+
           '<div style="padding:6px 12px;background:var(--bg)">'+
           c.itens.map(it=>'<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)">'+
-            '<span style="font-size:.85rem">'+(it.venc?dbr(it.venc)+' · ':'')+(it.nota?esc(it.nota):'<span style="color:var(--muted)">sem obs</span>')+'</span>'+
+            '<span style="font-size:.85rem">'+(it.venc?'<span'+(it.atrasado?' style="color:var(--crit);font-weight:600"':'')+'>'+dbr(it.venc)+(it.atrasado?' ⚠️':'')+'</span> · ':'')+(it.nota?esc(it.nota):'<span style="color:var(--muted)">sem obs</span>')+'</span>'+
             '<span style="display:inline-flex;gap:6px;align-items:center"><b>R$ '+fmt(it.valor)+'</b>'+
               '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
               '<button class="pv-pay" data-id="'+it.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--good);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">paguei</button>'+

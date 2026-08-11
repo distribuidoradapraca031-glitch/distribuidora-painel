@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """App web da Distribuidora da Praça — painel ao vivo + gravação direta no GestãoClick,
 protegido por senha. (Fase 1: login + leitura ao vivo.)"""
-import os, functools, time, re
+import os, functools, time, re, calendar
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
 import gclient as gcapi
 
@@ -77,10 +77,6 @@ def _num(x):
     try: return float(str(x).replace(",", "."))
     except (TypeError, ValueError): return 0.0
 
-def _eh_provisao(p):
-    """True se a conta é uma provisão/previsão (não é gasto real lançado)."""
-    return "PROVISAO" in (p.get("descricao") or "").upper()
-
 @app.route("/api/resumo")
 @login_required
 def api_resumo():
@@ -106,10 +102,10 @@ def api_pagar():
     """Contas a pagar em aberto (liquidado != 1), ao vivo."""
     def build():
         pgs = gcapi.get_all("/pagamentos")
-        # em aberto e SEM as provisões nem os itens de previsão (esses ficam no bloco
-        # de cima). Aqui embaixo só boleto/DDA/compra de verdade pra pagar.
+        # aqui embaixo só mercadoria (nota de compra/boleto DDA). Tudo que é previsão,
+        # provisão ou recorrente vai pro bloco de cima, então sai daqui.
         abertos = [p for p in pgs if str(p.get("liquidado")) != "1"
-                   and not _eh_provisao(p) and not _prev_categoria(p.get("descricao"))]
+                   and not _categoria_conta(p)]
         itens = [{
             "id": p.get("id"),
             "desc": p.get("descricao") or p.get("nome_plano_conta") or "—",
@@ -192,6 +188,52 @@ def _prev_nota(desc):
         if d.startswith(label):
             return d[len(label):].strip().lstrip("—-").strip()
     return d
+
+# reconhece a categoria de contas antigas (provisões [provisao] e recorrentes) pela
+# descrição — INSS antes de PRO-LABORE, PH MOTOCA antes de MOTOBOY, etc.
+PREV_KEYWORDS = [
+    ("ALUGUEL", "Aluguel (IPTU)"),
+    ("CEMIG", "Energia (CEMIG)"), ("ENERGIA", "Energia (CEMIG)"),
+    ("COPASA", "Água (COPASA)"), ("AGUA", "Água (COPASA)"), ("ÁGUA", "Água (COPASA)"),
+    ("INTERNET", "Internet / telefone"), ("TELEFON", "Internet / telefone"),
+    ("WERDEI", "Contabilidade (Werdeiros)"), ("CONTAB", "Contabilidade (Werdeiros)"),
+    ("HONORARIOS CONTAB", "Contabilidade (Werdeiros)"),
+    ("INSS", "INSS s/ pró-labore"),
+    ("PRO-LABORE", "Pró-labore Igor"), ("PRÓ-LABORE", "Pró-labore Igor"),
+    ("RETIRADA", "Retirada Victor"),
+    ("PH MOTOCA", "PH Motoca"), ("BIEL", "Biel"),
+    ("MOTOBOY", "Motoboy / entrega"),
+    ("GABRIEL", "Funcionário Gabriel (FDS)"),
+    ("ANOTA", "Anota AI"),
+    ("SIMPLES", "DAS (Simples)"), ("DAS ", "DAS (Simples)"),
+    ("VIGIA", "Vigia"),
+    ("SEGURO", "Seguro do carro"),
+    ("SACOLAS", "Sacolas / gelo / copos"), ("GELO", "Sacolas / gelo / copos"),
+]
+
+def _categoria_conta(p):
+    """Categoria (das 17) de uma conta a pagar, ou None se não for previsão/recorrente."""
+    desc = p.get("descricao") or ""
+    c = _prev_categoria(desc)      # itens [PREV] que o dono adiciona
+    if c:
+        return c
+    du = desc.upper()
+    for kw, label in PREV_KEYWORDS:  # provisões antigas e recorrentes
+        if kw in du:
+            return label
+    return None
+
+def _nota_conta(p):
+    """Texto limpo pra mostrar de uma conta (tira as tags [PREV]/[provisao])."""
+    desc = (p.get("descricao") or "")
+    if desc.startswith(PREV_TAG):
+        return _prev_nota(desc)
+    return re.sub(r"\[provisao\]|\[PREV\]", "", desc, flags=re.I).strip()
+
+def _ultimo_dia_mes(d):
+    """'AAAA-MM-DD' do último dia do mês da data d ('AAAA-MM-...')."""
+    y, m = int(d[:4]), int(d[5:7])
+    return f"{y:04d}-{m:02d}-{calendar.monthrange(y, m)[1]:02d}"
 
 # ---- SAQUE (troca cartão -> dinheiro, vira venda + sangria) ----
 SAQUE_FEE = {"credito": 0.0314, "debito": 0.0085}   # taxa da maquininha
@@ -509,27 +551,27 @@ def api_fechamento():
 @app.route("/api/gastos-mes")
 @login_required
 def api_gastos_mes():
-    """Soma dos gastos do mês por categoria (fora as compras de mercadoria) — pro
-    fechamento saber tudo que saiu além das compras."""
+    """Pagos do mês (bloco do meio): só o que JÁ FOI PAGO no mês, por categoria,
+    fora mercadoria (compras). Inclui provisões pagas, retirada, lanche, motoca..."""
     def build():
-        pgs = gcapi.get_all("/pagamentos")
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
         mes = _hoje()[:7]
         cats, total = {}, 0.0
         for p in pgs:
-            dref = (p.get("data_competencia") or p.get("data_vencimento") or "")[:7]
-            if dref != mes:
-                continue
+            if str(p.get("liquidado")) != "1":
+                continue  # só o que já saiu da conta (pago)
+            if (p.get("data_liquidacao") or "")[:7] != mes:
+                continue  # pago dentro deste mês
             desc = (p.get("descricao") or "").strip()
             if desc.upper().startswith("SANGRIA SAQUE"):
                 continue  # saque não é gasto, é troca de dinheiro
-            if _eh_provisao(p):
-                continue  # provisão/previsão não entra: só soma o que o dono lançar
             plano = p.get("nome_plano_conta") or "Outros"
-            cat = next((lbl for lbl in SPLIT_LABELS if desc.startswith(lbl)), None)
-            if not cat:
-                if plano == "Compras":
-                    continue  # mercadoria fica fora ("além das compras")
-                cat = plano
+            if plano in ("Compras", "Ajuste de caixa"):
+                continue  # mercadoria e acerto de gaveta ficam fora dos gastos
+            cat = (_categoria_conta(p)
+                   or next((lbl for lbl in SPLIT_LABELS if desc.startswith(lbl)), None)
+                   or plano)
             val = _num(p.get("valor_total")) or _num(p.get("valor"))
             cats[cat] = cats.get(cat, 0.0) + val
             total += val
@@ -631,33 +673,35 @@ def api_previsoes():
     def build():
         pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
                                             "data_fim": "2027-12-31"})
-        mes = _hoje()[:7]
+        hoje = _hoje()
+        fim_mes = _ultimo_dia_mes(hoje)
         abertos = {lbl: [] for lbl, _ in CATEGORIAS_PREV}
-        pagos = []
         for p in pgs:
-            cat = _prev_categoria(p.get("descricao"))
+            if str(p.get("liquidado")) == "1":
+                continue  # pago já saiu do topo (vai pros pagos do mês)
+            cat = _categoria_conta(p)
             if not cat:
                 continue
+            venc = (p.get("data_vencimento") or "")[:10]
+            if venc and venc > fim_mes:
+                continue  # meses futuros não entram (só o do mês + atrasados)
             val = _num(p.get("valor_total")) or _num(p.get("valor"))
-            item = {"id": p.get("id"), "nota": _prev_nota(p.get("descricao")),
-                    "venc": (p.get("data_vencimento") or "")[:10], "valor": val}
-            if str(p.get("liquidado")) == "1":
-                if (p.get("data_liquidacao") or "")[:7] == mes:
-                    pagos.append({**item, "cat": cat,
-                                  "pago_em": (p.get("data_liquidacao") or "")[:10]})
-            else:
-                abertos[cat].append(item)
+            abertos[cat].append({"id": p.get("id"), "nota": _nota_conta(p),
+                                 "venc": venc, "valor": val,
+                                 "atrasado": bool(venc and venc < hoje)})
         categorias = []
         for lbl, _ in CATEGORIAS_PREV:
             its = sorted(abertos[lbl], key=lambda x: x["venc"] or "9999")
             categorias.append({"cat": lbl, "n": len(its),
                                "aberto": round(sum(i["valor"] for i in its), 2),
+                               "atrasado": any(i["atrasado"] for i in its),
                                "itens": its})
-        pagos.sort(key=lambda x: x["pago_em"], reverse=True)
+        atrasado = round(sum(i["valor"] for c in categorias for i in c["itens"]
+                             if i["atrasado"]), 2)
         return {"categorias": categorias,
                 "total_aberto": round(sum(c["aberto"] for c in categorias), 2),
-                "pagos": pagos, "total_pago": round(sum(p["valor"] for p in pagos), 2),
-                "mes": mes, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+                "total_atrasado": atrasado,
+                "mes": hoje[:7], "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("previsoes", 60, build))
 
 @app.route("/api/previsao", methods=["POST"])
