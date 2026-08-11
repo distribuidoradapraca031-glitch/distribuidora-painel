@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """App web da Distribuidora da Praça — painel ao vivo + gravação direta no GestãoClick,
 protegido por senha. (Fase 1: login + leitura ao vivo.)"""
-import os, functools, time
+import os, functools, time, re
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
 import gclient as gcapi
 
@@ -77,6 +77,10 @@ def _num(x):
     try: return float(str(x).replace(",", "."))
     except (TypeError, ValueError): return 0.0
 
+def _eh_provisao(p):
+    """True se a conta é uma provisão/previsão (não é gasto real lançado)."""
+    return "PROVISAO" in (p.get("descricao") or "").upper()
+
 @app.route("/api/resumo")
 @login_required
 def api_resumo():
@@ -102,7 +106,10 @@ def api_pagar():
     """Contas a pagar em aberto (liquidado != 1), ao vivo."""
     def build():
         pgs = gcapi.get_all("/pagamentos")
-        abertos = [p for p in pgs if str(p.get("liquidado")) != "1"]
+        # em aberto e SEM as provisões nem os itens de previsão (esses ficam no bloco
+        # de cima). Aqui embaixo só boleto/DDA/compra de verdade pra pagar.
+        abertos = [p for p in pgs if str(p.get("liquidado")) != "1"
+                   and not _eh_provisao(p) and not _prev_categoria(p.get("descricao"))]
         itens = [{
             "id": p.get("id"),
             "desc": p.get("descricao") or p.get("nome_plano_conta") or "—",
@@ -139,6 +146,52 @@ CATS = {
 SPLIT_LABELS = ["Retirada do sócio (Victor)", "Retirada do sócio (Igor)",
                 "Pagamento Biel", "Pagamento PH Motoca"]
 BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
+
+# ---- PREVISÕES (topo do contas a pagar): lista fixa de categorias recorrentes ----
+# cada item que o dono adiciona vira um pagamento em aberto com descrição
+# "[PREV] <categoria> — <obs>". Começam zeradas; somam conforme o dono insere.
+PREV_TAG = "[PREV]"
+CATEGORIAS_PREV = [
+    ("Aluguel (IPTU)", "33015630"),
+    ("Energia (CEMIG)", "33015649"),
+    ("Água (COPASA)", "33015649"),
+    ("Internet / telefone", "33015663"),
+    ("Contabilidade (Werdeiros)", "33015635"),
+    ("Pró-labore Igor", "33015660"),
+    ("Retirada Victor", "33015638"),
+    ("Motoboy / entrega", "33015664"),
+    ("Funcionário Gabriel (FDS)", "33015660"),
+    ("Anota AI", "33015654"),
+    ("DAS (Simples)", "33015672"),
+    ("INSS s/ pró-labore", "33015646"),
+    ("Vigia", "33015661"),
+    ("Seguro do carro", "33015633"),
+    ("Sacolas / gelo / copos", "33015662"),
+    ("Biel", "33015664"),
+    ("PH Motoca", "33015664"),
+]
+_PREV_PLANO = dict(CATEGORIAS_PREV)
+
+def _prev_categoria(desc):
+    """Categoria de um item de previsão, ou None se não for [PREV]."""
+    d = (desc or "")
+    if not d.startswith(PREV_TAG):
+        return None
+    rest = d[len(PREV_TAG):].strip()
+    for label, _ in CATEGORIAS_PREV:
+        if rest.startswith(label):
+            return label
+    return None
+
+def _prev_nota(desc):
+    """A observação depois do rótulo da categoria (ou vazio)."""
+    d = (desc or "")
+    if d.startswith(PREV_TAG):
+        d = d[len(PREV_TAG):].strip()
+    for label, _ in CATEGORIAS_PREV:
+        if d.startswith(label):
+            return d[len(label):].strip().lstrip("—-").strip()
+    return d
 
 # ---- SAQUE (troca cartão -> dinheiro, vira venda + sangria) ----
 SAQUE_FEE = {"credito": 0.0314, "debito": 0.0085}   # taxa da maquininha
@@ -185,7 +238,7 @@ def api_baixa():
     }
     try:
         gcapi.put(f"/pagamentos/{pid}", payload)
-        _invalida("pagar", "resumo")
+        _invalida("pagar", "resumo", "previsoes", "gastos_mes")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -469,6 +522,8 @@ def api_gastos_mes():
             desc = (p.get("descricao") or "").strip()
             if desc.upper().startswith("SANGRIA SAQUE"):
                 continue  # saque não é gasto, é troca de dinheiro
+            if _eh_provisao(p):
+                continue  # provisão/previsão não entra: só soma o que o dono lançar
             plano = p.get("nome_plano_conta") or "Outros"
             cat = next((lbl for lbl in SPLIT_LABELS if desc.startswith(lbl)), None)
             if not cat:
@@ -534,15 +589,116 @@ def api_saque():
             return jsonify({"ok": False, "erro": str(rv.get("data") or rv)[:200]}), 502
         vid = (rv.get("data") or {}).get("id")
         sangria = {
-            "descricao": f"SANGRIA SAQUE R$ {valor} — dinheiro entregue ao cliente",
+            "descricao": f"SANGRIA SAQUE R$ {valor} · lucro R$ {ganho:.2f} — dinheiro entregue ao cliente",
             "valor": f"{valor:.2f}", "data_vencimento": data, "data_competencia": data,
             "data_liquidacao": data, "liquidado": "1", "plano_contas_id": SAQUE_SANGRIA_PLANO,
             "conta_bancaria_id": "696747", "forma_pagamento_id": "6055919",
         }
         gcapi.post("/pagamentos", sangria)
-        _invalida("resumo", "hoje", "pagar")
+        _invalida("resumo", "hoje", "pagar", "saque_resumo")
         return jsonify({"ok": True, "venda_id": vid, "total": total,
                         "sangria": valor, "taxa": taxa, "ganho": ganho})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/saque-resumo")
+@login_required
+def api_saque_resumo():
+    """Total sacado e lucro do saque acumulados (desde que começou a registrar no
+    painel) — lê as sangrias de saque gravadas no sistema."""
+    def build():
+        pgs = gcapi.get_all("/pagamentos")
+        principal = lucro = 0.0
+        n = 0
+        for p in pgs:
+            desc = p.get("descricao") or ""
+            if not desc.upper().startswith("SANGRIA SAQUE"):
+                continue
+            n += 1
+            val = _num(p.get("valor_total")) or _num(p.get("valor"))
+            principal += val
+            m = re.search(r"lucro R\$ ?([\d.,]+)", desc)
+            lucro += _num(m.group(1)) if m else round(val * 0.19, 2)  # fallback p/ saques antigos
+        return {"n": n, "valor": round(principal, 2), "lucro": round(lucro, 2),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("saque_resumo", 60, build))
+
+@app.route("/api/previsoes")
+@login_required
+def api_previsoes():
+    """Previsões por categoria (topo do contas a pagar): total em aberto de cada
+    categoria + itens em aberto + o que já foi pago no mês (pra fechar dia 10)."""
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
+        mes = _hoje()[:7]
+        abertos = {lbl: [] for lbl, _ in CATEGORIAS_PREV}
+        pagos = []
+        for p in pgs:
+            cat = _prev_categoria(p.get("descricao"))
+            if not cat:
+                continue
+            val = _num(p.get("valor_total")) or _num(p.get("valor"))
+            item = {"id": p.get("id"), "nota": _prev_nota(p.get("descricao")),
+                    "venc": (p.get("data_vencimento") or "")[:10], "valor": val}
+            if str(p.get("liquidado")) == "1":
+                if (p.get("data_liquidacao") or "")[:7] == mes:
+                    pagos.append({**item, "cat": cat,
+                                  "pago_em": (p.get("data_liquidacao") or "")[:10]})
+            else:
+                abertos[cat].append(item)
+        categorias = []
+        for lbl, _ in CATEGORIAS_PREV:
+            its = sorted(abertos[lbl], key=lambda x: x["venc"] or "9999")
+            categorias.append({"cat": lbl, "n": len(its),
+                               "aberto": round(sum(i["valor"] for i in its), 2),
+                               "itens": its})
+        pagos.sort(key=lambda x: x["pago_em"], reverse=True)
+        return {"categorias": categorias,
+                "total_aberto": round(sum(c["aberto"] for c in categorias), 2),
+                "pagos": pagos, "total_pago": round(sum(p["valor"] for p in pagos), 2),
+                "mes": mes, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("previsoes", 60, build))
+
+@app.route("/api/previsao", methods=["POST"])
+@login_required
+def api_previsao():
+    """Adiciona uma previsão em aberto numa categoria (vira conta a pagar [PREV])."""
+    body = request.get_json(force=True, silent=True) or {}
+    cat = (body.get("categoria") or "").strip()
+    valor = _num(body.get("valor"))
+    venc = (body.get("vencimento") or _hoje())[:10]
+    nota = (body.get("descricao") or "").strip()
+    plano = _PREV_PLANO.get(cat)
+    if not plano:
+        return jsonify({"ok": False, "erro": "categoria inválida"}), 400
+    if valor <= 0:
+        return jsonify({"ok": False, "erro": "valor inválido"}), 400
+    desc = f"{PREV_TAG} {cat}" + (f" — {nota}" if nota else "")
+    payload = {"descricao": desc, "valor": f"{valor:.2f}",
+               "data_vencimento": venc, "data_competencia": venc,
+               "liquidado": "0", "plano_contas_id": plano,
+               "forma_pagamento_id": BOLETO_FORMA_ID}
+    try:
+        r = gcapi.post("/pagamentos", payload)
+        d = r.get("data") or {}
+        _invalida("previsoes", "pagar")
+        return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/excluir-conta", methods=["POST"])
+@login_required
+def api_excluir_conta():
+    """Apaga uma conta a pagar (boleto de golpe ou previsão lançada errada)."""
+    body = request.get_json(force=True, silent=True) or {}
+    pid = str(body.get("id") or "").strip()
+    if not pid:
+        return jsonify({"ok": False, "erro": "sem id"}), 400
+    try:
+        gcapi.delete(f"/pagamentos/{pid}")
+        _invalida("pagar", "previsoes", "resumo", "gastos_mes")
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 

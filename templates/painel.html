@@ -170,6 +170,7 @@ th.g,td.g{background:var(--accent-soft)}
     <p class="note">Aqui não é o faturado — é o que <strong>de fato entrou</strong>: o que caiu (ou vai cair) na <strong>conta</strong> (PIX + cartão) e o que entrou em <strong>dinheiro</strong> na gaveta. Confira com o extrato do banco e a contagem da gaveta: se entrou mais ou menos que o faturado, é aqui que aparece dinheiro solto ou saída sem justificativa.</p>
     <div class="tblwrap" id="tbl-entrou"></div>
   </div>
+  <div id="saque-resumo-box" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"></div>
 </section>
 
 <section class="card">
@@ -330,26 +331,39 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
-  <div class="eyebrow">Caixa · saques (troca no cartão)</div>
-  <h2>Saques que você fez</h2>
-  <p class="note">Anote cada saque: quanto passou no cartão e quanto deu em dinheiro. A <strong>taxa (seu lucro)</strong> sai sozinha. Fica salvo só neste navegador — <strong>me manda no chat</strong> que eu lanço no GestãoClick (entra no cartão, sai da gaveta) e aí entra no caixa de verdade.</p>
-  <div class="fbox">
+  <div class="eyebrow">Contas a pagar · previsões do mês</div>
+  <h2>Previsões — o que falta pagar por categoria</h2>
+  <p class="note">Cada categoria começa <strong>zerada</strong>. Você adiciona o que tem pra pagar e ela vai somando. <strong>Clique na categoria</strong> pra abrir os itens em aberto e marcar o que já <strong>pagou</strong> — o valor desce na hora e entra nos <strong>pagos do mês</strong> (que eu fecho todo dia 10). O ✕ exclui um item lançado errado.</p>
+  <div id="prev-total-box" style="margin:8px 0"></div>
+  <div class="tblwrap" id="tbl-previsoes"></div>
+
+  <div class="fbox" style="margin-top:12px">
+    <strong style="font-size:.9rem">➕ Adicionar previsão</strong>
+    <p class="note" style="margin-top:2px">Uma conta que tem pra pagar (aluguel, energia, contabilidade, motoboy...). Escolha a categoria, o valor, o vencimento e (se quiser) uma observação tipo o mês de referência.</p>
     <div class="fform">
-      <label>Dia<input type="date" id="s-data"></label>
-      <label>Passou no cartão (R$)<input type="number" step="0.01" inputmode="decimal" id="s-cartao" placeholder="0,00"></label>
-      <label>Deu em dinheiro (R$)<input type="number" step="0.01" inputmode="decimal" id="s-dinheiro" placeholder="0,00"></label>
-      <label>Taxa (auto)<input type="text" id="s-taxa" readonly placeholder="—"></label>
-      <button id="s-salvar">Salvar saque</button>
+      <label style="flex:1 1 180px">Categoria
+        <select id="prev-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)"></select>
+      </label>
+      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="prev-desc" placeholder="ex.: ref. agosto" style="width:100%"></label>
+      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="prev-valor" placeholder="0,00" style="width:110px"></label>
+      <label>Vencimento<input type="date" id="prev-venc"></label>
+      <button id="prev-add">Adicionar previsão</button>
     </div>
-    <div class="fres" id="s-msg"></div>
+    <div class="fres" id="prev-msg"></div>
   </div>
-  <div class="tblwrap" id="tbl-saques"></div>
 </section>
 
 <section class="card">
-  <div class="eyebrow">Contas a pagar</div>
-  <h2>O que vence — sistema + boletos DDA</h2>
+  <div class="eyebrow">Contas a pagar · pagos do mês</div>
+  <h2>Pagos do mês — pra fechar dia 10</h2>
+  <p class="note">Tudo que você já pagou no mês (previsões que você marcou + gastos do dia a dia), por categoria. É esse total que a gente usa no fechamento do dia 10 do mês seguinte.</p>
   <div id="gastos-mes-box" style="margin:10px 0"></div>
+</section>
+
+<section class="card">
+  <div class="eyebrow">Contas a pagar · boletos</div>
+  <h2>Boletos pra pagar (compras + DDA)</h2>
+  <p class="note">Só os <strong>boletos de verdade</strong> pra pagar. O DDA você abre no <strong>seu banco</strong> e me manda o print/lista que eu carrego aqui — cada boleto tem o <strong>✕ excluir</strong>, então se vier <strong>boleto de golpe</strong> você tira da lista na hora.</p>
   <div class="banner crit" id="venc-banner" style="display:none"></div>
   <div class="tblwrap" id="tbl-pagar"></div>
   <div id="baixa-out-box"></div>
@@ -780,44 +794,6 @@ document.getElementById('tbl-conta').innerHTML =
  c10.map(c=>'<tr><td>'+dbr(c.data)+'</td><td class="num">'+fmt(c.pix)+'</td><td class="num">'+fmt(c.cartao)+'</td><td class="num">'+fmt(c.entrada_liq)+'</td><td class="num g">'+fmt(c.dinheiro||0)+'</td></tr>').join('') +
  '</tbody><tfoot><tr><td>10 dias</td><td class="num">'+fmt(tot.pix)+'</td><td class="num">'+fmt(tot.cartao)+'</td><td class="num">'+fmt(tot.liq)+'</td><td class="num g">'+fmt(tot.din)+'</td></tr></tfoot></table>';
 
-// ---- saques (anotação local, igual ao fechamento) ----
-(function(){
-  const LS='distribuidora_saques';
-  const load=()=>{try{return JSON.parse(localStorage.getItem(LS))||[]}catch(e){return []}};
-  const save=(a)=>{try{localStorage.setItem(LS,JSON.stringify(a));return true}catch(e){return false}};
-  const dEl=document.getElementById('s-data'),caEl=document.getElementById('s-cartao'),
-        diEl=document.getElementById('s-dinheiro'),txEl=document.getElementById('s-taxa'),msg=document.getElementById('s-msg');
-  dEl.value=(D.dia_mes&&D.dia_mes.length)?D.dia_mes[D.dia_mes.length-1].data:D.gerado_em;
-  function calcTaxa(){
-    const ca=parseFloat(caEl.value),di=parseFloat(diEl.value);
-    if(isNaN(ca)||isNaN(di)){txEl.value='—';return null;}
-    const t=+(ca-di).toFixed(2); txEl.value='R$ '+fmt(t); return t;
-  }
-  caEl.addEventListener('input',calcTaxa); diEl.addEventListener('input',calcTaxa);
-  function render(){
-    const arr=load().slice().sort((a,b)=>a.data<b.data?1:-1);
-    const box=document.getElementById('tbl-saques');
-    if(!arr.length){box.innerHTML='<p class="note" style="margin-top:12px">Nenhum saque anotado ainda.</p>';return;}
-    const tot=arr.reduce((s,x)=>({ca:s.ca+x.cartao,di:s.di+x.dinheiro,tx:s.tx+x.taxa}),{ca:0,di:0,tx:0});
-    box.innerHTML=
-      '<table><thead><tr><th>Dia</th><th class="num">Passou no cartão</th><th class="num">Deu em dinheiro</th><th class="num g">Taxa (lucro)</th><th></th></tr></thead><tbody>'+
-      arr.map(x=>'<tr><td>'+dbr(x.data)+'</td><td class="num">R$ '+fmt(x.cartao)+'</td><td class="num">R$ '+fmt(x.dinheiro)+'</td><td class="num g">R$ '+fmt(x.taxa)+'</td><td><button class="linkx" data-id="'+x.id+'" aria-label="remover">✕</button></td></tr>').join('')+
-      '</tbody><tfoot><tr><td>Total ('+arr.length+')</td><td class="num">R$ '+fmt(tot.ca)+'</td><td class="num">R$ '+fmt(tot.di)+'</td><td class="num g">R$ '+fmt(tot.tx)+'</td><td></td></tr></tfoot></table>';
-    box.querySelectorAll('.linkx').forEach(b=>b.addEventListener('click',()=>{
-      save(load().filter(x=>String(x.id)!==b.dataset.id)); render();
-    }));
-  }
-  document.getElementById('s-salvar').addEventListener('click',()=>{
-    const ca=parseFloat(caEl.value),di=parseFloat(diEl.value),t=calcTaxa();
-    if(isNaN(ca)||isNaN(di)){msg.innerHTML='<span style="color:var(--crit)">Preenche o cartão e o dinheiro.</span>';return;}
-    if(t<0){msg.innerHTML='<span style="color:var(--warn)">O dinheiro dado ficou maior que o cartão — confere os valores.</span>';return;}
-    const arr=load(); arr.push({id:Date.now(),data:dEl.value,cartao:+ca.toFixed(2),dinheiro:+di.toFixed(2),taxa:t});
-    const ok=save(arr); render(); caEl.value='';diEl.value='';txEl.value='—';
-    msg.innerHTML= ok?'<span style="color:var(--good)">Saque anotado ✓ — me manda no chat que eu lanço no GC.</span>':'<span style="color:var(--warn)">Não consegui salvar neste navegador (me manda no chat).</span>';
-  });
-  render();
-})();
-
 // ---- contas a pagar ----
 const DDA = [
  ["2026-07-16","Souza Cruz (DDA)",362.64],["2026-07-16","HNK / Heineken (DDA)",946.44],
@@ -1160,6 +1136,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           '<td><span style="display:inline-flex;gap:4px;align-items:center">'+
             '<select class="bx-forma" style="font:inherit;font-size:.76rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)">'+FORMAS.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
             '<button class="bx-btn" data-id="'+i.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--accent);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">baixar</button>'+
+            '<button class="bx-del" data-id="'+i.id+'" title="excluir (boleto de golpe)" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
           '</span></td></tr>'
         ).join('') : '<tr><td colspan="4" style="color:var(--muted)">Nada em aberto 🎉</td></tr>')+
         '</tbody><tfoot><tr><td colspan="2">Total em aberto</td><td class="num">R$ '+fmt(d.total)+'</td><td></td></tr></tfoot></table>';
@@ -1170,9 +1147,17 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         const forma=b.parentNode.querySelector('.bx-forma').value;
         b.disabled=true; b.textContent='…';
         post('/api/baixa',{id:b.dataset.id,forma}).then(res=>{
-          if(res.ok){ toast('✅ Conta baixada no sistema ('+forma+').'); loadPagar(true); loadResumo(true); }
+          if(res.ok){ toast('✅ Conta baixada no sistema ('+forma+').'); loadPagar(true); loadResumo(true); loadGastosMes(true); }
           else { b.disabled=false; b.textContent='baixar'; toast('❌ '+(res.erro||'não consegui baixar')); }
         }).catch(()=>{ b.disabled=false; b.textContent='baixar'; toast('❌ erro de conexão'); });
+      }));
+      wrap.querySelectorAll('.bx-del').forEach(b=>b.addEventListener('click',()=>{
+        if(!confirm('Excluir esse boleto da lista? Use pra boleto de golpe — some do sistema, não tem volta.')) return;
+        b.disabled=true; b.textContent='…';
+        post('/api/excluir-conta',{id:b.dataset.id}).then(res=>{
+          if(res.ok){ toast('🗑️ Boleto excluído do sistema.'); loadPagar(true); loadResumo(true); }
+          else { b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui excluir')); }
+        }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
       }));
     }).catch(()=>{}); }
 
@@ -1258,7 +1243,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       btn.disabled=true; btn.textContent='gravando…';
       post('/api/saque',{valor:v,tipo:tEl.value}).then(res=>{
         btn.disabled=false; btn.textContent='Registrar saque';
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Saque lançado: venda R$ '+fmt(res.total)+' no cartão + sangria R$ '+fmt(res.sangria)+' do caixa. Você ganhou R$ '+fmt(res.ganho)+'.</span>'; vEl.value=''; calc.textContent=''; loadResumo(true); loadPagar(true); }
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Saque lançado: venda R$ '+fmt(res.total)+' no cartão + sangria R$ '+fmt(res.sangria)+' do caixa. Você ganhou R$ '+fmt(res.ganho)+'.</span>'; vEl.value=''; calc.textContent=''; loadResumo(true); loadPagar(true); loadSaqueResumo(true); }
         else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
       }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar saque'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
@@ -1267,12 +1252,97 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   /* ---------- gastos do mês por categoria (topo do contas a pagar) ---------- */
   function loadGastosMes(f){ return fetch('/api/gastos-mes'+qf(f)).then(r=>r.json()).then(d=>{
     const box=g('gastos-mes-box'); if(!box) return;
-    if(!d.itens||!d.itens.length){ box.innerHTML=''; return; }
-    box.innerHTML='<div class="eyebrow" style="margin-bottom:4px">Gastos do mês por categoria (além das compras) — total R$ '+fmt(d.total)+'</div>'+
+    if(!d.itens||!d.itens.length){ box.innerHTML='<p class="note" style="margin:0">Nada pago ainda neste mês.</p>'; return; }
+    box.innerHTML='<div class="eyebrow" style="margin-bottom:4px">Pago no mês por categoria — total R$ '+fmt(d.total)+'</div>'+
       '<div class="tblwrap"><table><thead><tr><th>Categoria</th><th class="num">No mês</th></tr></thead><tbody>'+
       d.itens.map(i=>'<tr><td class="nome">'+esc(i.cat)+'</td><td class="num">R$ '+fmt(i.total)+'</td></tr>').join('')+
-      '<tr><td style="font-weight:700">Total gasto (fora compras)</td><td class="num" style="font-weight:700">R$ '+fmt(d.total)+'</td></tr>'+
+      '<tr><td style="font-weight:700">Total pago no mês (fora compras)</td><td class="num" style="font-weight:700">R$ '+fmt(d.total)+'</td></tr>'+
       '</tbody></table></div>';
+  }).catch(()=>{}); }
+
+  /* ---------- Previsões por categoria (topo do contas a pagar) ---------- */
+  const PREV_POT=['Caixa','Dinheiro','PIX'];
+  function loadPrevisoes(f){ return fetch('/api/previsoes'+qf(f)).then(r=>r.json()).then(d=>{
+    // popula o select do formulário (uma vez) com as categorias do servidor
+    const sel=g('prev-cat');
+    if(sel && !sel.options.length) sel.innerHTML=d.categorias.map(c=>'<option>'+esc(c.cat)+'</option>').join('');
+    const tb=g('prev-total-box');
+    if(tb) tb.innerHTML='<div class="eyebrow" style="margin:0">Falta pagar (previsões) — total <b>R$ '+fmt(d.total_aberto)+'</b></div>';
+    const wrap=g('tbl-previsoes'); if(!wrap) return;
+    const inp='font:inherit;font-size:.76rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)';
+    let rows='';
+    d.categorias.forEach((c,ci)=>{
+      const has=c.n>0;
+      rows+='<tr class="prev-cat'+(has?' clic':'')+'" data-ci="'+ci+'" style="'+(has?'cursor:pointer':'opacity:.55')+'">'+
+        '<td class="nome">'+(has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+esc(c.cat)+'</td>'+
+        '<td class="num"'+(c.aberto>0?' style="font-weight:700"':' style="color:var(--muted)"')+'>R$ '+fmt(c.aberto)+'</td>'+
+        '<td class="num" style="color:var(--muted);font-size:.8rem">'+(has?c.n+' em aberto':'—')+'</td></tr>';
+      if(has){
+        rows+='<tr class="prev-det" data-ci="'+ci+'" hidden><td colspan="3" style="padding:0">'+
+          '<div style="padding:6px 12px;background:var(--bg)">'+
+          c.itens.map(it=>'<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)">'+
+            '<span style="font-size:.85rem">'+(it.venc?dbr(it.venc)+' · ':'')+(it.nota?esc(it.nota):'<span style="color:var(--muted)">sem obs</span>')+'</span>'+
+            '<span style="display:inline-flex;gap:6px;align-items:center"><b>R$ '+fmt(it.valor)+'</b>'+
+              '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
+              '<button class="pv-pay" data-id="'+it.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--good);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">paguei</button>'+
+              '<button class="pv-del" data-id="'+it.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
+            '</span></div>').join('')+
+          '</div></td></tr>';
+      }
+    });
+    wrap.innerHTML='<table><thead><tr><th>Categoria</th><th class="num">Em aberto</th><th class="num">Itens</th></tr></thead><tbody>'+rows+
+      '<tr><td style="font-weight:700">Total em aberto</td><td class="num" style="font-weight:700">R$ '+fmt(d.total_aberto)+'</td><td></td></tr></tbody></table>';
+    wrap.querySelectorAll('tr.prev-cat.clic').forEach(r=>r.addEventListener('click',e=>{
+      if(e.target.closest('button,select')) return;
+      const det=wrap.querySelector('tr.prev-det[data-ci="'+r.dataset.ci+'"]');
+      if(det){ det.hidden=!det.hidden; const ch=r.querySelector('.chev'); if(ch) ch.textContent=det.hidden?'▸':'▾'; }
+    }));
+    wrap.querySelectorAll('.pv-pay').forEach(b=>b.addEventListener('click',()=>{
+      const forma=b.parentNode.querySelector('.pv-forma').value; b.disabled=true; b.textContent='…';
+      post('/api/baixa',{id:b.dataset.id,forma}).then(res=>{
+        if(res.ok){ toast('✅ Pago ('+forma+') e descontado da previsão.'); loadPrevisoes(true); loadGastosMes(true); loadResumo(true); }
+        else{ b.disabled=false; b.textContent='paguei'; toast('❌ '+(res.erro||'não consegui')); }
+      }).catch(()=>{ b.disabled=false; b.textContent='paguei'; toast('❌ erro de conexão'); });
+    }));
+    wrap.querySelectorAll('.pv-del').forEach(b=>b.addEventListener('click',()=>{
+      if(!confirm('Excluir essa previsão? Some do sistema, não tem volta.')) return;
+      b.disabled=true; b.textContent='…';
+      post('/api/excluir-conta',{id:b.dataset.id}).then(res=>{
+        if(res.ok){ toast('🗑️ Previsão excluída.'); loadPrevisoes(true); }
+        else{ b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui')); }
+      }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+    }));
+  }).catch(()=>{}); }
+
+  /* ---------- Adicionar previsão ---------- */
+  (function(){
+    const btn=g('prev-add'); if(!btn) return;
+    const pv=g('prev-venc'); if(pv&&!pv.value) pv.value=hoje;
+    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
+    nb.addEventListener('click',()=>{
+      const msg=g('prev-msg'), v=parseFloat(g('prev-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
+      const payload={ categoria:g('prev-cat').value, valor:v,
+        vencimento:g('prev-venc').value, descricao:g('prev-desc').value.trim() };
+      nb.disabled=true; nb.textContent='gravando…';
+      post('/api/previsao',payload).then(res=>{
+        nb.disabled=false; nb.textContent='Adicionar previsão';
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Previsão adicionada em '+esc(payload.categoria)+'.</span>';
+          g('prev-valor').value=''; g('prev-desc').value=''; loadPrevisoes(true); }
+        else{ msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>'; }
+      }).catch(()=>{ nb.disabled=false; nb.textContent='Adicionar previsão'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
+  /* ---------- saque: valor sacado + lucro acumulados (na régua) ---------- */
+  function loadSaqueResumo(f){ return fetch('/api/saque-resumo'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('saque-resumo-box'); if(!box) return;
+    box.innerHTML=
+      '<div class="eyebrow" style="margin-bottom:6px">💸 Saque (troca cartão → dinheiro) · desde a abertura</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<div class="kpi" style="flex:1 1 180px"><div class="lbl">Valor sacado</div><div class="val">R$ '+fmt(d.valor)+'</div><div class="sub">'+d.n+' saque(s) registrado(s)</div></div>'+
+        '<div class="kpi" style="flex:1 1 180px"><div class="lbl">Lucro do saque</div><div class="val" style="color:var(--good)">R$ '+fmt(d.lucro)+'</div><div class="sub">já sem a taxa da maquininha</div></div>'+
+      '</div>';
   }).catch(()=>{}); }
 
   /* ---------- Fechamento AO VIVO (bate com o dinheiro que entrou + registra) ---------- */
@@ -1308,11 +1378,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadPagar(); loadGastosMes(); loadFechHoje();
+  loadResumo(); loadHoje(); loadPagar(); loadGastosMes(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true),loadGastosMes(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true),loadGastosMes(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

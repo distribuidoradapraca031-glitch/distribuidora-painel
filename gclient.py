@@ -70,6 +70,9 @@ def post(path, body):
 def put(path, body):
     return _req(path, "PUT", body=body)
 
+def delete(path):
+    return _req(path, "DELETE")
+
 def get_all(path, params=None, hard_cap=5000):
     """Puxa todas as páginas (usa meta.proxima_pagina). Achata o wrapper de recurso."""
     out = []
