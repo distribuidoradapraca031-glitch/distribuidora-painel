@@ -157,7 +157,7 @@ th.g,td.g{background:var(--accent-soft)}
   </div>
   <div id="pane-fatgastos">
     <h2>Faturamento × Gastos, mês a mês</h2>
-    <p class="note">Barras douradas = faturamento; barras azuis = gastos (mercadoria + DAS + cartão ≈ 74,9% da venda, mais custos fixos do mês). O número em cima é o <strong>resultado</strong>. Julho usa a projeção do mês (barras listradas). Este modelo bateu com a conferência real: maio +2,5 mil ✓, junho empate ✓.</p>
+    <p class="note">Barras douradas = faturamento; barras azuis = gastos (mercadoria + DAS + cartão ≈ 74,9% da venda, mais custos fixos do mês). O número em cima é o <strong>resultado</strong>. O mês atual usa a projeção (barras listradas). Este modelo bateu com a conferência real: maio +2,5 mil ✓, junho empate ✓.</p>
     <div id="chart-anual" style="margin-top:12px;position:relative"><div id="tip2" style="position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 8px;font-size:.72rem;display:none;white-space:nowrap;z-index:5"></div></div>
     <div style="display:flex;gap:14px;margin-top:8px;font-size:.75rem;color:var(--muted)">
       <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px"></span>Faturamento</span>
@@ -166,7 +166,7 @@ th.g,td.g{background:var(--accent-soft)}
     <div class="tblwrap" id="tbl-meses"></div>
   </div>
   <div id="pane-entrou" hidden>
-    <h2>Todo dinheiro que entrou — julho, dia a dia</h2>
+    <h2>Todo dinheiro que entrou — mês atual, dia a dia</h2>
     <p class="note">Aqui não é o faturado — é o que <strong>de fato entrou</strong>: o que caiu (ou vai cair) na <strong>conta</strong> (PIX + cartão) e o que entrou em <strong>dinheiro</strong> na gaveta. Confira com o extrato do banco e a contagem da gaveta: se entrou mais ou menos que o faturado, é aqui que aparece dinheiro solto ou saída sem justificativa.</p>
     <div class="tblwrap" id="tbl-entrou"></div>
   </div>
@@ -428,11 +428,14 @@ document.getElementById('gerado').textContent =
 
 // KPIs — acompanhamento do mês atual
 const k = D.kpis, MA = D.mes_atual;
+const _MN=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const mesLow = _MN[parseInt(MA.mes.slice(5,7),10)-1]||'mês';
+const mesCap = mesLow.charAt(0).toUpperCase()+mesLow.slice(1);
 const pctBE = Math.round((MA.proj/MA.be_mes-1)*100);
 document.getElementById('kpis').innerHTML = [
- ['Julho até agora ('+MA.dias+' dias)','R$ '+fmt(MA.fat_mtd), 'média R$ '+fmt(MA.media_dia)+'/dia · ticket R$ '+fmt(k.ticket)],
- ['Projeção de julho','R$ '+fmt(MA.proj), pctBE>=0 ? '▲ '+pctBE+'% acima do equilíbrio mensal' : '▼ '+(-pctBE)+'% ABAIXO do equilíbrio'],
- ['Resultado projetado (julho)',(MA.resultado_proj>=0?'+':'')+'R$ '+fmt(MA.resultado_proj), 'já com sua retirada de R$ 1.500 paga'],
+ [mesCap+' até agora ('+MA.dias+' dias)','R$ '+fmt(MA.fat_mtd), 'média R$ '+fmt(MA.media_dia)+'/dia · ticket R$ '+fmt(k.ticket)],
+ ['Projeção de '+mesLow,'R$ '+fmt(MA.proj), pctBE>=0 ? '▲ '+pctBE+'% acima do equilíbrio mensal' : '▼ '+(-pctBE)+'% ABAIXO do equilíbrio'],
+ ['Resultado projetado ('+mesLow+')',(MA.resultado_proj>=0?'+':'')+'R$ '+fmt(MA.resultado_proj), 'já com sua retirada de R$ 1.500 paga'],
  ['Equilíbrio do mês','R$ '+fmt0(MA.be_mes), 'R$ '+fmt0(MA.be_mes_sem_retirada)+' sem retirada de sócio'],
 ].map(x=>'<div class="kpi"><div class="lbl">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('');
 
