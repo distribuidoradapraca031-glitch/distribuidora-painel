@@ -302,6 +302,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Contado na gaveta (R$)<input type="number" step="0.01" inputmode="decimal" id="f-contado" placeholder="0,00"></label>
       <label>Esperado (auto)<input type="text" id="f-esperado" readonly placeholder="—"></label>
     </div>
+    <div id="fech-live" style="margin-top:10px"></div>
     <details id="gaveta-det" style="margin-top:10px">
       <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar a gaveta (cédulas e moedas)</summary>
       <div style="margin-top:10px">
@@ -1274,12 +1275,44 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       '</tbody></table></div>';
   }).catch(()=>{}); }
 
+  /* ---------- Fechamento AO VIVO (bate com o dinheiro que entrou + registra) ---------- */
+  let FECH_ESP=null;
+  function renderFechLive(){
+    const box=g('fech-live'); if(!box||FECH_ESP===null) return;
+    const cEl=g('f-contado'); const c=parseFloat(cEl&&cEl.value);
+    let linha='';
+    if(!isNaN(c)){
+      const q=+(c-FECH_ESP.esperado).toFixed(2);
+      const cor=Math.abs(q)<0.01?'var(--good)':q>0?'var(--warn)':'var(--crit)';
+      const txt=Math.abs(q)<0.01?'bateu certinho ✓':q>0?'sobrou R$ '+fmt(q):'faltou R$ '+fmt(-q);
+      linha='<div style="margin-top:4px">Você contou <b>R$ '+fmt(c)+'</b> → <b style="color:'+cor+'">'+txt+'</b></div>';
+    }
+    box.innerHTML='<div class="note" style="margin:0">💵 Dinheiro que entrou hoje: <b>R$ '+fmt(FECH_ESP.dinheiro)+'</b> · saídas em dinheiro: <b>R$ '+fmt(FECH_ESP.saidas)+'</b> · troco: R$ '+fmt(FECH_ESP.troco)+' → esperado na gaveta: <b>R$ '+fmt(FECH_ESP.esperado)+'</b></div>'+linha+
+      '<button id="fech-registrar" class="btn-copy" style="margin-top:8px">✅ Registrar fechamento no sistema</button><div class="fres" id="fech-reg-msg"></div>';
+    g('fech-registrar').addEventListener('click',()=>{
+      const cc=parseFloat(g('f-contado').value), msg=g('fech-reg-msg');
+      if(isNaN(cc)){ msg.innerHTML='<span style="color:var(--crit)">Conte a gaveta primeiro.</span>'; return; }
+      const b=g('fech-registrar'); b.disabled=true; b.textContent='gravando…';
+      post('/api/fechamento',{data:(g('f-data')&&g('f-data').value)||'',contado:cc,troco:parseFloat(g('f-abertura').value)||200}).then(res=>{
+        b.disabled=false; b.textContent='✅ Registrar fechamento no sistema';
+        if(res.ok){ const q=res.quebra; const t=Math.abs(q)<0.01?'bateu ✓':q>0?'sobra R$ '+fmt(q)+' (lancei uma entrada de ajuste)':'falta R$ '+fmt(-q)+' (lancei uma saída de ajuste)';
+          msg.innerHTML='<span style="color:var(--good)">✅ Fechamento registrado: esperado R$ '+fmt(res.esperado)+' · contado R$ '+fmt(res.contado)+' — '+t+'. Agora o caixa bate.</span>'; loadResumo(true); loadGastosMes(true); }
+        else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
+      }).catch(()=>{ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  }
+  function loadFechHoje(f){ return fetch('/api/fechamento-hoje'+qf(f)).then(r=>r.json()).then(d=>{
+    FECH_ESP=d; const e=g('f-esperado'); if(e) e.value='R$ '+fmt(d.esperado); renderFechLive();
+  }).catch(()=>{}); }
+  (function(){ const c=g('f-contado'); if(c) c.addEventListener('input',renderFechLive);
+    document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
+
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadPagar(); loadGastosMes();
+  loadResumo(); loadHoje(); loadPagar(); loadGastosMes(); loadFechHoje();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true),loadGastosMes(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true),loadGastosMes(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

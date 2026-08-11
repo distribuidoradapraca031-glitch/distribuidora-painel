@@ -387,6 +387,72 @@ def api_inventario():
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
+AJUSTE_CAIXA_PLANO = "33015682"  # plano "Ajuste de caixa" no GestãoClick
+
+def _fech_calc(data):
+    """Dinheiro que ENTROU (vendas em dinheiro) e SAÍDAS em dinheiro do caixa no dia."""
+    vendas = gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": data, "data_fim": data})
+    din = 0.0
+    for v in vendas:
+        for w in v.get("pagamentos") or []:
+            p = w.get("pagamento", w)
+            if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
+                din += _num(p.get("valor"))
+    saidas = 0.0
+    for p in gcapi.get_all("/pagamentos"):
+        if str(p.get("liquidado")) != "1":
+            continue
+        if (p.get("data_liquidacao") or "")[:10] != data:
+            continue
+        if str(p.get("conta_bancaria_id")) == "696747" or str(p.get("forma_pagamento_id")) == "6055919":
+            saidas += _num(p.get("valor_total")) or _num(p.get("valor"))
+    return round(din, 2), round(saidas, 2)
+
+@app.route("/api/fechamento-hoje")
+@login_required
+def api_fechamento_hoje():
+    """Quanto DEVERIA ter na gaveta hoje = troco + dinheiro que entrou − saídas em dinheiro."""
+    def build():
+        troco = _num(request.args.get("troco")) or 200.0
+        din, saidas = _fech_calc(_hoje())
+        return {"troco": round(troco, 2), "dinheiro": din, "saidas": saidas,
+                "esperado": round(troco + din - saidas, 2),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("fech_hoje", 45, build))
+
+@app.route("/api/fechamento", methods=["POST"])
+@login_required
+def api_fechamento():
+    """Fecha o caixa: compara o contado com o esperado e lança o Ajuste de caixa no
+    sistema (faltou = saída; sobrou = entrada) pra o caixa BATER com a gaveta."""
+    body = request.get_json(force=True, silent=True) or {}
+    data = (body.get("data") or _hoje())[:10]
+    troco = _num(body.get("troco")) or 200.0
+    contado = _num(body.get("contado"))
+    if body.get("contado") in (None, ""):
+        return jsonify({"ok": False, "erro": "conte a gaveta primeiro"}), 400
+    din, saidas = _fech_calc(data)
+    esperado = round(troco + din - saidas, 2)
+    quebra = round(contado - esperado, 2)
+    ajuste_id = None
+    try:
+        if abs(quebra) >= 0.01:
+            desc = (f"FECHAMENTO {data} — contado R$ {contado:.2f} · esperado R$ {esperado:.2f} · "
+                    f"{'sobra' if quebra > 0 else 'falta'} R$ {abs(quebra):.2f}")
+            mov = {"descricao": desc, "valor": f"{abs(quebra):.2f}",
+                   "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+                   "liquidado": "1", "plano_contas_id": AJUSTE_CAIXA_PLANO,
+                   "conta_bancaria_id": "696747", "forma_pagamento_id": "6055919"}
+            # sobra = entra dinheiro (recebimento) ; falta = sai dinheiro (pagamento)
+            r = gcapi.post("/recebimentos" if quebra > 0 else "/pagamentos", mov)
+            ajuste_id = (r.get("data") or {}).get("id") if isinstance(r.get("data"), dict) else None
+        _invalida("resumo", "hoje", "fech_hoje")
+        return jsonify({"ok": True, "esperado": esperado, "contado": round(contado, 2),
+                        "quebra": quebra, "dinheiro": din, "saidas": saidas,
+                        "ajuste_id": ajuste_id})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
 @app.route("/api/gastos-mes")
 @login_required
 def api_gastos_mes():
