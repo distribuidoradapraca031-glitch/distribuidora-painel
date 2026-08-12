@@ -173,7 +173,7 @@ th.g,td.g{background:var(--accent-soft)}
   <p class="note">Esperado = troco inicial + vendas em dinheiro − saídas em dinheiro. <strong>Contado</strong> é o que você conferiu na gaveta no fim do dia. Lembrete: digitar o CONTADO no PDV, não o valor da tela.</p>
   <div class="fbox">
     <strong style="font-size:.9rem">✍️ Anotar o fechamento de hoje</strong>
-    <p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada você contou que eu somo sozinho. Fica salvo só neste navegador; me manda no chat que eu gravo no sistema.</p>
+    <p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada que eu somo sozinho e já jogo no <strong>Contado</strong>. A <strong>abertura vem do sistema</strong> (o troco que você lançou ao abrir o caixa). Quando terminar, clique <strong>Registrar fechamento no sistema</strong> que eu <strong>gravo direto no GestãoClick</strong> (lanço o ajuste pra o caixa bater) — não precisa mandar no chat.</p>
     <div class="fform">
       <label>Dia<input type="date" id="f-data"></label>
       <label>Abertura / troco (R$)<input type="number" step="0.01" inputmode="decimal" id="f-abertura" placeholder="0,00"></label>
@@ -192,7 +192,7 @@ th.g,td.g{background:var(--accent-soft)}
       </div>
     </details>
     <div class="fform" style="margin-top:10px">
-      <button id="f-salvar">Salvar contagem</button>
+      <button id="f-salvar">✅ Registrar fechamento no sistema</button>
       <button class="ghost" id="f-limpar">Limpar</button>
     </div>
     <div class="fres" id="f-resultado"></div>
@@ -719,8 +719,7 @@ const abByData={}; D.fechamentos.forEach(f=>abByData[f.data]=f.abertura);
   const dEl=document.getElementById('f-data'), cEl=document.getElementById('f-contado'),
         eEl=document.getElementById('f-esperado'), res=document.getElementById('f-resultado'),
         abEl=document.getElementById('f-abertura');
-  const ult = D.fechamentos.length ? D.fechamentos[D.fechamentos.length-1].data : D.gerado_em;
-  dEl.value = ult;
+  dEl.value = new Date().toISOString().slice(0,10);  // fechamento é do dia de hoje
 
   // ---- contador de cédulas e moedas -> preenche o "contado" ----
   const NOTAS=[200,100,50,20,10,5,2], MOEDAS=[1,0.5,0.25,0.1,0.05], TODAS=NOTAS.concat(MOEDAS);
@@ -753,23 +752,15 @@ const abByData={}; D.fechamentos.forEach(f=>abByData[f.data]=f.abertura);
     if(anot[dEl.value]!=null && !cEl.value) cEl.value=anot[dEl.value];
     calc();
   }
-  function calc(){
-    const e=espByData[dEl.value], c=parseFloat(cEl.value);
-    if(e==null){res.innerHTML='<span style="color:var(--muted)">Sem esperado calculado para esse dia (fora do período com dados).</span>';return;}
-    if(isNaN(c)){res.textContent='';return;}
-    const dif=+(c-e).toFixed(2);
-    const cor = Math.abs(dif)<0.01?'var(--good)':dif>0?'var(--warn)':'var(--crit)';
-    const txt = Math.abs(dif)<0.01?'bateu certinho ✓':dif>0?'sobrou R$ '+fmt(dif)+' na gaveta':'faltou R$ '+fmt(-dif)+' na gaveta';
-    res.innerHTML='<span style="color:'+cor+'">'+txt+'</span> <span style="color:var(--muted);font-weight:400">(contado R$ '+fmt(c)+' − esperado R$ '+fmt(e)+')</span>';
-  }
+  function calc(){ if(res) res.textContent=''; }  // cálculo/esperado agora vêm AO VIVO do sistema (fech-live)
   dEl.addEventListener('change',()=>{cEl.value='';abEl.value='';clearGaveta();refEsp();});
   cEl.addEventListener('input',calc);
   document.getElementById('f-salvar').addEventListener('click',()=>{
     const c=parseFloat(cEl.value);
     if(isNaN(c)){res.innerHTML='<span style="color:var(--crit)">Conte a gaveta ou digite o valor contado primeiro.</span>';return;}
-    const anot=loadAnot(); anot[dEl.value]=+c.toFixed(2); const ok=saveAnot(anot);
-    renderFech(); calc();
-    res.innerHTML+= ok ? ' <span style="color:var(--good)">· salvo ✓ — me manda no chat que eu gravo no sistema</span>' : ' <span style="color:var(--warn)">· não consegui salvar neste navegador (me manda no chat)</span>';
+    try{ const anot=loadAnot(); anot[dEl.value]=+c.toFixed(2); saveAnot(anot); renderFech(); }catch(e){}
+    if(window.registrarFechamento) window.registrarFechamento();
+    else res.innerHTML='<span style="color:var(--warn)">Recarregue a página e tente de novo.</span>';
   });
   document.getElementById('f-limpar').addEventListener('click',()=>{
     const anot=loadAnot(); delete anot[dEl.value]; saveAnot(anot);
@@ -1329,7 +1320,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   let FECH_ESP=null;
   function renderFechLive(){
     const box=g('fech-live'); if(!box||FECH_ESP===null) return;
-    const cEl=g('f-contado'); const c=parseFloat(cEl&&cEl.value);
+    const c=parseFloat((g('f-contado')||{}).value);
     let linha='';
     if(!isNaN(c)){
       const q=+(c-FECH_ESP.esperado).toFixed(2);
@@ -1337,22 +1328,26 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const txt=Math.abs(q)<0.01?'bateu certinho ✓':q>0?'sobrou R$ '+fmt(q):'faltou R$ '+fmt(-q);
       linha='<div style="margin-top:4px">Você contou <b>R$ '+fmt(c)+'</b> → <b style="color:'+cor+'">'+txt+'</b></div>';
     }
-    box.innerHTML='<div class="note" style="margin:0">💵 Dinheiro que entrou hoje: <b>R$ '+fmt(FECH_ESP.dinheiro)+'</b> · saídas em dinheiro: <b>R$ '+fmt(FECH_ESP.saidas)+'</b> · troco: R$ '+fmt(FECH_ESP.troco)+' → esperado na gaveta: <b>R$ '+fmt(FECH_ESP.esperado)+'</b></div>'+linha+
-      '<button id="fech-registrar" class="btn-copy" style="margin-top:8px">✅ Registrar fechamento no sistema</button><div class="fres" id="fech-reg-msg"></div>';
-    g('fech-registrar').addEventListener('click',()=>{
-      const cc=parseFloat(g('f-contado').value), msg=g('fech-reg-msg');
-      if(isNaN(cc)){ msg.innerHTML='<span style="color:var(--crit)">Conte a gaveta primeiro.</span>'; return; }
-      const b=g('fech-registrar'); b.disabled=true; b.textContent='gravando…';
-      post('/api/fechamento',{data:(g('f-data')&&g('f-data').value)||'',contado:cc,troco:parseFloat(g('f-abertura').value)||200}).then(res=>{
-        b.disabled=false; b.textContent='✅ Registrar fechamento no sistema';
-        if(res.ok){ const q=res.quebra; const t=Math.abs(q)<0.01?'bateu ✓':q>0?'sobra R$ '+fmt(q)+' (lancei uma entrada de ajuste)':'falta R$ '+fmt(-q)+' (lancei uma saída de ajuste)';
-          msg.innerHTML='<span style="color:var(--good)">✅ Fechamento registrado: esperado R$ '+fmt(res.esperado)+' · contado R$ '+fmt(res.contado)+' — '+t+'. Agora o caixa bate.</span>'; loadResumo(true); loadGastosMes(true); }
-        else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
-      }).catch(()=>{ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
+    box.innerHTML='<div class="note" style="margin:0">💵 Entrou em dinheiro hoje: <b>R$ '+fmt(FECH_ESP.dinheiro)+'</b> · saídas em dinheiro: <b>R$ '+fmt(FECH_ESP.saidas)+'</b> · abertura (do sistema): <b>R$ '+fmt(FECH_ESP.troco)+'</b> → esperado na gaveta: <b>R$ '+fmt(FECH_ESP.esperado)+'</b></div>'+linha;
   }
+  // grava o fechamento DIRETO no sistema (usado pelo botão "Registrar fechamento")
+  window.registrarFechamento=function(){
+    const cc=parseFloat((g('f-contado')||{}).value), msg=g('f-resultado');
+    if(isNaN(cc)){ if(msg) msg.innerHTML='<span style="color:var(--crit)">Conte a gaveta (ou digite o contado) primeiro.</span>'; return; }
+    const b=g('f-salvar'); if(b){ b.disabled=true; b.textContent='gravando…'; }
+    post('/api/fechamento',{data:(g('f-data')&&g('f-data').value)||'',contado:cc,troco:parseFloat((g('f-abertura')||{}).value)||0}).then(res=>{
+      if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; }
+      if(res.ok){ const q=res.quebra; const t=Math.abs(q)<0.01?'bateu ✓':q>0?'sobra R$ '+fmt(q)+' (lancei uma entrada de ajuste)':'falta R$ '+fmt(-q)+' (lancei uma saída de ajuste)';
+        if(msg) msg.innerHTML='<span style="color:var(--good)">✅ Fechamento GRAVADO no sistema: esperado R$ '+fmt(res.esperado)+' · contado R$ '+fmt(res.contado)+' — '+t+'. O caixa agora bate.</span>';
+        loadResumo(true); loadGastosMes(true); loadFechHoje(true); }
+      else { if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui gravar')+'</span>'; }
+    }).catch(()=>{ if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; } if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+  };
   function loadFechHoje(f){ return fetch('/api/fechamento-hoje'+qf(f)).then(r=>r.json()).then(d=>{
-    FECH_ESP=d; const e=g('f-esperado'); if(e) e.value='R$ '+fmt(d.esperado); renderFechLive();
+    FECH_ESP=d; const e=g('f-esperado'); if(e) e.value='R$ '+fmt(d.esperado);
+    const ab=g('f-abertura');
+    if(ab && d.abertura_gc){ ab.value=(+d.troco).toFixed(2); ab.readOnly=true; ab.title='Puxado do GestãoClick (Abertura de caixa de hoje)'; ab.style.background='var(--surface)'; }
+    renderFechLive();
   }).catch(()=>{}); }
   (function(){ const c=g('f-contado'); if(c) c.addEventListener('input',renderFechLive);
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();

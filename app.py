@@ -541,6 +541,18 @@ def api_inventario():
 
 AJUSTE_CAIXA_PLANO = "33015682"  # plano "Ajuste de caixa" no GestãoClick
 
+def _abertura_caixa(data):
+    """Valor da 'Abertura de caixa' (troco) lançada no GestãoClick nesse dia, ou None
+    se o dono ainda não abriu o caixa."""
+    try:
+        recs = gcapi.get_all("/recebimentos", {"data_inicio": data, "data_fim": data})
+    except Exception:
+        return None
+    for r in recs:
+        if "ABERTURA DE CAIXA" in (r.get("descricao") or "").upper():
+            return round(_num(r.get("valor_total")) or _num(r.get("valor")), 2)
+    return None
+
 def _fech_calc(data):
     """Dinheiro que ENTROU (vendas em dinheiro) e SAÍDAS em dinheiro do caixa no dia."""
     vendas = gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": data, "data_fim": data})
@@ -565,9 +577,11 @@ def _fech_calc(data):
 def api_fechamento_hoje():
     """Quanto DEVERIA ter na gaveta hoje = troco + dinheiro que entrou − saídas em dinheiro."""
     def build():
-        troco = _num(request.args.get("troco")) or 200.0
+        ab = _abertura_caixa(_hoje())               # troco real lançado no GC
+        troco = ab if ab is not None else (_num(request.args.get("troco")) or 200.0)
         din, saidas = _fech_calc(_hoje())
-        return {"troco": round(troco, 2), "dinheiro": din, "saidas": saidas,
+        return {"troco": round(troco, 2), "abertura_gc": ab is not None,
+                "dinheiro": din, "saidas": saidas,
                 "esperado": round(troco + din - saidas, 2),
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("fech_hoje", 45, build))
@@ -579,7 +593,8 @@ def api_fechamento():
     sistema (faltou = saída; sobrou = entrada) pra o caixa BATER com a gaveta."""
     body = request.get_json(force=True, silent=True) or {}
     data = (body.get("data") or _hoje())[:10]
-    troco = _num(body.get("troco")) or 200.0
+    ab = _abertura_caixa(data)                       # usa a abertura real do GC
+    troco = ab if ab is not None else (_num(body.get("troco")) or 200.0)
     contado = _num(body.get("contado"))
     if body.get("contado") in (None, ""):
         return jsonify({"ok": False, "erro": "conte a gaveta primeiro"}), 400
