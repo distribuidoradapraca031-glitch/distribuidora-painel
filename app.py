@@ -635,13 +635,14 @@ def api_fechamento():
 @app.route("/api/gastos-mes")
 @login_required
 def api_gastos_mes():
-    """Pagos do mês (bloco do meio): só o que JÁ FOI PAGO no mês, por categoria,
-    fora mercadoria (compras). Inclui provisões pagas, retirada, lanche, motoca..."""
+    """Gastos do mês (pra fechar o mês): despesas pagas por categoria (motoca, Biel,
+    retiradas, lanche...) + mercadoria (compras) somadas à parte + TOTAL GERAL =
+    tudo que JÁ SAIU no mês. Fora: ajuste de caixa (quebra) e sangria de saque."""
     def build():
         pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
                                             "data_fim": "2027-12-31"})
         mes = _hoje()[:7]
-        cats, total = {}, 0.0
+        cats, total, compras = {}, 0.0, 0.0
         for p in pgs:
             if str(p.get("liquidado")) != "1":
                 continue  # só o que já saiu da conta (pago)
@@ -651,17 +652,22 @@ def api_gastos_mes():
             if desc.upper().startswith("SANGRIA SAQUE"):
                 continue  # saque não é gasto, é troca de dinheiro
             plano = p.get("nome_plano_conta") or "Outros"
-            if plano in ("Compras", "Ajuste de caixa"):
-                continue  # mercadoria e acerto de gaveta ficam fora dos gastos
+            if plano == "Ajuste de caixa":
+                continue  # acerto de gaveta (quebra) não é gasto
+            val = _num(p.get("valor_total")) or _num(p.get("valor"))
+            if plano == "Compras":
+                compras += val  # mercadoria: soma só no total geral, não nas categorias
+                continue
             cat = (_categoria_conta(p)
                    or next((lbl for lbl in SPLIT_LABELS if desc.startswith(lbl)), None)
                    or plano)
-            val = _num(p.get("valor_total")) or _num(p.get("valor"))
             cats[cat] = cats.get(cat, 0.0) + val
             total += val
         itens = sorted([{"cat": k, "total": round(v, 2)} for k, v in cats.items()],
                        key=lambda x: -x["total"])
-        return {"itens": itens, "total": round(total, 2), "mes": mes,
+        return {"itens": itens, "total": round(total, 2),
+                "compras": round(compras, 2),
+                "total_geral": round(total + compras, 2), "mes": mes,
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("gastos_mes", 60, build))
 

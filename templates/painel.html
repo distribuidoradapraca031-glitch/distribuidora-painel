@@ -335,6 +335,13 @@ th.g,td.g{background:var(--accent-soft)}
 
 <!-- ============ FINANCEIRO ============ -->
 <div id="view-financeiro" hidden>
+<section class="card" id="card-gasto-mes">
+  <div class="eyebrow">Fechamento do mês · o que já saiu</div>
+  <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
+  <div id="gasto-mes-topo" style="margin:8px 0"></div>
+  <p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra) e saque.</p>
+</section>
+
 <section class="card">
   <div class="eyebrow">Contas a pagar · a pagar do mês</div>
   <h2>Provisões e atrasados — o que falta pagar</h2>
@@ -1030,6 +1037,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         kpiCard('Em estoque (custo)','k-val','')+
         kpiCard('Estoque negativo','k-neg','')+
         kpiCard('A pagar em aberto','k-pagar','')+
+        kpiCard('Faturamento total hoje','k-hoje-t','k-hoje-t-sub')+
         kpiCard('Vendas hoje (balcão)','k-hoje','k-hoje-sub')+
         kpiCard('Vendas hoje (delivery)','k-hoje-d','k-hoje-d-sub')+
       '</section>';
@@ -1041,13 +1049,18 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(g('live-badge')) g('live-badge').textContent = '● conectado ao sistema — ao vivo';
       if(g('live-stamp')) g('live-stamp').textContent = 'lido em '+d.gerado_em;
     }).catch(()=>{ if(g('live-badge')) g('live-badge').textContent='● sem conexão com o sistema'; }); }
+  let _fatBalcao=0,_fatDeliv=0;
+  function _updFatTotal(){ if(g('k-hoje-t')) g('k-hoje-t').textContent='R$ '+fmt(_fatBalcao+_fatDeliv);
+    if(g('k-hoje-t-sub')) g('k-hoje-t-sub').textContent='balcão R$ '+fmt(_fatBalcao)+' + delivery R$ '+fmt(_fatDeliv); }
   function loadHoje(f){ return fetch('/api/hoje'+qf(f)).then(r=>r.json()).then(d=>{
       if(g('k-hoje')) g('k-hoje').textContent = 'R$ '+fmt(d.total);
       if(g('k-hoje-sub')) g('k-hoje-sub').textContent = d.n+' vendas · 💵 '+fmt(d.dinheiro)+' · PIX '+fmt(d.pix)+' · 💳 '+fmt(d.cartao);
+      _fatBalcao=d.total||0; _updFatTotal();
     }).catch(()=>{}); }
   function loadHojeDelivery(f){ return fetch('/api/hoje-delivery'+qf(f)).then(r=>r.json()).then(d=>{
       if(g('k-hoje-d')) g('k-hoje-d').textContent = 'R$ '+fmt(d.total);
       if(g('k-hoje-d-sub')) g('k-hoje-d-sub').textContent = d.n+' pedido(s) do app hoje';
+      _fatDeliv=d.total||0; _updFatTotal();
     }).catch(()=>{}); }
   function loadDelivery(f){ return fetch('/api/delivery'+qf(f)).then(r=>r.json()).then(d=>{
     const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -1215,12 +1228,22 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
   /* ---------- gastos do mês por categoria (topo do contas a pagar) ---------- */
   function loadGastosMes(f){ return fetch('/api/gastos-mes'+qf(f)).then(r=>r.json()).then(d=>{
+    // topo do Financeiro: TOTAL gasto no mês = despesas pagas + mercadoria (compras)
+    const topo=g('gasto-mes-topo');
+    if(topo){
+      const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      if(g('gm-mes')) g('gm-mes').textContent=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'';
+      topo.innerHTML='<div style="font-size:1.7rem;font-weight:800;line-height:1.1">R$ '+fmt(d.total_geral)+'</div>'+
+        '<div class="note" style="margin:4px 0 0">despesas (fora mercadoria) <b>R$ '+fmt(d.total)+'</b> · mercadoria (compras) <b>R$ '+fmt(d.compras)+'</b></div>';
+    }
     const box=g('gastos-mes-box'); if(!box) return;
-    if(!d.itens||!d.itens.length){ box.innerHTML='<p class="note" style="margin:0">Nada pago ainda neste mês.</p>'; return; }
-    box.innerHTML='<div class="eyebrow" style="margin-bottom:4px">Pago no mês por categoria — total R$ '+fmt(d.total)+'</div>'+
+    if((!d.itens||!d.itens.length) && !d.compras){ box.innerHTML='<p class="note" style="margin:0">Nada pago ainda neste mês.</p>'; return; }
+    box.innerHTML='<div class="eyebrow" style="margin-bottom:4px">Pago no mês por categoria</div>'+
       '<div class="tblwrap"><table><thead><tr><th>Categoria</th><th class="num">No mês</th></tr></thead><tbody>'+
       d.itens.map(i=>'<tr><td class="nome">'+esc(i.cat)+'</td><td class="num">R$ '+fmt(i.total)+'</td></tr>').join('')+
-      '<tr><td style="font-weight:700">Total pago no mês (fora compras)</td><td class="num" style="font-weight:700">R$ '+fmt(d.total)+'</td></tr>'+
+      '<tr><td>Despesas (fora mercadoria)</td><td class="num">R$ '+fmt(d.total)+'</td></tr>'+
+      '<tr><td>Mercadoria (compras)</td><td class="num">R$ '+fmt(d.compras)+'</td></tr>'+
+      '<tr><td style="font-weight:700">Total gasto no mês</td><td class="num" style="font-weight:700">R$ '+fmt(d.total_geral)+'</td></tr>'+
       '</tbody></table></div>';
   }).catch(()=>{}); }
 
