@@ -1129,6 +1129,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         kpiCard('Estoque negativo','k-neg','')+
         kpiCard('A pagar em aberto','k-pagar','')+
         kpiCard('Vendas hoje (balcão)','k-hoje','k-hoje-sub')+
+        kpiCard('Vendas hoje (delivery)','k-hoje-d','k-hoje-d-sub')+
       '</section>';
   }
   function loadResumo(f){ return fetch('/api/resumo'+qf(f)).then(r=>r.json()).then(d=>{
@@ -1141,6 +1142,10 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   function loadHoje(f){ return fetch('/api/hoje'+qf(f)).then(r=>r.json()).then(d=>{
       if(g('k-hoje')) g('k-hoje').textContent = 'R$ '+fmt(d.total);
       if(g('k-hoje-sub')) g('k-hoje-sub').textContent = d.n+' vendas · 💵 '+fmt(d.dinheiro)+' · PIX '+fmt(d.pix)+' · 💳 '+fmt(d.cartao);
+    }).catch(()=>{}); }
+  function loadHojeDelivery(f){ return fetch('/api/hoje-delivery'+qf(f)).then(r=>r.json()).then(d=>{
+      if(g('k-hoje-d')) g('k-hoje-d').textContent = 'R$ '+fmt(d.total);
+      if(g('k-hoje-d-sub')) g('k-hoje-d-sub').textContent = d.n+' pedido(s) do app hoje';
     }).catch(()=>{}); }
 
   /* ---------- O que vence: AO VIVO (baixa grava no sistema) ---------- */
@@ -1404,11 +1409,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadPagar(); loadGastosMes(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadPagar(); loadGastosMes(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadPagar(true),loadGastosMes(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadPagar(true),loadGastosMes(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

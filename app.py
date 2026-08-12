@@ -370,6 +370,25 @@ def api_hoje():
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("hoje", 60, build))
 
+@app.route("/api/hoje-delivery")
+@login_required
+def api_hoje_delivery():
+    """Vendas de DELIVERY de hoje (Anota AI), ao vivo. Delivery entra como venda
+    tipo 'produto' com cliente DELIVERY e observação 'Anota AI' — separa do saque."""
+    def build():
+        h = _hoje()
+        vendas = gcapi.get_all("/vendas", {"tipo": "produto", "data_inicio": h, "data_fim": h})
+        tot = 0.0
+        n = 0
+        for v in vendas:
+            if "ANOTA AI" not in (v.get("observacoes") or "").upper():
+                continue  # exclui saque e outras vendas produto
+            n += 1
+            tot += _num(v.get("valor_total"))
+        return {"n": n, "total": round(tot, 2),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("hoje_deliv", 60, build))
+
 def _proximo_codigo_compra():
     """Código na faixa manual (< 1.000.000), separada dos automáticos (~13 mi)."""
     try:
