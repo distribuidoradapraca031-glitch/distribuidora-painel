@@ -105,7 +105,8 @@ def api_pagar():
         # aqui embaixo só mercadoria (nota de compra/boleto DDA). Tudo que é previsão,
         # provisão ou recorrente vai pro bloco de cima, então sai daqui.
         abertos = [p for p in pgs if str(p.get("liquidado")) != "1"
-                   and not _categoria_conta(p)]
+                   and not _categoria_conta(p)
+                   and not (p.get("descricao") or "").startswith(RP_TAG)]
         itens = [{
             "id": p.get("id"),
             "desc": p.get("descricao") or p.get("nome_plano_conta") or "—",
@@ -142,6 +143,19 @@ CATS = {
 SPLIT_LABELS = ["Retirada do sócio (Victor)", "Retirada do sócio (Igor)",
                 "Pagamento Biel", "Pagamento PH Motoca"]
 BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
+
+# ---- RECURSO PRÓPRIO (dinheiro do Victor) ----
+# pagamento que o dono fez com o próprio dinheiro. Fica SÓ no painel, separado:
+# guardado como lançamento ABERTO (liquidado=0) com a tag [RP] — assim NÃO mexe na
+# gaveta, no banco, no fechamento nem no "Total gasto no mês" da loja. Some de todos
+# os blocos normais (é filtrado) e aparece só no quadro "Recurso próprio".
+RP_TAG = "[RP]"
+
+def _rp_nota(desc):
+    d = desc or ""
+    if d.startswith(RP_TAG):
+        d = d[len(RP_TAG):].strip().lstrip("—-").strip()
+    return d
 
 # ---- PREVISÕES (topo do contas a pagar): lista fixa de categorias recorrentes ----
 # cada item que o dono adiciona vira um pagamento em aberto com descrição
@@ -769,6 +783,8 @@ def api_previsoes():
         for p in pgs:
             if str(p.get("liquidado")) == "1":
                 continue  # pago já saiu do topo (vai pros pagos do mês)
+            if (p.get("descricao") or "").startswith(RP_TAG):
+                continue  # recurso próprio não é conta a pagar da loja
             cat = _categoria_conta(p)
             if not cat:
                 continue
@@ -831,10 +847,57 @@ def api_excluir_conta():
         return jsonify({"ok": False, "erro": "sem id"}), 400
     try:
         gcapi.delete(f"/pagamentos/{pid}")
-        _invalida("pagar", "previsoes", "resumo", "gastos_mes")
+        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/recurso-proprio", methods=["GET", "POST"])
+@login_required
+def api_recurso_proprio():
+    """GET: pagamentos com recurso próprio (dinheiro do Victor) do mês — separados,
+    fora do caixa e do total da loja. POST: lança um novo (guarda tag [RP], aberto)."""
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        valor = _num(body.get("valor"))
+        data = (body.get("data") or _hoje())[:10]
+        nota = (body.get("descricao") or "").strip()
+        cat = body.get("categoria") or "Outros"
+        if valor <= 0:
+            return jsonify({"ok": False, "erro": "valor inválido"}), 400
+        plano = CATS.get(cat, CATS["Outros"])
+        desc = f"{RP_TAG} " + (nota or cat)
+        payload = {"descricao": desc, "valor": f"{valor:.2f}",
+                   "data_vencimento": data, "data_competencia": data,
+                   "liquidado": "0", "plano_contas_id": plano,
+                   "forma_pagamento_id": BOLETO_FORMA_ID}
+        try:
+            r = gcapi.post("/pagamentos", payload)
+            d = r.get("data") or {}
+            _invalida("recurso_proprio", "pagar", "previsoes")
+            return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
+        except Exception as e:
+            return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
+        mes = _hoje()[:7]
+        itens = []
+        for p in pgs:
+            desc = (p.get("descricao") or "")
+            if not desc.startswith(RP_TAG):
+                continue
+            comp = (p.get("data_competencia") or p.get("data_vencimento") or "")[:10]
+            if comp[:7] != mes:
+                continue
+            itens.append({"id": p.get("id"), "desc": _rp_nota(desc) or "—", "data": comp,
+                          "valor": _num(p.get("valor_total")) or _num(p.get("valor"))})
+        itens.sort(key=lambda x: x["data"] or "9999")
+        return {"itens": itens, "total": round(sum(i["valor"] for i in itens), 2),
+                "n": len(itens), "mes": mes, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("recurso_proprio", 60, build))
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

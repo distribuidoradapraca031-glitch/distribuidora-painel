@@ -339,7 +339,35 @@ th.g,td.g{background:var(--accent-soft)}
   <div class="eyebrow">Fechamento do mês · o que já saiu</div>
   <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
   <div id="gasto-mes-topo" style="margin:8px 0"></div>
-  <p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra) e saque.</p>
+  <p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra), saque e <strong>o que você paga com recurso próprio</strong> (esse fica no quadro abaixo, separado).</p>
+</section>
+
+<section class="card" id="card-recurso-proprio">
+  <div class="eyebrow">Recurso próprio · dinheiro do Victor</div>
+  <h2>Pago com recurso próprio — <span id="rp-mes"></span></h2>
+  <div id="rp-total-box" style="margin:8px 0"></div>
+  <p class="note">Pagamentos que você fez com o <strong>seu dinheiro</strong>. Fica <strong>separado de propósito</strong>: NÃO entra no caixa, nem no banco, nem no "Total gasto no mês" da loja — é só pra você saber quanto colocou do bolso. <strong>Só no painel</strong> (não criei nada no GestãoClick).</p>
+  <div class="tblwrap" id="tbl-rp" style="margin:8px 0"></div>
+  <div class="fbox" style="margin-top:10px">
+    <strong style="font-size:.9rem">➕ Lançar pagamento com recurso próprio</strong>
+    <p class="note" style="margin-top:2px">O que você pagou com seu dinheiro. Escolha a categoria, o valor e a data — ele entra aqui e vai somando, sem mexer no caixa da loja.</p>
+    <div class="fform">
+      <label style="flex:1 1 180px">Categoria
+        <select id="rp-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
+          <option>Mercadoria / fornecedor</option><option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
+          <option>Combustível</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
+          <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Água / luz / internet</option>
+          <option>Retirada do sócio (Victor)</option><option>Retirada do sócio (Igor)</option>
+          <option>Pagamento Biel</option><option>Pagamento PH Motoca</option><option>Outros</option>
+        </select>
+      </label>
+      <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="rp-desc" placeholder="ex.: paguei a Ambev no meu PIX" style="width:100%"></label>
+      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="rp-valor" placeholder="0,00" style="width:110px"></label>
+      <label>Data<input type="date" id="rp-data"></label>
+      <button id="rp-add">Adicionar</button>
+    </div>
+    <div class="fres" id="rp-msg"></div>
+  </div>
 </section>
 
 <section class="card">
@@ -1247,6 +1275,45 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       '</tbody></table></div>';
   }).catch(()=>{}); }
 
+  /* ---------- Recurso próprio (dinheiro do Victor) ---------- */
+  function loadRecursoProprio(f){ return fetch('/api/recurso-proprio'+qf(f)).then(r=>r.json()).then(d=>{
+    const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    if(g('rp-mes')) g('rp-mes').textContent=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'';
+    const tb=g('rp-total-box');
+    if(tb) tb.innerHTML='<div style="font-size:1.5rem;font-weight:800;line-height:1.1">R$ '+fmt(d.total)+'</div>'+
+      '<div class="note" style="margin:3px 0 0">'+(d.n||0)+' pagamento(s) com seu dinheiro neste mês · separado do caixa</div>';
+    const box=g('tbl-rp'); if(!box) return;
+    if(!d.itens||!d.itens.length){ box.innerHTML='<p class="note" style="margin:0">Nada lançado ainda neste mês.</p>'; return; }
+    box.innerHTML='<table><thead><tr><th>Data</th><th>Descrição</th><th class="num">Valor</th><th></th></tr></thead><tbody>'+
+      d.itens.map(i=>'<tr><td>'+dbr(i.data)+'</td><td class="nome">'+esc(i.desc)+'</td><td class="num">R$ '+fmt(i.valor)+'</td>'+
+        '<td class="num"><button class="rp-del" data-id="'+i.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button></td></tr>').join('')+
+      '<tr><td colspan="2" style="font-weight:700">Total com recurso próprio</td><td class="num" style="font-weight:700">R$ '+fmt(d.total)+'</td><td></td></tr>'+
+      '</tbody></table>';
+    box.querySelectorAll('.rp-del').forEach(b=>b.addEventListener('click',()=>{
+      if(!confirm('Excluir esse lançamento de recurso próprio?')) return;
+      b.disabled=true; b.textContent='…';
+      post('/api/excluir-conta',{id:b.dataset.id}).then(res=>{
+        if(res.ok){ toast('🗑️ Lançamento excluído.'); loadRecursoProprio(true); }
+        else{ b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui')); }
+      }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+    }));
+  }).catch(()=>{}); }
+  (function(){
+    const btn=g('rp-add'); if(!btn) return;
+    const rd=g('rp-data'); if(rd&&!rd.value) rd.value=hoje;
+    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
+    nb.addEventListener('click',()=>{
+      const msg=g('rp-msg'), v=parseFloat(g('rp-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
+      nb.disabled=true;
+      post('/api/recurso-proprio',{categoria:g('rp-cat').value, valor:v, descricao:g('rp-desc').value, data:g('rp-data').value||hoje}).then(res=>{
+        nb.disabled=false;
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Lançado R$ '+fmt(v)+' com recurso próprio (separado do caixa).</span>'; g('rp-valor').value=''; g('rp-desc').value=''; loadRecursoProprio(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
   /* ---------- Previsões por categoria (topo do contas a pagar) ---------- */
   const PREV_POT=['Caixa','Dinheiro','PIX'];
   function loadPrevisoes(f){ return fetch('/api/previsoes'+qf(f)).then(r=>r.json()).then(d=>{
@@ -1386,11 +1453,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadPagar(); loadGastosMes(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadPagar(true),loadGastosMes(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();
