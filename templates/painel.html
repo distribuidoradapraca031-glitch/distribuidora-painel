@@ -421,39 +421,16 @@ th.g,td.g{background:var(--accent-soft)}
 
 <section class="card">
   <div class="eyebrow">Delivery · <span id="d-periodo"></span></div>
-  <h2>Onde cada venda de delivery está no sistema</h2>
-  <p class="note">O delivery vem do relatório do Anota AI. Parte é digitada no balcão (e já conta no faturamento da Loja), parte deveria entrar sozinha pelo sync. Isto mostra o que está batido e o que ficou de fora.</p>
-  <div class="banner crit" id="d-buraco"></div>
-  <div class="tblwrap" id="d-reconc"></div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Delivery · por dia</div>
   <h2>Faturamento do delivery por dia</h2>
-  <p class="note">Só pedidos finalizados (entregues/retirados). Toque nas barras para ver o valor.</p>
-  <div id="d-chart"><div id="d-tip" style="position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 8px;font-size:.72rem;display:none;white-space:nowrap;z-index:5"></div></div>
-</section>
-
-<div class="grid2">
-<section class="card">
-  <div class="eyebrow">Delivery · canal</div>
-  <h2>De onde vêm os pedidos</h2>
-  <p class="note">Balcão (PDV) = digitado na mão; os outros chegam pelo app/WhatsApp.</p>
-  <div id="d-origem" style="margin-top:8px"></div>
+  <p class="note">🟢 <strong>Ao vivo do sistema</strong> — os pedidos do app que o sync trouxe pro GestãoClick no mês atual. Atualiza sozinho, não congela mais. Toque nas barras pra ver o valor.</p>
+  <div id="d-chart" style="position:relative"><div id="d-tip" style="position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 8px;font-size:.72rem;display:none;white-space:nowrap;z-index:5"></div></div>
 </section>
 
 <section class="card">
   <div class="eyebrow">Delivery · pagamento</div>
   <h2>Como o cliente paga</h2>
-  <p class="note">PIX e cartão do iFood caem online; dinheiro e maquininha o entregador traz.</p>
+  <p class="note">Formas de pagamento dos pedidos de delivery do mês.</p>
   <div id="d-pagamento" style="margin-top:8px"></div>
-</section>
-</div>
-
-<section class="card">
-  <div class="eyebrow">Delivery · resumo do período</div>
-  <h2>Números do mês</h2>
-  <div class="tblwrap" id="d-resumo"></div>
   <span class="stamp" id="d-stamp"></span>
 </section>
 </div><!-- /view-delivery -->
@@ -471,7 +448,7 @@ const fmt0 = n => n.toLocaleString('pt-BR',{maximumFractionDigits:0});
 const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
 
 document.getElementById('gerado').textContent =
-  'Gerado em '+dbr(D.gerado_em)+'/2026 · loja e caixa até '+(D.dia_mes.length?dbr(D.dia_mes[D.dia_mes.length-1].data):'—')+' · delivery '+(D.delivery?D.delivery.periodo:'—')+' · boletos DDA de 15/07';
+  'Gerado em '+dbr(D.gerado_em)+'/2026 · loja e caixa até '+(D.dia_mes.length?dbr(D.dia_mes[D.dia_mes.length-1].data):'—')+' · boletos DDA de 15/07';
 
 // KPIs — acompanhamento do mês atual
 const k = D.kpis, MA = D.mes_atual;
@@ -880,73 +857,7 @@ if (vencidas.length){
 document.getElementById('dda-stamp').textContent =
  '📅 Boletos DDA atualizados pela última vez em 15/07/2026 — manda um print novo do DDA que eu atualizo esta lista.';
 
-// ============ VISÃO DELIVERY ============
-(function(){
-  const DV = D.delivery; if(!DV) return;
-  const R = DV.resumo, RC = DV.reconc;
-  document.getElementById('d-periodo').textContent = DV.periodo;
-
-  document.getElementById('d-kpis').innerHTML = [
-   ['Pedidos finalizados', fmt0(R.pedidos), R.descartados+' descartados (expirado/rejeitado)'],
-   ['Faturamento delivery','R$ '+fmt(R.fat), 'produtos R$ '+fmt(R.produtos)+' + frete R$ '+fmt(R.frete)],
-   ['Ticket médio','R$ '+fmt(R.ticket), R.entrega_ped+' entregas · '+R.retira_ped+' retiram no balcão'],
-   ['Ritmo do delivery','R$ '+fmt0(R.media_dia)+'/dia', R.ped_dia+' pedidos/dia em '+R.dias+' dias'],
-  ].map(x=>'<div class="kpi"><div class="lbl">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('');
-
-  document.getElementById('d-buraco').innerHTML =
-   '🔴 <strong>'+RC.faltando_ped+' pedidos (R$ '+fmt(RC.faltando_fat)+')</strong> vendidos pelo app NÃO entraram no GestãoClick — sem faturamento e sem NFC-e. O sync automático (ligado hoje) fecha esse buraco daqui pra frente.';
-  document.getElementById('d-reconc').innerHTML =
-   '<table><thead><tr><th>Situação da venda</th><th class="num">Pedidos</th><th class="num">Valor</th><th>Onde está</th></tr></thead><tbody>'+
-   '<tr><td class="nome">Digitada no balcão (PDV)</td><td class="num">'+RC.pdv_ped+'</td><td class="num">R$ '+fmt(RC.pdv_fat)+'</td><td><span class="pill pok">já conta no faturamento da Loja</span></td></tr>'+
-   '<tr><td class="nome">App — sincronizada</td><td class="num">'+RC.synced_ped+'</td><td class="num">R$ '+fmt(RC.synced_fat)+'</td><td><span class="pill pok">no GC com NFC-e</span></td></tr>'+
-   '<tr><td class="nome">App — fora do sistema</td><td class="num">'+RC.faltando_ped+'</td><td class="num">R$ '+fmt(RC.faltando_fat)+'</td><td><span class="pill pcrit">sem venda / sem nota</span></td></tr>'+
-   '</tbody><tfoot><tr><td>Total delivery do período</td><td class="num">'+R.pedidos+'</td><td class="num">R$ '+fmt(R.fat)+'</td><td></td></tr></tfoot></table>';
-
-  (function(){
-    const box=document.getElementById('d-chart'), tip=document.getElementById('d-tip');
-    const serie=DV.por_dia;
-    const W=Math.max(box.clientWidth||900,640),H=210,padL=44,padB=22,padT=12;
-    const max=Math.max(...serie.map(d=>d.fat),200);
-    const bw=(W-padL-8)/serie.length;
-    const y=v=>padT+(H-padT-padB)*(1-v/max);
-    let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="Faturamento de delivery por dia">';
-    for(const g of [0,max/2,max]){
-      s+='<line x1="'+padL+'" y1="'+y(g)+'" x2="'+W+'" y2="'+y(g)+'" stroke="var(--line)" stroke-width="1"/>'+
-         '<text x="'+(padL-6)+'" y="'+(y(g)+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+fmt0(g/1000)+'k</text>';
-    }
-    serie.forEach((d,i)=>{
-      const x=padL+i*bw,h=y(0)-y(d.fat);
-      s+='<rect data-i="'+i+'" x="'+(x+1)+'" y="'+y(d.fat)+'" width="'+Math.max(bw-3,2)+'" height="'+h+'" rx="3" fill="var(--accent)"/>';
-      if(i%3===0) s+='<text x="'+(x+bw/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="var(--muted)">'+dbr(d.data)+'</text>';
-    });
-    s+='</svg>';
-    box.insertAdjacentHTML('beforeend',s);
-    box.querySelectorAll('rect').forEach(r=>{
-      const show=e=>{const d=serie[+r.dataset.i];tip.textContent=dbr(d.data)+' · '+d.ped+' ped · R$ '+fmt(d.fat);tip.style.display='block';const bb=box.getBoundingClientRect();tip.style.left=Math.min(e.clientX-bb.left+10,bb.width-150)+'px';tip.style.top=(e.clientY-bb.top-30)+'px';};
-      r.addEventListener('mousemove',show);r.addEventListener('click',show);r.addEventListener('mouseleave',()=>tip.style.display='none');
-    });
-  })();
-
-  const barRows=(arr,total)=>arr.map(x=>{
-    const w=Math.max(Math.round(x.fat/total*100),2);
-    return '<div class="bar-row"><span class="lbl2">'+x.nome+'</span>'+
-      '<span class="bar-track"><span class="bar-fill" style="width:'+w+'%"></span></span>'+
-      '<span class="bar-val">'+x.ped+' ped · R$ '+fmt(x.fat)+'</span></div>';
-  }).join('');
-  document.getElementById('d-origem').innerHTML=barRows(DV.origem,R.fat);
-  document.getElementById('d-pagamento').innerHTML=barRows(DV.pagamento,R.fat);
-
-  const desc=Object.entries(DV.descartados).map(([k,v])=>v+' '+k.toLowerCase()).join(' · ');
-  document.getElementById('d-resumo').innerHTML=
-   '<table><tbody>'+
-   '<tr><td class="nome">Faturamento (produtos + frete)</td><td class="num">R$ '+fmt(R.fat)+'</td></tr>'+
-   '<tr><td class="nome">Só produtos</td><td class="num">R$ '+fmt(R.produtos)+'</td></tr>'+
-   '<tr><td class="nome">Frete cobrado</td><td class="num">R$ '+fmt(R.frete)+'</td></tr>'+
-   '<tr><td class="nome">Entregas / retiram no balcão</td><td class="num">'+R.entrega_ped+' / '+R.retira_ped+'</td></tr>'+
-   '<tr><td class="nome">Pedidos descartados</td><td class="num">'+R.descartados+'</td></tr>'+
-   '</tbody></table>';
-  document.getElementById('d-stamp').textContent='📄 Fonte: relatório do Anota AI puxado em '+dbr(D.deliv_atualizado)+'/2026 (cobre '+DV.periodo+'). Descartados: '+desc+'.';
-})();
+// (visão delivery agora é AO VIVO — loadDelivery() no script ao vivo)
 
 // ============ CATÁLOGO (estoque, inventário, gerar compra) ============
 const CAT = D.catalogo || {produtos:[],fornecedores:[],gerado_em:''};
@@ -1147,6 +1058,43 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(g('k-hoje-d')) g('k-hoje-d').textContent = 'R$ '+fmt(d.total);
       if(g('k-hoje-d-sub')) g('k-hoje-d-sub').textContent = d.n+' pedido(s) do app hoje';
     }).catch(()=>{}); }
+  function loadDelivery(f){ return fetch('/api/delivery'+qf(f)).then(r=>r.json()).then(d=>{
+    const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const mesNome=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'mês';
+    if(g('d-periodo')) g('d-periodo').textContent=mesNome+' (ao vivo)';
+    if(g('d-kpis')) g('d-kpis').innerHTML=[
+      ['Pedidos (delivery)', fmt0(d.n), d.dias+' dia(s) com pedido'],
+      ['Faturamento delivery','R$ '+fmt(d.fat), 'produtos R$ '+fmt(d.produtos)+' + frete R$ '+fmt(d.frete)],
+      ['Ticket médio','R$ '+fmt(d.ticket), fmt(d.ped_dia)+' pedidos/dia'],
+      ['Ritmo','R$ '+fmt0(d.media_dia)+'/dia', 'no mês atual'],
+    ].map(x=>'<div class="kpi"><div class="lbl">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('');
+    const box=g('d-chart');
+    if(box){
+      const serie=d.por_dia||[];
+      box.innerHTML='<div id="d-tip" style="position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 8px;font-size:.72rem;display:none;white-space:nowrap;z-index:5"></div>';
+      const tip=g('d-tip');
+      if(serie.length){
+        const W=Math.max(box.clientWidth||900,640),H=210,padL=44,padB=22,padT=12;
+        const max=Math.max(...serie.map(x=>x.fat),200);
+        const bw=(W-padL-8)/serie.length; const y=v=>padT+(H-padT-padB)*(1-v/max);
+        let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="Faturamento de delivery por dia">';
+        for(const gl of [0,max/2,max]) s+='<line x1="'+padL+'" y1="'+y(gl)+'" x2="'+W+'" y2="'+y(gl)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(padL-6)+'" y="'+(y(gl)+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+fmt0(gl/1000)+'k</text>';
+        serie.forEach((x,i)=>{ const px=padL+i*bw,h=y(0)-y(x.fat);
+          s+='<rect data-i="'+i+'" x="'+(px+1)+'" y="'+y(x.fat)+'" width="'+Math.max(bw-3,2)+'" height="'+h+'" rx="3" fill="var(--accent)"/>';
+          if(i%3===0) s+='<text x="'+(px+bw/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="var(--muted)">'+dbr(x.data)+'</text>'; });
+        s+='</svg>'; box.insertAdjacentHTML('beforeend',s);
+        box.querySelectorAll('rect').forEach(r=>{ const show=e=>{const x=serie[+r.dataset.i];tip.textContent=dbr(x.data)+' · '+x.n+' ped · R$ '+fmt(x.fat);tip.style.display='block';const bb=box.getBoundingClientRect();tip.style.left=Math.min(e.clientX-bb.left+10,bb.width-150)+'px';tip.style.top=(e.clientY-bb.top-30)+'px';};
+          r.addEventListener('mousemove',show); r.addEventListener('click',show); r.addEventListener('mouseleave',()=>tip.style.display='none'); });
+      } else box.insertAdjacentHTML('beforeend','<p class="note" style="margin:8px 0">Sem pedidos de delivery no sistema neste mês ainda.</p>');
+    }
+    if(g('d-pagamento')){
+      const pag=d.pagamento||[]; const tot=d.fat||1;
+      g('d-pagamento').innerHTML= pag.length? pag.map(x=>{ const w=Math.max(Math.round(x.valor/tot*100),2);
+        return '<div class="bar-row"><span class="lbl2">'+esc(x.forma)+'</span><span class="bar-track"><span class="bar-fill" style="width:'+w+'%"></span></span><span class="bar-val">'+x.n+' ped · R$ '+fmt(x.valor)+'</span></div>';
+      }).join('') : '<p class="note" style="margin:0">Sem pagamentos ainda.</p>';
+    }
+    if(g('d-stamp')) g('d-stamp').textContent='🟢 Ao vivo do sistema · lido em '+(d.gerado_em||'');
+  }).catch(()=>{}); }
 
   /* ---------- O que vence: AO VIVO (baixa grava no sistema) ---------- */
   function loadPagar(f){ return fetch('/api/pagar'+qf(f)).then(r=>r.json()).then(d=>{
@@ -1409,11 +1357,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadPagar(); loadGastosMes(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadPagar(); loadGastosMes(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadPagar(true),loadGastosMes(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadPagar(true),loadGastosMes(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

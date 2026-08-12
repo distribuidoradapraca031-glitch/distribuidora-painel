@@ -389,6 +389,43 @@ def api_hoje_delivery():
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("hoje_deliv", 60, build))
 
+@app.route("/api/delivery")
+@login_required
+def api_delivery():
+    """Delivery do MÊS ATUAL, ao vivo do sistema (vendas do Anota trazidas pelo sync).
+    Não congela mais — sempre reflete o mês corrente."""
+    def build():
+        mes = _hoje()[:7]
+        vendas = gcapi.get_all("/vendas", {"tipo": "produto",
+                                           "data_inicio": mes + "-01",
+                                           "data_fim": _ultimo_dia_mes(_hoje())})
+        deliv = [v for v in vendas if "ANOTA AI" in (v.get("observacoes") or "").upper()]
+        por_dia, formas = {}, {}
+        produtos = frete = 0.0
+        for v in deliv:
+            d = (v.get("data") or "")[:10]
+            tot = _num(v.get("valor_total")); fr = _num(v.get("valor_frete"))
+            frete += fr; produtos += (tot - fr)
+            pd = por_dia.setdefault(d, {"data": d, "fat": 0.0, "n": 0})
+            pd["fat"] += tot; pd["n"] += 1
+            for w in v.get("pagamentos") or []:
+                p = w.get("pagamento", w)
+                nm = p.get("nome_forma_pagamento") or "Outros"
+                fo = formas.setdefault(nm, {"forma": nm, "n": 0, "valor": 0.0})
+                fo["n"] += 1; fo["valor"] += _num(p.get("valor"))
+        n = len(deliv); dias = len(por_dia); fat = round(produtos + frete, 2)
+        serie = [{"data": k, "fat": round(por_dia[k]["fat"], 2), "n": por_dia[k]["n"]}
+                 for k in sorted(por_dia)]
+        pag = sorted(({"forma": f["forma"], "n": f["n"], "valor": round(f["valor"], 2)}
+                      for f in formas.values()), key=lambda x: -x["valor"])
+        return {"mes": mes, "n": n, "fat": fat, "produtos": round(produtos, 2),
+                "frete": round(frete, 2), "ticket": round(fat / n, 2) if n else 0.0,
+                "dias": dias, "media_dia": round(fat / dias, 2) if dias else 0.0,
+                "ped_dia": round(n / dias, 1) if dias else 0.0,
+                "por_dia": serie, "pagamento": pag,
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("delivery", 120, build))
+
 def _proximo_codigo_compra():
     """Código na faixa manual (< 1.000.000), separada dos automáticos (~13 mi)."""
     try:
