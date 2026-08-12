@@ -134,6 +134,9 @@ th.g,td.g{background:var(--accent-soft)}
     <div class="toolbar">
       <div class="toggle" role="tablist" aria-label="Escolher visão">
         <button id="tab-loja" class="on" role="tab" aria-selected="true">🏪 Loja</button>
+        <button id="tab-acomp" role="tab" aria-selected="false">📊 Acompanhamento</button>
+        <button id="tab-estoque" role="tab" aria-selected="false">📦 Estoque</button>
+        <button id="tab-financeiro" role="tab" aria-selected="false">💰 Financeiro</button>
         <button id="tab-deliv" role="tab" aria-selected="false">🛵 Delivery</button>
       </div>
       <button class="btn-refresh" id="btn-refresh" title="Recarrega a versão mais recente do painel">
@@ -148,6 +151,64 @@ th.g,td.g{background:var(--accent-soft)}
 <div id="view-loja">
 <div id="live-wrap"></div>
 <section class="kpis" id="kpis"></section>
+
+<section class="card">
+  <div class="eyebrow">Caixa · saque (troca cartão/PIX → dinheiro)</div>
+  <h2>💸 Registrar saque</h2>
+  <p class="note">Digite quanto o cliente quer <strong>sacar</strong>. Os <strong>20%</strong> entram sozinhos (ele passa o valor + 20% no <strong>cartão</strong> ou manda no <strong>PIX</strong>). No cartão desconta a taxa da maquininha; no <strong>PIX não tem taxa</strong> (lucro cheio de 20%). Ao registrar, eu lanço a <strong>entrada</strong> (na conta e nos relatórios, com imposto) e a <strong>sangria</strong> do dinheiro (sai do caixa, então não falta no fechamento).</p>
+  <div class="fbox">
+    <div class="fform">
+      <label>Cliente quer sacar (R$)<input type="number" step="1" inputmode="numeric" id="sq-valor" placeholder="0"></label>
+      <label>Passou no<select id="sq-tipo"><option value="debito">Débito</option><option value="credito">Crédito</option><option value="pix">PIX</option></select></label>
+      <button id="sq-registrar">Registrar saque</button>
+    </div>
+    <div class="fres" id="sq-calc" style="color:var(--muted);font-weight:400"></div>
+    <div class="fres" id="sq-msg"></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="eyebrow">Caixa · últimos fechamentos</div>
+  <h2>Fechamentos de caixa</h2>
+  <p class="note">Esperado = troco inicial + vendas em dinheiro − saídas em dinheiro. <strong>Contado</strong> é o que você conferiu na gaveta no fim do dia. Lembrete: digitar o CONTADO no PDV, não o valor da tela.</p>
+  <div class="fbox">
+    <strong style="font-size:.9rem">✍️ Anotar o fechamento de hoje</strong>
+    <p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada você contou que eu somo sozinho. Fica salvo só neste navegador; me manda no chat que eu gravo no sistema.</p>
+    <div class="fform">
+      <label>Dia<input type="date" id="f-data"></label>
+      <label>Abertura / troco (R$)<input type="number" step="0.01" inputmode="decimal" id="f-abertura" placeholder="0,00"></label>
+      <label>Contado na gaveta (R$)<input type="number" step="0.01" inputmode="decimal" id="f-contado" placeholder="0,00"></label>
+      <label>Esperado (auto)<input type="text" id="f-esperado" readonly placeholder="—"></label>
+    </div>
+    <div id="fech-live" style="margin-top:10px"></div>
+    <details id="gaveta-det" style="margin-top:10px">
+      <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar a gaveta (cédulas e moedas)</summary>
+      <div style="margin-top:10px">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Cédulas</div>
+        <div id="gaveta-notas" class="dengrid"></div>
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 6px">Moedas</div>
+        <div id="gaveta-moedas" class="dengrid"></div>
+        <div class="fres" id="gaveta-tot" style="margin-top:10px"></div>
+      </div>
+    </details>
+    <div class="fform" style="margin-top:10px">
+      <button id="f-salvar">Salvar contagem</button>
+      <button class="ghost" id="f-limpar">Limpar</button>
+    </div>
+    <div class="fres" id="f-resultado"></div>
+  </div>
+  <div class="tblwrap" id="tbl-fech"></div>
+</section>
+</div><!-- /view-loja -->
+
+<!-- ============ ACOMPANHAMENTO DE LOJA ============ -->
+<div id="view-acomp" hidden>
+<section class="card">
+  <div class="eyebrow">Vendas · mês atual (balcão)</div>
+  <h2>Faturamento por dia — <span id="fatdia-mes"></span></h2>
+  <p class="note">Dia a dia do mês. Linha tracejada = ponto de equilíbrio (R$ 1.306/dia sem retirada de sócio). Toque nas barras para ver o valor. Quando eu atualizar o painel, entra o dia de hoje.</p>
+  <div id="chart"><div id="tip"></div></div>
+</section>
 
 <section class="card">
   <div class="eyebrow">Régua · desde a abertura</div>
@@ -173,13 +234,24 @@ th.g,td.g{background:var(--accent-soft)}
   <div id="saque-resumo-box" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"></div>
 </section>
 
+<div class="grid2">
 <section class="card">
-  <div class="eyebrow">Vendas · mês atual (balcão)</div>
-  <h2>Faturamento por dia — <span id="fatdia-mes"></span></h2>
-  <p class="note">Dia a dia do mês. Linha tracejada = ponto de equilíbrio (R$ 1.306/dia sem retirada de sócio). Toque nas barras para ver o valor. Quando eu atualizar o painel, entra o dia de hoje.</p>
-  <div id="chart"><div id="tip"></div></div>
+  <div class="eyebrow">Vendas · destaque</div>
+  <h2>Top 10 mais vendidos (30 dias)</h2>
+  <div class="tblwrap" id="tbl-top"></div>
 </section>
 
+<section class="card">
+  <div class="eyebrow">Vendas · atenção</div>
+  <h2>Parados: com estoque e sem venda há 7 dias</h2>
+  <p class="note">Capital preso = estoque × custo. Candidatos a promoção ou a não recomprar.</p>
+  <div class="tblwrap" id="tbl-parados"></div>
+</section>
+</div>
+</div><!-- /view-acomp -->
+
+<!-- ============ ESTOQUE ============ -->
+<div id="view-estoque" hidden>
 <section class="card">
   <div class="eyebrow">Compras · para segunda/terça</div>
   <h2>Sugestão de compra (curva ABC)</h2>
@@ -201,21 +273,6 @@ th.g,td.g{background:var(--accent-soft)}
       <button id="iv-salvar">Salvar no sistema</button>
     </div>
     <div class="fres" id="iv-msg"></div>
-  </div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Caixa · saque (troca cartão/PIX → dinheiro)</div>
-  <h2>💸 Registrar saque</h2>
-  <p class="note">Digite quanto o cliente quer <strong>sacar</strong>. Os <strong>20%</strong> entram sozinhos (ele passa o valor + 20% no <strong>cartão</strong> ou manda no <strong>PIX</strong>). No cartão desconta a taxa da maquininha; no <strong>PIX não tem taxa</strong> (lucro cheio de 20%). Ao registrar, eu lanço a <strong>entrada</strong> (na conta e nos relatórios, com imposto) e a <strong>sangria</strong> do dinheiro (sai do caixa, então não falta no fechamento).</p>
-  <div class="fbox">
-    <div class="fform">
-      <label>Cliente quer sacar (R$)<input type="number" step="1" inputmode="numeric" id="sq-valor" placeholder="0"></label>
-      <label>Passou no<select id="sq-tipo"><option value="debito">Débito</option><option value="credito">Crédito</option><option value="pix">PIX</option></select></label>
-      <button id="sq-registrar">Registrar saque</button>
-    </div>
-    <div class="fres" id="sq-calc" style="color:var(--muted);font-weight:400"></div>
-    <div class="fres" id="sq-msg"></div>
   </div>
 </section>
 
@@ -274,62 +331,10 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <datalist id="dl-produtos"></datalist>
+</div><!-- /view-estoque -->
 
-<div class="grid2">
-<section class="card">
-  <div class="eyebrow">Vendas · destaque</div>
-  <h2>Top 10 mais vendidos (30 dias)</h2>
-  <div class="tblwrap" id="tbl-top"></div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Vendas · atenção</div>
-  <h2>Parados: com estoque e sem venda há 7 dias</h2>
-  <p class="note">Capital preso = estoque × custo. Candidatos a promoção ou a não recomprar.</p>
-  <div class="tblwrap" id="tbl-parados"></div>
-</section>
-</div>
-
-<section class="card">
-  <div class="eyebrow">Caixa · últimos fechamentos</div>
-  <h2>Fechamentos de caixa</h2>
-  <p class="note">Esperado = troco inicial + vendas em dinheiro − saídas em dinheiro. <strong>Contado</strong> é o que você conferiu na gaveta no fim do dia. Lembrete: digitar o CONTADO no PDV, não o valor da tela.</p>
-  <div class="fbox">
-    <strong style="font-size:.9rem">✍️ Anotar o fechamento de hoje</strong>
-    <p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada você contou que eu somo sozinho. Fica salvo só neste navegador; me manda no chat que eu gravo no sistema.</p>
-    <div class="fform">
-      <label>Dia<input type="date" id="f-data"></label>
-      <label>Abertura / troco (R$)<input type="number" step="0.01" inputmode="decimal" id="f-abertura" placeholder="0,00"></label>
-      <label>Contado na gaveta (R$)<input type="number" step="0.01" inputmode="decimal" id="f-contado" placeholder="0,00"></label>
-      <label>Esperado (auto)<input type="text" id="f-esperado" readonly placeholder="—"></label>
-    </div>
-    <div id="fech-live" style="margin-top:10px"></div>
-    <details id="gaveta-det" style="margin-top:10px">
-      <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar a gaveta (cédulas e moedas)</summary>
-      <div style="margin-top:10px">
-        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Cédulas</div>
-        <div id="gaveta-notas" class="dengrid"></div>
-        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 6px">Moedas</div>
-        <div id="gaveta-moedas" class="dengrid"></div>
-        <div class="fres" id="gaveta-tot" style="margin-top:10px"></div>
-      </div>
-    </details>
-    <div class="fform" style="margin-top:10px">
-      <button id="f-salvar">Salvar contagem</button>
-      <button class="ghost" id="f-limpar">Limpar</button>
-    </div>
-    <div class="fres" id="f-resultado"></div>
-  </div>
-  <div class="tblwrap" id="tbl-fech"></div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Entradas · aproximado</div>
-  <h2>Quanto deve ter entrado — conta e dinheiro</h2>
-  <p class="note">Só os números do que deveria ter entrado: <strong>PIX</strong> e <strong>cartão</strong> caem na conta (líquido já desconta ~0,68% do cartão; crédito pode cair D+1); <strong>dinheiro</strong> é o que entrou na gaveta. Confira com o banco e a contagem da gaveta.</p>
-  <div class="tblwrap" id="tbl-conta"></div>
-</section>
-
+<!-- ============ FINANCEIRO ============ -->
+<div id="view-financeiro" hidden>
 <section class="card">
   <div class="eyebrow">Contas a pagar · a pagar do mês</div>
   <h2>Provisões e atrasados — o que falta pagar</h2>
@@ -369,7 +374,17 @@ th.g,td.g{background:var(--accent-soft)}
   <div id="baixa-out-box"></div>
   <span class="stamp" id="dda-stamp"></span>
   <p class="note">💰 Lembrete do cofre: primeiro depósito <strong>R$ 2.000 na segunda 27/07</strong>, depois R$ 1.700 toda segunda.</p>
+</section>
 
+<section class="card">
+  <div class="eyebrow">Entradas · aproximado</div>
+  <h2>Quanto deve ter entrado — conta e dinheiro</h2>
+  <p class="note">Só os números do que deveria ter entrado: <strong>PIX</strong> e <strong>cartão</strong> caem na conta (líquido já desconta ~0,68% do cartão; crédito pode cair D+1); <strong>dinheiro</strong> é o que entrou na gaveta. Confira com o banco e a contagem da gaveta.</p>
+  <div class="tblwrap" id="tbl-conta"></div>
+</section>
+
+<section class="card">
+  <div class="eyebrow">Financeiro · lançar gasto</div>
   <div class="fbox" style="margin-top:14px">
     <strong style="font-size:.9rem">➕ Lançar um gasto na mão</strong>
     <p class="note" style="margin-top:2px">Pra despesa do dia a dia (lanche, almoço, papelaria...). Escolha a categoria, o valor e <strong>de onde saiu o dinheiro</strong> (mesma regra da compra: Caixa = gaveta · Dinheiro = reserva · PIX/Cartão = conta · Boleto = a pagar). Vai juntando e me manda o resumo que eu lanço no GestãoClick.</p>
@@ -398,7 +413,7 @@ th.g,td.g{background:var(--accent-soft)}
     <div id="ex-out-box"></div>
   </div>
 </section>
-</div><!-- /view-loja -->
+</div><!-- /view-financeiro -->
 
 <!-- ============ VISÃO DELIVERY (Anota AI) ============ -->
 <div id="view-delivery" hidden>
@@ -444,7 +459,7 @@ th.g,td.g{background:var(--accent-soft)}
 </div><!-- /view-delivery -->
 
 <footer>
-Use o botão <strong>🏪 Loja / 🛵 Delivery</strong> no topo pra trocar de visão. <strong>Loja</strong> = balcão (GestãoClick); <strong>Delivery</strong> = relatório do Anota AI. Para atualizar os números: me peça "atualiza o painel" — ou mande o fechamento do dia / relatório do Anota / print novo do DDA, que eu regenero. Rotinas ativas: sync do delivery (a cada 30 min, neste Mac) · entrada de notas (2ª: custos atualizados na nuvem às 10h + painel preparado neste Mac às 11h; eu publico) · cofre (2ª).
+Use os botões no topo (<strong>Loja · Acompanhamento · Estoque · Financeiro · Delivery</strong>) pra trocar de visão. <strong>Loja</strong> = balcão (GestãoClick); <strong>Delivery</strong> = relatório do Anota AI. Para atualizar os números: me peça "atualiza o painel" — ou mande o fechamento do dia / relatório do Anota / print novo do DDA, que eu regenero. Rotinas ativas: sync do delivery (a cada 30 min, neste Mac) · entrada de notas (2ª: custos atualizados na nuvem às 10h + painel preparado neste Mac às 11h; eu publico) · cofre (2ª).
 </footer>
 </div>
 
@@ -1059,17 +1074,20 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
 // ============ TOGGLE LOJA/DELIVERY + BOTÃO ATUALIZAR ============
 (function(){
-  const vLoja=document.getElementById('view-loja'), vDeliv=document.getElementById('view-delivery');
-  const tLoja=document.getElementById('tab-loja'), tDeliv=document.getElementById('tab-deliv');
-  function sel(d){
-    vDeliv.hidden=!d; vLoja.hidden=d;
-    tDeliv.classList.toggle('on',d); tLoja.classList.toggle('on',!d);
-    tDeliv.setAttribute('aria-selected',d); tLoja.setAttribute('aria-selected',!d);
-    try{history.replaceState(null,'',d?'#delivery':'#loja');}catch(e){}
+  const VIEWS={loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',financeiro:'view-financeiro',delivery:'view-delivery'};
+  const TABS={loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',financeiro:'tab-financeiro',delivery:'tab-deliv'};
+  function sel(which){
+    if(!VIEWS[which]) which='loja';
+    for(const k in VIEWS){
+      const v=document.getElementById(VIEWS[k]), t=document.getElementById(TABS[k]);
+      if(v) v.hidden=(k!==which);
+      if(t){ t.classList.toggle('on',k===which); t.setAttribute('aria-selected',k===which); }
+    }
+    try{history.replaceState(null,'','#'+which);}catch(e){}
+    try{window.scrollTo(0,0);}catch(e){}
   }
-  tLoja.addEventListener('click',()=>sel(false));
-  tDeliv.addEventListener('click',()=>sel(true));
-  if(location.hash==='#delivery') sel(true);
+  for(const k in TABS){ const t=document.getElementById(TABS[k]); if(t) t.addEventListener('click',()=>sel(k)); }
+  const _h=(location.hash||'').replace('#',''); if(VIEWS[_h]) sel(_h);
 
   const btn=document.getElementById('btn-refresh');
   btn.addEventListener('click',()=>{
