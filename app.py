@@ -236,8 +236,8 @@ def _ultimo_dia_mes(d):
     return f"{y:04d}-{m:02d}-{calendar.monthrange(y, m)[1]:02d}"
 
 # ---- SAQUE (troca cartão -> dinheiro, vira venda + sangria) ----
-SAQUE_FEE = {"credito": 0.0314, "debito": 0.0085}   # taxa da maquininha
-SAQUE_FORMA = {"credito": "6055920", "debito": "6055921"}
+SAQUE_FEE = {"credito": 0.0314, "debito": 0.0085, "pix": 0.0}   # taxa da maquininha (PIX = sem taxa)
+SAQUE_FORMA = {"credito": "6055920", "debito": "6055921", "pix": "6055931"}
 SAQUE_CLIENTE = "55346041"          # cliente DELIVERY (consumidor)
 SAQUE_SITUACAO = "8468151"          # Concretizada
 SAQUE_SANGRIA_PLANO = "33015669"    # provisório (Outros) — dono cria plano "Saque" depois
