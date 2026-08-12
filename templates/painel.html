@@ -1064,7 +1064,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     if(g('d-periodo')) g('d-periodo').textContent=mesNome+' (ao vivo)';
     if(g('d-kpis')) g('d-kpis').innerHTML=[
       ['Pedidos (delivery)', fmt0(d.n), d.dias+' dia(s) com pedido'],
-      ['Faturamento delivery','R$ '+fmt(d.fat), 'produtos R$ '+fmt(d.produtos)+' + frete R$ '+fmt(d.frete)],
+      ['Faturamento delivery','R$ '+fmt(d.fat), 'produtos R$ '+fmt(d.produtos)+' + taxa R$ '+fmt(d.frete)],
+      ['Taxa de entrega (recebida)','R$ '+fmt(d.frete), d.n+' entregas · média R$ '+fmt(d.n?d.frete/d.n:0)+'/pedido'],
       ['Ticket médio','R$ '+fmt(d.ticket), fmt(d.ped_dia)+' pedidos/dia'],
       ['Ritmo','R$ '+fmt0(d.media_dia)+'/dia', 'no mês atual'],
     ].map(x=>'<div class="kpi"><div class="lbl">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('');
