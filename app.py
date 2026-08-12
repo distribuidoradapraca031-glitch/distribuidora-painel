@@ -554,10 +554,18 @@ def _abertura_caixa(data):
     return None
 
 def _fech_calc(data):
-    """Dinheiro que ENTROU (vendas em dinheiro) e SAÍDAS em dinheiro do caixa no dia."""
-    vendas = gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": data, "data_fim": data})
+    """Dinheiro que ENTROU (vendas em dinheiro, balcão + delivery) e SAÍDAS em
+    dinheiro do caixa no dia. O delivery em dinheiro entra na MESMA gaveta (o
+    entregador traz), então conta pro fechamento."""
     din = 0.0
-    for v in vendas:
+    for v in gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": data, "data_fim": data}):
+        for w in v.get("pagamentos") or []:
+            p = w.get("pagamento", w)
+            if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
+                din += _num(p.get("valor"))
+    for v in gcapi.get_all("/vendas", {"tipo": "produto", "data_inicio": data, "data_fim": data}):
+        if "ANOTA AI" not in (v.get("observacoes") or "").upper():
+            continue  # só delivery (não saque, que já é sangria)
         for w in v.get("pagamentos") or []:
             p = w.get("pagamento", w)
             if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
