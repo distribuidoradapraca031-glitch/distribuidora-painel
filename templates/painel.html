@@ -1343,13 +1343,23 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       else { if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui gravar')+'</span>'; }
     }).catch(()=>{ if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; } if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
   };
-  function loadFechHoje(f){ return fetch('/api/fechamento-hoje'+qf(f)).then(r=>r.json()).then(d=>{
-    FECH_ESP=d; const e=g('f-esperado'); if(e) e.value='R$ '+fmt(d.esperado);
-    const ab=g('f-abertura');
-    if(ab && d.abertura_gc){ ab.value=(+d.troco).toFixed(2); ab.readOnly=true; ab.title='Puxado do GestãoClick (Abertura de caixa de hoje)'; ab.style.background='var(--surface)'; }
-    renderFechLive();
-  }).catch(()=>{}); }
+  function loadFechHoje(f){
+    const dv=(g('f-data')&&g('f-data').value)||'';
+    const tv=(g('f-abertura')&&g('f-abertura').value)||'';
+    const params=[]; if(f) params.push('fresh=1'); if(dv) params.push('data='+dv); if(tv) params.push('troco='+tv);
+    return fetch('/api/fechamento-hoje'+(params.length?'?'+params.join('&'):'')).then(r=>r.json()).then(d=>{
+      FECH_ESP=d; const e=g('f-esperado'); if(e) e.value='R$ '+fmt(d.esperado);
+      const ab=g('f-abertura');
+      if(ab){
+        if(d.abertura_gc){ ab.value=(+d.troco).toFixed(2); ab.readOnly=true; ab.title='Puxado do GestãoClick (Abertura de caixa do dia '+(d.data||'')+')'; ab.style.background='var(--surface)'; }
+        else { ab.readOnly=false; ab.title='Sem abertura lançada no sistema nesse dia — digite o troco que uso pra calcular.'; ab.style.background=''; }
+      }
+      renderFechLive();
+    }).catch(()=>{});
+  }
   (function(){ const c=g('f-contado'); if(c) c.addEventListener('input',renderFechLive);
+    const fd=g('f-data'); if(fd) fd.addEventListener('change',()=>setTimeout(()=>loadFechHoje(true),0));
+    const fab=g('f-abertura'); if(fab) fab.addEventListener('input',()=>loadFechHoje(true));
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */

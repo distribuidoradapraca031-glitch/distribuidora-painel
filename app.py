@@ -568,6 +568,8 @@ def _fech_calc(data):
             continue
         if (p.get("data_liquidacao") or "")[:10] != data:
             continue
+        if str(p.get("plano_contas_id")) == AJUSTE_CAIXA_PLANO:
+            continue  # o próprio ajuste de fechamento NÃO é saída da gaveta (evita loop/erro)
         if str(p.get("conta_bancaria_id")) == "696747" or str(p.get("forma_pagamento_id")) == "6055919":
             saidas += _num(p.get("valor_total")) or _num(p.get("valor"))
     return round(din, 2), round(saidas, 2)
@@ -575,16 +577,18 @@ def _fech_calc(data):
 @app.route("/api/fechamento-hoje")
 @login_required
 def api_fechamento_hoje():
-    """Quanto DEVERIA ter na gaveta hoje = troco + dinheiro que entrou − saídas em dinheiro."""
+    """Quanto DEVERIA ter na gaveta no DIA escolhido (?data=AAAA-MM-DD, default hoje)
+    = abertura + dinheiro que entrou − saídas em dinheiro, tudo daquele dia."""
+    data = (request.args.get("data") or _hoje())[:10]
     def build():
-        ab = _abertura_caixa(_hoje())               # troco real lançado no GC
+        ab = _abertura_caixa(data)                  # abertura real lançada no GC no dia
         troco = ab if ab is not None else (_num(request.args.get("troco")) or 200.0)
-        din, saidas = _fech_calc(_hoje())
-        return {"troco": round(troco, 2), "abertura_gc": ab is not None,
+        din, saidas = _fech_calc(data)              # vendas em dinheiro + saídas DO DIA
+        return {"data": data, "troco": round(troco, 2), "abertura_gc": ab is not None,
                 "dinheiro": din, "saidas": saidas,
                 "esperado": round(troco + din - saidas, 2),
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
-    return jsonify(cached("fech_hoje", 45, build))
+    return jsonify(cached("fech_" + data, 45, build))
 
 @app.route("/api/fechamento", methods=["POST"])
 @login_required
