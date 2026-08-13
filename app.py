@@ -106,7 +106,7 @@ def api_pagar():
         # provisão ou recorrente vai pro bloco de cima, então sai daqui.
         abertos = [p for p in pgs if str(p.get("liquidado")) != "1"
                    and not _categoria_conta(p)
-                   and not (p.get("descricao") or "").startswith(RP_TAG)]
+                   and not _eh_interno(p.get("descricao"))]
         itens = [{
             "id": p.get("id"),
             "desc": p.get("descricao") or p.get("nome_plano_conta") or "—",
@@ -160,7 +160,7 @@ def api_ultima_atualizacao():
 RESERVA_CONTA = os.environ.get("RESERVA_CONTA_ID", "696747")  # trocar p/ conta RESERVA quando existir
 POTES = {
     "Caixa":    {"conta": "696747", "forma": "6055919"},        # gaveta + Dinheiro
-    "Dinheiro": {"conta": RESERVA_CONTA, "forma": "6055919"},   # reserva (notas altas) + Dinheiro
+    "Dinheiro": {"conta": "681760", "forma": "6055931"},        # RESERVA (sobras) — FORA da gaveta (não bate no fechamento); saldo controlado à parte
     "PIX":      {"conta": "681760", "forma": "6055931"},        # conta bancária + PIX
 }
 CATS = {
@@ -170,6 +170,9 @@ CATS = {
     "Manutenção / conserto": "33015656", "Água / luz / internet": "33015649",
     "Retirada do sócio (Victor)": "33015638", "Retirada do sócio (Igor)": "33015638",
     "Pagamento Biel": "33015664", "Pagamento PH Motoca": "33015664",
+    "PH Motoca / motoboy": "33015664",
+    "Pró-labore Igor": "33015660", "Funcionário Gabriel (FDS)": "33015660",
+    "Sacolas / gelo / copos": "33015662",
     "Outros": "33015669",
 }
 # categorias que dividem o mesmo plano (Victor/Igor, Biel/PH) — separadas pela descrição no resumo
@@ -184,11 +187,38 @@ BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
 # os blocos normais (é filtrado) e aparece só no quadro "Recurso próprio".
 RP_TAG = "[RP]"
 
-def _rp_nota(desc):
+# ---- DINHEIRO RESERVA (stash das sobras de caixa) ----
+# saldo = depósitos [RES+] − saídas [RES-]. Registros liquidado=0 (não mexem em conta
+# nem no fechamento); só o painel lê. Pagar com fonte "Dinheiro" (reserva) já sai FORA
+# da gaveta (conta banco) e cria um [RES-] pra descontar do saldo.
+RES_DEP_TAG = "[RES+]"
+RES_OUT_TAG = "[RES-]"
+
+def _sem_tag(desc, tag):
     d = desc or ""
-    if d.startswith(RP_TAG):
-        d = d[len(RP_TAG):].strip().lstrip("—-").strip()
+    if d.startswith(tag):
+        d = d[len(tag):].strip().lstrip("—-").strip()
     return d
+
+def _rp_nota(desc):
+    return _sem_tag(desc, RP_TAG)
+
+def _eh_interno(desc):
+    """Registro de controle do painel (recurso próprio / reserva) — some dos blocos normais."""
+    d = (desc or "")
+    return d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
+
+def _reserva_saida(valor, desc, data):
+    """Desconta da reserva: grava um [RES-] (só ledger do painel) quando um pagamento
+    foi feito com a fonte Dinheiro reserva."""
+    try:
+        gcapi.post("/pagamentos", {
+            "descricao": f"{RES_OUT_TAG} {desc}"[:180], "valor": f"{_num(valor):.2f}",
+            "data_vencimento": data, "data_competencia": data, "liquidado": "0",
+            "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+        _invalida("reserva")
+    except Exception:
+        pass
 
 # ---- PREVISÕES (topo do contas a pagar): lista fixa de categorias recorrentes ----
 # cada item que o dono adiciona vira um pagamento em aberto com descrição
@@ -337,7 +367,9 @@ def api_baixa():
     }
     try:
         gcapi.put(f"/pagamentos/{pid}", payload)
-        _invalida("pagar", "resumo", "previsoes", "gastos_mes")
+        if forma == "Dinheiro":
+            _reserva_saida(payload["valor"], payload["descricao"] or "Conta", _hoje())
+        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -382,7 +414,9 @@ def api_gasto():
     try:
         r = gcapi.post("/pagamentos", payload)
         d = r.get("data") or {}
-        _invalida("pagar", "resumo")
+        if forma == "Dinheiro":
+            _reserva_saida(valor, desc, data)
+        _invalida("pagar", "resumo", "reserva")
         return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -548,7 +582,9 @@ def api_compra():
         if r.get("status") != "success":
             return jsonify({"ok": False, "erro": str(r.get("data") or r)[:200]}), 502
         d = r.get("data") or {}
-        _invalida("resumo", "pagar", "catalogo")
+        if forma == "Dinheiro":
+            _reserva_saida(total, f"Compra {d.get('codigo') or ''}".strip(), data)
+        _invalida("resumo", "pagar", "catalogo", "reserva")
         return jsonify({"ok": True, "id": d.get("id"), "codigo": d.get("codigo"),
                         "total": round(total, 2), "itens": len(produtos)})
     except Exception as e:
@@ -690,6 +726,7 @@ def api_fechamento():
 
 # nomes fixos que o dono quer ver SEMPRE no topo (mesmo zerados), na ordem
 RESUMO_FIXOS = ["PH Motoca", "Biel", "Retirada Victor", "Retirada Igor",
+                "Pró-labore Igor", "Funcionário Gabriel (FDS)", "Sacolas / gelo / copos",
                 "Lanches", "Gastos adicionais"]
 
 def _eh_mercadoria(desc):
@@ -855,8 +892,8 @@ def api_previsoes():
         for p in pgs:
             if str(p.get("liquidado")) == "1":
                 continue  # pago já saiu do topo (vai pros pagos do mês)
-            if (p.get("descricao") or "").startswith(RP_TAG):
-                continue  # recurso próprio não é conta a pagar da loja
+            if _eh_interno(p.get("descricao")):
+                continue  # recurso próprio / reserva não são conta a pagar da loja
             cat = _categoria_conta(p)
             if not cat:
                 continue
@@ -919,7 +956,7 @@ def api_excluir_conta():
         return jsonify({"ok": False, "erro": "sem id"}), 400
     try:
         gcapi.delete(f"/pagamentos/{pid}")
-        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio")
+        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -969,6 +1006,51 @@ def api_recurso_proprio():
         return {"itens": itens, "total": round(sum(i["valor"] for i in itens), 2),
                 "n": len(itens), "mes": mes, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("recurso_proprio", 60, build))
+
+@app.route("/api/reserva", methods=["GET", "POST"])
+@login_required
+def api_reserva():
+    """GET: saldo do Dinheiro Reserva (sobras de caixa) = depósitos − saídas + movimentos.
+    POST: guarda um valor na reserva (depósito [RES+]). Tudo só no painel (liquidado=0)."""
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        valor = _num(body.get("valor"))
+        data = (body.get("data") or _hoje())[:10]
+        nota = (body.get("descricao") or "").strip()
+        if valor <= 0:
+            return jsonify({"ok": False, "erro": "valor inválido"}), 400
+        desc = f"{RES_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
+        try:
+            gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
+                "data_vencimento": data, "data_competencia": data, "liquidado": "0",
+                "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+            _invalida("reserva", "pagar", "previsoes")
+            return jsonify({"ok": True})
+        except Exception as e:
+            return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
+        dep = out = 0.0
+        movs = []
+        for p in pgs:
+            desc = (p.get("descricao") or "")
+            v = _num(p.get("valor_total")) or _num(p.get("valor"))
+            data = (p.get("data_competencia") or p.get("data_vencimento") or "")[:10]
+            if desc.startswith(RES_DEP_TAG):
+                dep += v
+                movs.append({"id": p.get("id"), "data": data, "tipo": "guardei",
+                             "desc": _sem_tag(desc, RES_DEP_TAG) or "guardei", "valor": v})
+            elif desc.startswith(RES_OUT_TAG):
+                out += v
+                movs.append({"id": p.get("id"), "data": data, "tipo": "gastei",
+                             "desc": _sem_tag(desc, RES_OUT_TAG) or "gasto", "valor": -v})
+        movs.sort(key=lambda x: x["data"] or "", reverse=True)
+        return {"saldo": round(dep - out, 2), "guardado": round(dep, 2),
+                "gasto": round(out, 2), "movimentos": movs[:40],
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("reserva", 45, build))
 
 
 if __name__ == "__main__":

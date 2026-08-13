@@ -152,6 +152,24 @@ th.g,td.g{background:var(--accent-soft)}
 <div id="live-wrap"></div>
 <section class="kpis" id="kpis"></section>
 
+<section class="card" id="card-reserva">
+  <div class="eyebrow">Caixa · dinheiro reserva</div>
+  <h2>💰 Dinheiro reserva</h2>
+  <div id="reserva-saldo-box" style="margin:8px 0"></div>
+  <p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Toda vez que você paga uma compra, gasto ou conta escolhendo a fonte <strong>Dinheiro reserva</strong>, eu <strong>desconto daqui sozinho</strong>.</p>
+  <div class="fbox" style="margin-top:8px">
+    <strong style="font-size:.9rem">➕ Guardar na reserva (sobra do dia)</strong>
+    <div class="fform" style="margin-top:6px">
+      <label>Guardei (R$)<input type="number" step="0.01" inputmode="decimal" id="res-valor" placeholder="0,00" style="width:120px"></label>
+      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="res-desc" placeholder="ex.: sobra do dia" style="width:100%"></label>
+      <label>Data<input type="date" id="res-data"></label>
+      <button id="res-add">Guardar</button>
+    </div>
+    <div class="fres" id="res-msg"></div>
+  </div>
+  <div class="tblwrap" id="tbl-reserva" style="margin-top:10px"></div>
+</section>
+
 <section class="card">
   <div class="eyebrow">Caixa · saque (troca cartão/PIX → dinheiro)</div>
   <h2>💸 Registrar saque</h2>
@@ -300,7 +318,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Data<input type="date" id="cp-data"></label>
       <label>Pagamento
         <select id="cp-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro (reserva)</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
+          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
         </select>
       </label>
     </div>
@@ -426,18 +444,25 @@ th.g,td.g{background:var(--accent-soft)}
     <div class="fform">
       <label style="flex:1 1 180px">Categoria
         <select id="ex-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
-          <option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
-          <option>Combustível</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
-          <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Água / luz / internet</option>
-          <option>Retirada do sócio (Victor)</option><option>Retirada do sócio (Igor)</option>
-          <option>Pagamento Biel</option><option>Pagamento PH Motoca</option><option>Outros</option>
+          <optgroup label="Toda semana (você paga e lança)">
+            <option>PH Motoca / motoboy</option><option>Pagamento Biel</option>
+            <option>Retirada do sócio (Victor)</option><option>Retirada do sócio (Igor)</option>
+            <option>Pró-labore Igor</option><option>Funcionário Gabriel (FDS)</option>
+            <option>Sacolas / gelo / copos</option>
+          </optgroup>
+          <optgroup label="Dia a dia">
+            <option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
+            <option>Combustível</option><option>Limpeza / higiene</option>
+            <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Água / luz / internet</option>
+            <option>Outros</option>
+          </optgroup>
         </select>
       </label>
       <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="ex-desc" placeholder="ex.: pão + frios" style="width:100%"></label>
       <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="ex-valor" placeholder="0,00" style="width:110px"></label>
       <label>Pagamento
         <select id="ex-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro (reserva)</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
+          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
         </select>
       </label>
       <label>Data<input type="date" id="ex-data"></label>
@@ -894,7 +919,7 @@ CAT.produtos.forEach(p=>{ prodByNome[p.nome]=p; });
   if(dl) dl.innerHTML = CAT.produtos.map(p=>'<option value="'+String(p.nome).replace(/"/g,'&quot;')+'" label="est '+fmt0(p.estoque)+(p.fardo?(' · fardo '+p.fardo):'')+'">').join('');
 })();
 const unNome = u=>({UN:'un',CX:'caixa(s)',FD:'fardo(s)',DZ:'dúzia(s)'}[u]||u);
-const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai da reserva de dinheiro (notas altas/sobras)',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)'}[f]||('pagamento '+f));
+const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)'}[f]||('pagamento '+f));
 function copyBtn(boxId, txt){
   const box=document.getElementById(boxId);
   const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -1066,6 +1091,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         kpiCard('Estoque negativo','k-neg','')+
         kpiCard('A pagar em aberto','k-pagar','')+
         kpiCard('Faturamento total hoje','k-hoje-t','k-hoje-t-sub')+
+        kpiCard('Dinheiro reserva','k-reserva','')+
         kpiCard('Vendas hoje (balcão)','k-hoje','k-hoje-sub')+
         kpiCard('Vendas hoje (delivery)','k-hoje-d','k-hoje-d-sub')+
       '</section>';
@@ -1328,8 +1354,47 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
+  /* ---------- Dinheiro reserva (sobras de caixa) ---------- */
+  function loadReserva(f){ return fetch('/api/reserva'+qf(f)).then(r=>r.json()).then(d=>{
+    const sb=g('reserva-saldo-box');
+    if(sb) sb.innerHTML='<div style="font-size:1.9rem;font-weight:800;line-height:1.05">R$ '+fmt(d.saldo)+'</div>'+
+      '<div class="note" style="margin:3px 0 0">guardado R$ '+fmt(d.guardado)+' · já usado da reserva R$ '+fmt(d.gasto)+'</div>';
+    if(g('k-reserva')) g('k-reserva').textContent='R$ '+fmt(d.saldo);
+    const box=g('tbl-reserva'); if(!box) return;
+    if(!d.movimentos||!d.movimentos.length){ box.innerHTML='<p class="note" style="margin:0">Sem movimento na reserva ainda.</p>'; return; }
+    box.innerHTML='<table><thead><tr><th>Data</th><th>Movimento</th><th class="num">Valor</th><th></th></tr></thead><tbody>'+
+      d.movimentos.map(m=>{const pos=m.valor>=0;return '<tr><td>'+dbr(m.data)+'</td>'+
+        '<td class="nome">'+(pos?'⬆️ guardei':'⬇️ paguei')+(m.desc&&m.desc!=='guardei'?' · '+esc(m.desc):'')+'</td>'+
+        '<td class="num" style="color:'+(pos?'var(--good)':'var(--crit)')+'">'+(pos?'+':'−')+'R$ '+fmt(Math.abs(m.valor))+'</td>'+
+        '<td class="num"><button class="res-del" data-id="'+m.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button></td></tr>';}).join('')+
+      '</tbody></table>';
+    box.querySelectorAll('.res-del').forEach(b=>b.addEventListener('click',()=>{
+      if(!confirm('Excluir esse movimento da reserva?')) return;
+      b.disabled=true; b.textContent='…';
+      post('/api/excluir-conta',{id:b.dataset.id}).then(res=>{
+        if(res.ok){ toast('🗑️ Movimento excluído.'); loadReserva(true); }
+        else{ b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui')); }
+      }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+    }));
+  }).catch(()=>{}); }
+  (function(){
+    const btn=g('res-add'); if(!btn) return;
+    const rd=g('res-data'); if(rd&&!rd.value) rd.value=hoje;
+    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
+    nb.addEventListener('click',()=>{
+      const msg=g('res-msg'), v=parseFloat(g('res-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
+      nb.disabled=true;
+      post('/api/reserva',{valor:v, descricao:g('res-desc').value, data:g('res-data').value||hoje}).then(res=>{
+        nb.disabled=false;
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na reserva.</span>'; g('res-valor').value=''; g('res-desc').value=''; loadReserva(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
   /* ---------- Previsões por categoria (topo do contas a pagar) ---------- */
-  const PREV_POT=['Caixa','Dinheiro','PIX'];
+  const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['PIX','PIX']];
   function loadPrevisoes(f){ return fetch('/api/previsoes'+qf(f)).then(r=>r.json()).then(d=>{
     // popula o select do formulário (uma vez) com as categorias do servidor
     const sel=g('prev-cat');
@@ -1354,7 +1419,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
               '<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">'+
               '<span style="font-size:.72rem;color:var(--muted)">previsto R$ '+fmt(it.valor)+'</span>'+
               '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">pago R$<input class="pv-valor" type="number" step="0.01" inputmode="decimal" value="'+it.valor+'" title="valor real que você pagou (com juros, se teve)" style="width:80px;'+inp+'"></label>'+
-              '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
+              '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select>'+
               '<button class="pv-pay" data-id="'+it.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--good);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">paguei</button>'+
               '<button class="pv-del" data-id="'+it.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
             '</span></div>').join('')+
@@ -1467,11 +1532,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();
