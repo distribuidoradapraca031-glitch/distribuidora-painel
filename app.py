@@ -172,7 +172,9 @@ CATEGORIAS_PREV = [
     ("Motoboy / entrega", "33015664"),
     ("Funcionário Gabriel (FDS)", "33015660"),
     ("Anota AI", "33015654"),
-    ("DAS (Simples)", "33015672"),
+    ("DAS (Simples)", "35981822"),
+    ("Parcelamento Simples (PARCSN)", "35981822"),
+    ("Taxas / alvará (PBH)", "33015650"),
     ("INSS s/ pró-labore", "33015646"),
     ("Vigia", "33015661"),
     ("Seguro do carro", "33015633"),
@@ -219,6 +221,10 @@ PREV_KEYWORDS = [
     ("MOTOBOY", "Motoboy / entrega"),
     ("GABRIEL", "Funcionário Gabriel (FDS)"),
     ("ANOTA", "Anota AI"),
+    ("PARCSN", "Parcelamento Simples (PARCSN)"),
+    ("PARCELAMENTO SIMPLES", "Parcelamento Simples (PARCSN)"),
+    ("DRAM", "Taxas / alvará (PBH)"), ("FISCALIZ", "Taxas / alvará (PBH)"),
+    ("ALVARA", "Taxas / alvará (PBH)"), ("ALVARÁ", "Taxas / alvará (PBH)"),
     ("SIMPLES", "DAS (Simples)"), ("DAS ", "DAS (Simples)"),
     ("VIGIA", "Vigia"),
     ("SEGURO", "Seguro do carro"),
@@ -646,17 +652,46 @@ def api_fechamento():
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
+# nomes fixos que o dono quer ver SEMPRE no topo (mesmo zerados), na ordem
+RESUMO_FIXOS = ["PH Motoca", "Biel", "Retirada Victor", "Retirada Igor",
+                "Lanches", "Gastos adicionais"]
+
+def _eh_mercadoria(desc):
+    """Pagamento de mercadoria = nota/compra (GC nomeia 'Compra de nº ...')."""
+    return (desc or "").upper().startswith("COMPRA DE")
+
+def _cat_resumo(p):
+    """Bucket do resumo do topo. Separa Victor/Igor e reconhece os nomes do dono;
+    o que não casar cai em 'Gastos adicionais' (nunca no plano 'Compras' bugado)."""
+    desc = (p.get("descricao") or "")
+    du = desc.upper()
+    if "RETIRADA" in du and "IGOR" in du:
+        return "Retirada Igor"
+    if "RETIRADA" in du:
+        return "Retirada Victor"
+    if "BIEL" in du:
+        return "Biel"
+    if "MOTOCA" in du or "MOTOBOY" in du:
+        return "PH Motoca"
+    if any(k in du for k in ("LANCHE", "ALMO", "PADARIA", "PÃO", "PAO")):
+        return "Lanches"
+    c = _categoria_conta(p)   # aluguel, energia, contab, DAS, seguro... viram linha própria
+    if c and c not in ("Retirada Victor", "PH Motoca", "Biel", "Motoboy / entrega"):
+        return c
+    return "Gastos adicionais"
+
 @app.route("/api/gastos-mes")
 @login_required
 def api_gastos_mes():
-    """Gastos do mês (pra fechar o mês): despesas pagas por categoria (motoca, Biel,
-    retiradas, lanche...) + mercadoria (compras) somadas à parte + TOTAL GERAL =
-    tudo que JÁ SAIU no mês. Fora: ajuste de caixa (quebra) e sangria de saque."""
+    """Resumo do topo do Financeiro: o que JÁ SAIU no mês, ITEMIZADO pelos nomes do
+    dono (sempre listados, começam zerados e sobem conforme ele lança) + mercadoria
+    (compras) + TOTAL GERAL. Fora: ajuste de caixa (quebra) e sangria de saque."""
     def build():
         pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
                                             "data_fim": "2027-12-31"})
         mes = _hoje()[:7]
-        cats, total, compras = {}, 0.0, 0.0
+        buckets = {k: 0.0 for k in RESUMO_FIXOS}   # nomes fixos sempre aparecem
+        extras, compras = {}, 0.0
         for p in pgs:
             if str(p.get("liquidado")) != "1":
                 continue  # só o que já saiu da conta (pago)
@@ -665,21 +700,22 @@ def api_gastos_mes():
             desc = (p.get("descricao") or "").strip()
             if desc.upper().startswith("SANGRIA SAQUE"):
                 continue  # saque não é gasto, é troca de dinheiro
-            plano = p.get("nome_plano_conta") or "Outros"
-            if plano == "Ajuste de caixa":
+            if (p.get("nome_plano_conta") or "") == "Ajuste de caixa":
                 continue  # acerto de gaveta (quebra) não é gasto
             val = _num(p.get("valor_total")) or _num(p.get("valor"))
-            if plano == "Compras":
-                compras += val  # mercadoria: soma só no total geral, não nas categorias
+            if _eh_mercadoria(desc):
+                compras += val  # mercadoria: soma só no total geral
                 continue
-            cat = (_categoria_conta(p)
-                   or next((lbl for lbl in SPLIT_LABELS if desc.startswith(lbl)), None)
-                   or plano)
-            cats[cat] = cats.get(cat, 0.0) + val
-            total += val
-        itens = sorted([{"cat": k, "total": round(v, 2)} for k, v in cats.items()],
-                       key=lambda x: -x["total"])
-        return {"itens": itens, "total": round(total, 2),
+            cat = _cat_resumo(p)
+            if cat in buckets:
+                buckets[cat] += val
+            else:
+                extras[cat] = extras.get(cat, 0.0) + val
+        itens = [{"cat": k, "total": round(buckets[k], 2), "fixo": True} for k in RESUMO_FIXOS]
+        itens += sorted([{"cat": k, "total": round(v, 2), "fixo": False}
+                         for k, v in extras.items()], key=lambda x: -x["total"])
+        total = round(sum(buckets.values()) + sum(extras.values()), 2)
+        return {"itens": itens, "total": total,
                 "compras": round(compras, 2),
                 "total_geral": round(total + compras, 2), "mes": mes,
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
