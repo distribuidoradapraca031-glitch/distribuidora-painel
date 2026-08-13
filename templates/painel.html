@@ -394,13 +394,6 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
-  <div class="eyebrow">Contas a pagar · pagos do mês</div>
-  <h2>Pagos do mês — o que já saiu (pra fechar dia 10)</h2>
-  <p class="note">Tudo que você <strong>já pagou</strong> neste mês, fora mercadoria (provisões que você marcou lá em cima + retirada, motoca, Gabriel, lanche...). É a soma que a gente usa no fechamento do dia 10.</p>
-  <div id="gastos-mes-box" style="margin:10px 0"></div>
-</section>
-
-<section class="card">
   <div class="eyebrow">Contas a pagar · notas de compra</div>
   <h2>Notas de compra (mercadoria) em aberto</h2>
   <p class="note">Só os <strong>boletos de mercadoria</strong> (nota de compra / DDA) pra pagar — <strong>pagou, some daqui</strong>. O DDA você abre no <strong>seu banco</strong> e me manda o print/lista que eu carrego aqui; cada boleto tem o <strong>✕ excluir</strong>, então se vier <strong>boleto de golpe</strong> você tira na hora.</p>
@@ -1256,22 +1249,18 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
   /* ---------- gastos do mês por categoria (topo do contas a pagar) ---------- */
   function loadGastosMes(f){ return fetch('/api/gastos-mes'+qf(f)).then(r=>r.json()).then(d=>{
-    // topo do Financeiro: TOTAL gasto no mês = despesas pagas + mercadoria (compras)
-    const topo=g('gasto-mes-topo');
-    if(topo){
-      const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-      if(g('gm-mes')) g('gm-mes').textContent=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'';
-      topo.innerHTML='<div style="font-size:1.7rem;font-weight:800;line-height:1.1">R$ '+fmt(d.total_geral)+'</div>'+
-        '<div class="note" style="margin:4px 0 0">despesas (fora mercadoria) <b>R$ '+fmt(d.total)+'</b> · mercadoria (compras) <b>R$ '+fmt(d.compras)+'</b></div>';
-    }
-    const box=g('gastos-mes-box'); if(!box) return;
-    if((!d.itens||!d.itens.length) && !d.compras){ box.innerHTML='<p class="note" style="margin:0">Nada pago ainda neste mês.</p>'; return; }
-    box.innerHTML='<div class="eyebrow" style="margin-bottom:4px">Pago no mês por categoria</div>'+
-      '<div class="tblwrap"><table><thead><tr><th>Categoria</th><th class="num">No mês</th></tr></thead><tbody>'+
-      d.itens.map(i=>'<tr><td class="nome">'+esc(i.cat)+'</td><td class="num">R$ '+fmt(i.total)+'</td></tr>').join('')+
-      '<tr><td>Despesas (fora mercadoria)</td><td class="num">R$ '+fmt(d.total)+'</td></tr>'+
-      '<tr><td>Mercadoria (compras)</td><td class="num">R$ '+fmt(d.compras)+'</td></tr>'+
-      '<tr><td style="font-weight:700">Total gasto no mês</td><td class="num" style="font-weight:700">R$ '+fmt(d.total_geral)+'</td></tr>'+
+    const topo=g('gasto-mes-topo'); if(!topo) return;
+    const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    if(g('gm-mes')) g('gm-mes').textContent=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'';
+    // lista os nomes fixos SEMPRE (zerados em cinza) e sobe conforme o dono paga
+    let rows=(d.itens||[]).map(i=>{ const z=i.total<=0;
+      return '<tr><td class="nome"'+(z?' style="color:var(--muted)"':'')+'>'+esc(i.cat)+'</td>'+
+        '<td class="num"'+(z?' style="color:var(--muted)"':' style="font-weight:600"')+'>R$ '+fmt(i.total)+'</td></tr>'; }).join('');
+    rows+='<tr><td class="nome" style="font-weight:600">Mercadoria (compras)</td><td class="num" style="font-weight:600">R$ '+fmt(d.compras)+'</td></tr>';
+    topo.innerHTML='<div style="font-size:1.75rem;font-weight:800;line-height:1.1">R$ '+fmt(d.total_geral)+'</div>'+
+      '<div class="note" style="margin:4px 0 10px">despesas <b>R$ '+fmt(d.total)+'</b> + mercadoria <b>R$ '+fmt(d.compras)+'</b> = o que já saiu no mês</div>'+
+      '<div class="tblwrap"><table><thead><tr><th>Onde foi</th><th class="num">Pago no mês</th></tr></thead><tbody>'+rows+
+      '<tr><td style="font-weight:800">Total gasto no mês</td><td class="num" style="font-weight:800">R$ '+fmt(d.total_geral)+'</td></tr>'+
       '</tbody></table></div>';
   }).catch(()=>{}); }
 
