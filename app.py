@@ -168,16 +168,21 @@ CATS = {
     "Papelaria": "33015658", "Combustível": "33015633", "Motoboy / entrega": "33015664",
     "Limpeza / higiene": "33015655", "Descartáveis (copo/saco)": "33015669",
     "Manutenção / conserto": "33015656", "Água / luz / internet": "33015649",
-    "Retirada do sócio (Victor)": "33015638", "Retirada do sócio (Igor)": "33015638",
-    "Pagamento Biel": "33015664", "Pagamento PH Motoca": "33015664",
-    "PH Motoca / motoboy": "33015664",
-    "Pró-labore Igor": "33015660", "Funcionário Gabriel (FDS)": "33015660",
+    "Retirada do sócio (Victor)": "33015638",
+    # cada pessoa tem UMA categoria só (o dono paga a mesma pessoa com nomes diferentes)
+    "Igor (pró-labore / retirada)": "33015660",
+    "Biel (Gabriel)": "33015660",
+    "PH Motoca": "33015664",
+    "Seguro do carro": "33015633",
     "Sacolas / gelo / copos": "33015662",
     "Outros": "33015669",
+    # nomes antigos (lançamentos já feitos) — continuam valendo se aparecerem
+    "Retirada do sócio (Igor)": "33015660", "Pró-labore Igor": "33015660",
+    "Pagamento Biel": "33015660", "Funcionário Gabriel (FDS)": "33015660",
+    "Pagamento PH Motoca": "33015664", "PH Motoca / motoboy": "33015664",
 }
-# categorias que dividem o mesmo plano (Victor/Igor, Biel/PH) — separadas pela descrição no resumo
-SPLIT_LABELS = ["Retirada do sócio (Victor)", "Retirada do sócio (Igor)",
-                "Pagamento Biel", "Pagamento PH Motoca"]
+# categorias que dividem o mesmo plano (Victor/Igor) — separadas pela descrição no resumo
+SPLIT_LABELS = ["Retirada do sócio (Victor)", "Igor (pró-labore / retirada)"]
 BOLETO_FORMA_ID = "6687681"  # forma "Boleto" (em aberto) no GestãoClick
 
 # ---- RECURSO PRÓPRIO (dinheiro do Victor) ----
@@ -230,10 +235,9 @@ CATEGORIAS_PREV = [
     ("Água (COPASA)", "33015649"),
     ("Internet / telefone", "33015663"),
     ("Contabilidade (Werdeiros)", "33015635"),
-    ("Pró-labore Igor", "33015660"),
+    ("Igor (pró-labore / retirada)", "33015660"),
     ("Retirada Victor", "33015638"),
     ("Motoboy / entrega", "33015664"),
-    ("Funcionário Gabriel (FDS)", "33015660"),
     ("Anota AI", "33015654"),
     ("DAS (Simples)", "35981822"),
     ("Parcelamento Simples (PARCSN)", "35981822"),
@@ -242,7 +246,7 @@ CATEGORIAS_PREV = [
     ("Vigia", "33015661"),
     ("Seguro do carro", "33015633"),
     ("Sacolas / gelo / copos", "33015662"),
-    ("Biel", "33015664"),
+    ("Biel (Gabriel)", "33015660"),
     ("PH Motoca", "33015664"),
 ]
 _PREV_PLANO = dict(CATEGORIAS_PREV)
@@ -278,11 +282,12 @@ PREV_KEYWORDS = [
     ("WERDEI", "Contabilidade (Werdeiros)"), ("CONTAB", "Contabilidade (Werdeiros)"),
     ("HONORARIOS CONTAB", "Contabilidade (Werdeiros)"),
     ("INSS", "INSS s/ pró-labore"),
-    ("PRO-LABORE", "Pró-labore Igor"), ("PRÓ-LABORE", "Pró-labore Igor"),
+    ("PRO-LABORE", "Igor (pró-labore / retirada)"),
+    ("PRÓ-LABORE", "Igor (pró-labore / retirada)"),
     ("RETIRADA", "Retirada Victor"),
-    ("PH MOTOCA", "PH Motoca"), ("BIEL", "Biel"),
+    ("PH MOTOCA", "PH Motoca"),
+    ("BIEL", "Biel (Gabriel)"), ("GABRIEL", "Biel (Gabriel)"),
     ("MOTOBOY", "Motoboy / entrega"),
-    ("GABRIEL", "Funcionário Gabriel (FDS)"),
     ("ANOTA", "Anota AI"),
     ("PARCSN", "Parcelamento Simples (PARCSN)"),
     ("PARCELAMENTO SIMPLES", "Parcelamento Simples (PARCSN)"),
@@ -301,6 +306,11 @@ def _categoria_conta(p):
     if c:
         return c
     du = desc.upper()
+    # uma pessoa = uma categoria (nomes antigos caem na mesma linha); INSS antes do Igor
+    if "IGOR" in du and "INSS" not in du:
+        return "Igor (pró-labore / retirada)"
+    if "BIEL" in du or "GABRIEL" in du:
+        return "Biel (Gabriel)"
     for kw, label in PREV_KEYWORDS:  # provisões antigas e recorrentes
         if kw in du:
             return label
@@ -725,8 +735,8 @@ def api_fechamento():
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
 # nomes fixos que o dono quer ver SEMPRE no topo (mesmo zerados), na ordem
-RESUMO_FIXOS = ["PH Motoca", "Biel", "Retirada Victor", "Retirada Igor",
-                "Pró-labore Igor", "Funcionário Gabriel (FDS)", "Sacolas / gelo / copos",
+RESUMO_FIXOS = ["PH Motoca", "Biel (Gabriel)", "Retirada Victor",
+                "Igor (pró-labore / retirada)", "Sacolas / gelo / copos",
                 "Lanches", "Gastos adicionais"]
 
 def _eh_mercadoria(desc):
@@ -738,18 +748,19 @@ def _cat_resumo(p):
     o que não casar cai em 'Gastos adicionais' (nunca no plano 'Compras' bugado)."""
     desc = (p.get("descricao") or "")
     du = desc.upper()
-    if "RETIRADA" in du and "IGOR" in du:
-        return "Retirada Igor"
+    if "IGOR" in du and "INSS" not in du:      # pró-labore e retirada do Igor = mesma linha
+        return "Igor (pró-labore / retirada)"
     if "RETIRADA" in du:
         return "Retirada Victor"
-    if "BIEL" in du:
-        return "Biel"
+    if "BIEL" in du or "GABRIEL" in du:        # Biel = Gabriel = mesma pessoa
+        return "Biel (Gabriel)"
     if "MOTOCA" in du or "MOTOBOY" in du:
         return "PH Motoca"
     if any(k in du for k in ("LANCHE", "ALMO", "PADARIA", "PÃO", "PAO")):
         return "Lanches"
     c = _categoria_conta(p)   # aluguel, energia, contab, DAS, seguro... viram linha própria
-    if c and c not in ("Retirada Victor", "PH Motoca", "Biel", "Motoboy / entrega"):
+    if c and c not in ("Retirada Victor", "PH Motoca", "Biel (Gabriel)",
+                       "Igor (pró-labore / retirada)", "Motoboy / entrega"):
         return c
     return "Gastos adicionais"
 
