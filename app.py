@@ -123,6 +123,39 @@ def api_pagar():
         }
     return jsonify(cached("pagar", 60, build))
 
+@app.route("/api/ultima-atualizacao")
+@login_required
+def api_ultima_atualizacao():
+    """Quando as contas a pagar foram atualizadas pela última vez.
+
+    Serve pro dono saber a partir de qual data mandar o próximo lote (guias da
+    contabilidade, DDA, boleto). Sai do próprio GestãoClick (campo cadastrado_em),
+    então não tem o que desencontrar. Fechamento de caixa/sangria ficam de fora —
+    entram todo dia sozinhos e não são "conta que o dono mandou".
+    """
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
+        def _quando(p):
+            return (p.get("cadastrado_em") or "")[:16]
+        def _vale(p):
+            d = (p.get("descricao") or "").upper()
+            plano = (p.get("nome_plano_conta") or "").upper()
+            if "FECHAMENTO DE CAIXA" in d or "SANGRIA" in d or "AJUSTE DE CAIXA" in plano:
+                return False
+            return bool(_quando(p))
+        validos = [p for p in pgs if _vale(p)]
+        def _ult(sub):
+            if not sub:
+                return {"quando": "", "n": 0}
+            q = max(_quando(p) for p in sub)
+            return {"quando": q, "n": sum(1 for p in sub if _quando(p)[:10] == q[:10])}
+        contas = [p for p in validos if _categoria_conta(p)]           # guias/fixos
+        notas = [p for p in validos if not _categoria_conta(p)]        # nota de compra/DDA
+        return {"geral": _ult(validos), "contas": _ult(contas), "notas": _ult(notas),
+                "hoje": _hoje()}
+    return jsonify(cached("ultima_atualizacao", 120, build))
+
 # ---- mapeamentos: potes (conta+forma) e categorias de gasto ----
 RESERVA_CONTA = os.environ.get("RESERVA_CONTA_ID", "696747")  # trocar p/ conta RESERVA quando existir
 POTES = {
@@ -269,6 +302,9 @@ def _hoje():
 def _invalida(*keys):
     for k in keys:
         _cache.pop(k, None)
+    # qualquer mexida em conta a pagar muda a "última atualização" do cabeçalho
+    if any(k in ("pagar", "previsoes") for k in keys):
+        _cache.pop("ultima_atualizacao", None)
 
 @app.route("/api/baixa", methods=["POST"])
 @login_required

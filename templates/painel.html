@@ -335,6 +335,13 @@ th.g,td.g{background:var(--accent-soft)}
 
 <!-- ============ FINANCEIRO ============ -->
 <div id="view-financeiro" hidden>
+<section class="card" id="card-ultima-atualizacao">
+  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
+  <div id="ua-box">
+    <div class="note" style="margin:0">carregando…</div>
+  </div>
+</section>
+
 <section class="card" id="card-gasto-mes">
   <div class="eyebrow">Fechamento do mês · o que já saiu</div>
   <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
@@ -1264,6 +1271,24 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       '</tbody></table></div>';
   }).catch(()=>{}); }
 
+  /* ---------- Última atualização das contas a pagar ---------- */
+  function loadUltimaAtualizacao(f){ return fetch('/api/ultima-atualizacao'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('ua-box'); if(!box) return;
+    const br=s=>{ if(!s) return '—'; const [dt,hr]=s.split(' '); const [a,m,di]=dt.split('-');
+                  return di+'/'+m+'/'+a+(hr?' às '+hr:''); };
+    const dias=s=>{ if(!s) return null;
+      const x=new Date(s.slice(0,10)+'T00:00:00'), h=new Date((d.hoje||'')+'T00:00:00');
+      return Math.round((h-x)/86400000); };
+    const q=(d.geral||{}).quando, nd=dias(q);
+    const alerta = nd===null || nd>7;
+    box.innerHTML=
+      '<h2 style="margin:0">Atualizado até '+br(q)+'</h2>'+
+      '<div class="note" style="margin:6px 0 0">Me mande <strong>só o que entrou depois dessa data</strong> — guia da contabilidade, boleto do DDA, nota de fornecedor. O que for anterior já está lançado aqui.</div>'+
+      '<div class="note" style="margin:8px 0 0">Guias e contas fixas: <strong>'+br((d.contas||{}).quando)+'</strong>'+
+        ' · Notas de compra / DDA: <strong>'+br((d.notas||{}).quando)+'</strong></div>'+
+      (alerta?'<div class="banner">⚠️ '+(nd===null?'Sem lançamento nenhum ainda.':'Já faz '+nd+' dias desde a última atualização.')+' Manda o que chegou pra eu lançar.</div>':'');
+  }).catch(()=>{}); }
+
   /* ---------- Recurso próprio (dinheiro do Victor) ---------- */
   function loadRecursoProprio(f){ return fetch('/api/recurso-proprio'+qf(f)).then(r=>r.json()).then(d=>{
     const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -1442,11 +1467,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();
