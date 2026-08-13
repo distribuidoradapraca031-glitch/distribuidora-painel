@@ -354,13 +354,6 @@ th.g,td.g{background:var(--accent-soft)}
 
 <!-- ============ FINANCEIRO ============ -->
 <div id="view-financeiro" hidden>
-<section class="card" id="card-ultima-atualizacao">
-  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
-  <div id="ua-box">
-    <div class="note" style="margin:0">carregando…</div>
-  </div>
-</section>
-
 <section class="card" id="card-gasto-mes">
   <div class="eyebrow">Fechamento do mês · o que já saiu</div>
   <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
@@ -472,6 +465,13 @@ th.g,td.g{background:var(--accent-soft)}
     <div class="fres" id="ex-msg"></div>
     <div class="tblwrap" id="tbl-ex"></div>
     <div id="ex-out-box"></div>
+  </div>
+</section>
+
+<section class="card" id="card-ultima-atualizacao">
+  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
+  <div id="ua-box">
+    <div class="note" style="margin:0">carregando…</div>
   </div>
 </section>
 </div><!-- /view-financeiro -->
@@ -1413,22 +1413,30 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const sel=g('prev-cat');
     if(sel && !sel.options.length) sel.innerHTML=d.categorias.map(c=>'<option>'+esc(c.cat)+'</option>').join('');
     const tb=g('prev-total-box');
-    if(tb) tb.innerHTML='<div class="eyebrow" style="margin:0">Falta pagar — total <b>R$ '+fmt(d.total_aberto)+'</b>'+
-      (d.total_atrasado>0?' · <b style="color:var(--crit)">atrasado R$ '+fmt(d.total_atrasado)+'</b>':'')+'</div>';
+    if(tb) tb.innerHTML='<div style="font-size:1.5rem;font-weight:800;line-height:1.1">R$ '+fmt(d.total_aberto)+'</div>'+
+      '<div class="note" style="margin:4px 0 0">tudo que você deve e ainda não pagou — incluindo o que vence lá na frente</div>'+
+      '<div class="note" style="margin:5px 0 0">'+
+        (d.total_atrasado>0?'<b style="color:var(--crit)">atrasado R$ '+fmt(d.total_atrasado)+'</b> · ':'')+
+        'vence ainda este mês <b>R$ '+fmt(d.total_mes||0)+'</b>'+
+        ((d.total_futuro||0)>0?' · próximos meses <b>R$ '+fmt(d.total_futuro)+'</b>':'')+
+      '</div>'+
+      ((d.total_estimativa||0)>0?'<div class="note" style="margin:5px 0 0">Fora disso tem <b>R$ '+fmt(d.total_estimativa)+'</b> de <b>estimativa antiga minha</b> (marcada como "estimativa" na lista) — <b>não</b> entra no total acima; vai virar valor real conforme você me manda as contas.</div>':'');
     const wrap=g('tbl-previsoes'); if(!wrap) return;
     const inp='font:inherit;font-size:.76rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)';
     let rows='';
     d.categorias.forEach((c,ci)=>{
-      const has=c.n>0;
+      const has=(c.n+(c.n_estimativa||0))>0;
       rows+='<tr class="prev-cat'+(has?' clic':'')+'" data-ci="'+ci+'" style="'+(has?'cursor:pointer':'opacity:.55')+'">'+
         '<td class="nome">'+(has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+esc(c.cat)+(c.atrasado?' <span class="pill pcrit">atrasado</span>':'')+'</td>'+
         '<td class="num"'+(c.aberto>0?(c.atrasado?' style="font-weight:700;color:var(--crit)"':' style="font-weight:700"'):' style="color:var(--muted)"')+'>R$ '+fmt(c.aberto)+'</td>'+
-        '<td class="num" style="color:var(--muted);font-size:.8rem">'+(has?c.n+' em aberto':'—')+'</td></tr>';
+        '<td class="num" style="color:var(--muted);font-size:.8rem">'+(has?c.n+' em aberto'+
+          (c.futuro>0?' <span style="opacity:.8">(R$ '+fmt(c.futuro)+' à frente)</span>':'')+
+          ((c.n_estimativa||0)>0?' <span style="opacity:.8">+ '+c.n_estimativa+' estimativa</span>':''):'—')+'</td></tr>';
       if(has){
         rows+='<tr class="prev-det" data-ci="'+ci+'" hidden><td colspan="3" style="padding:0">'+
           '<div style="padding:6px 12px;background:var(--bg)">'+
           c.itens.map(it=>'<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)">'+
-            '<span style="font-size:.85rem">'+(it.venc?'<span'+(it.atrasado?' style="color:var(--crit);font-weight:600"':'')+'>'+dbr(it.venc)+(it.atrasado?' ⚠️':'')+'</span> · ':'')+(it.nota?esc(it.nota):'<span style="color:var(--muted)">sem obs</span>')+'</span>'+
+            '<span style="font-size:.85rem'+(it.futuro?';opacity:.75':'')+'">'+(it.venc?'<span'+(it.atrasado?' style="color:var(--crit);font-weight:600"':(it.futuro?' style="color:var(--muted)"':''))+'>'+dbr(it.venc)+(it.atrasado?' ⚠️':'')+'</span> · ':'')+(it.nota?esc(it.nota):'<span style="color:var(--muted)">sem obs</span>')+(it.futuro?' <span class="pill" style="background:var(--bg);color:var(--muted)">vence à frente</span>':'')+(it.estimativa?' <span class="pill" style="background:var(--bg);color:var(--muted)">estimativa</span>':'')+'</span>'+
               '<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">'+
               '<span style="font-size:.72rem;color:var(--muted)">previsto R$ '+fmt(it.valor)+'</span>'+
               '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">pago R$<input class="pv-valor" type="number" step="0.01" inputmode="decimal" value="'+it.valor+'" title="valor real que você pagou (com juros, se teve)" style="width:80px;'+inp+'"></label>'+

@@ -897,25 +897,40 @@ def api_previsoes():
             cat = _categoria_conta(p)
             if not cat:
                 continue
+            # entra TUDO que está em aberto, inclusive vencimento longe (o dono quer
+            # enxergar tudo que já sabe que deve); o front separa por etiqueta.
+            # "estimativa" = provisão velha que EU criei — fica visível mas NÃO soma
+            # no total (o total é só o que o dono confirmou).
             venc = (p.get("data_vencimento") or "")[:10]
-            if venc and venc > fim_mes:
-                continue  # meses futuros não entram (só o do mês + atrasados)
             val = _num(p.get("valor_total")) or _num(p.get("valor"))
             abertos[cat].append({"id": p.get("id"), "nota": _nota_conta(p),
                                  "venc": venc, "valor": val,
-                                 "atrasado": bool(venc and venc < hoje)})
+                                 "atrasado": bool(venc and venc < hoje),
+                                 "futuro": bool(venc and venc > fim_mes),
+                                 "estimativa": "[PROVISAO]" in (p.get("descricao") or "").upper()})
         categorias = []
         for lbl, _ in CATEGORIAS_PREV:
             its = sorted(abertos[lbl], key=lambda x: x["venc"] or "9999")
-            categorias.append({"cat": lbl, "n": len(its),
-                               "aberto": round(sum(i["valor"] for i in its), 2),
-                               "atrasado": any(i["atrasado"] for i in its),
+            reais = [i for i in its if not i["estimativa"]]
+            categorias.append({"cat": lbl, "n": len(reais),
+                               "aberto": round(sum(i["valor"] for i in reais), 2),
+                               "atrasado": any(i["atrasado"] for i in reais),
+                               "futuro": round(sum(i["valor"] for i in reais if i["futuro"]), 2),
+                               "estimativa": round(sum(i["valor"] for i in its if i["estimativa"]), 2),
+                               "n_estimativa": sum(1 for i in its if i["estimativa"]),
                                "itens": its})
-        atrasado = round(sum(i["valor"] for c in categorias for i in c["itens"]
-                             if i["atrasado"]), 2)
+        todos = [i for c in categorias for i in c["itens"] if not i["estimativa"]]
+        atrasado = round(sum(i["valor"] for i in todos if i["atrasado"]), 2)
+        futuro = round(sum(i["valor"] for i in todos if i["futuro"]), 2)
+        # "deste mês" = o que ainda vence até o fim do mês (fora o atrasado)
+        do_mes = round(sum(i["valor"] for i in todos
+                           if not i["atrasado"] and not i["futuro"]), 2)
         return {"categorias": categorias,
                 "total_aberto": round(sum(c["aberto"] for c in categorias), 2),
                 "total_atrasado": atrasado,
+                "total_mes": do_mes,
+                "total_futuro": futuro,
+                "total_estimativa": round(sum(c["estimativa"] for c in categorias), 2),
                 "mes": hoje[:7], "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("previsoes", 60, build))
 
