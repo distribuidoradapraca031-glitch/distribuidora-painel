@@ -159,11 +159,25 @@ def api_ultima_atualizacao():
 
 # ---- mapeamentos: potes (conta+forma) e categorias de gasto ----
 RESERVA_CONTA = os.environ.get("RESERVA_CONTA_ID", "696747")  # trocar p/ conta RESERVA quando existir
+GAVETA_CONTA = "696747"      # conta CAIXA = a gaveta da loja (é ela que o fechamento confere)
+RESERVA_CONTA_ID = "681760"  # onde fica a reserva/banco — FORA da gaveta
 POTES = {
-    "Caixa":    {"conta": "696747", "forma": "6055919"},        # gaveta + Dinheiro
-    "Dinheiro": {"conta": "681760", "forma": "6055931"},        # RESERVA (sobras) — FORA da gaveta (não bate no fechamento); saldo controlado à parte
-    "PIX":      {"conta": "681760", "forma": "6055931"},        # conta bancária + PIX
+    "Caixa":    {"conta": GAVETA_CONTA,     "forma": "6055919"},  # gaveta + Dinheiro
+    "Dinheiro": {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # RESERVA em dinheiro (fora da gaveta)
+    "PIX":      {"conta": RESERVA_CONTA_ID, "forma": "6055931"},  # conta bancária + PIX
 }
+
+def _saiu_da_gaveta(p):
+    """Esse pagamento tirou dinheiro da GAVETA do dia?
+
+    Só conta o que saiu EM DINHEIRO. Pagamento em PIX/cartão sai do banco, não da
+    gaveta — e isso importa porque o GestãoClick carimba conta "CAIXA" em todo
+    pagamento de compra, mesmo quando foi PIX (era o que derrubava o esperado do
+    fechamento pra negativo). Dinheiro da RESERVA também não está na gaveta.
+    """
+    if str(p.get("forma_pagamento_id")) != "6055919":     # não é dinheiro
+        return False
+    return str(p.get("conta_bancaria_id") or "") != RESERVA_CONTA_ID
 CATS = {
     "Lanche": "33015662", "Almoço": "33015662", "Padaria": "33015662",
     "Papelaria": "33015658", "Combustível": "33015633", "Motoboy / entrega": "33015664",
@@ -770,6 +784,36 @@ def api_compra():
             conf.append({"nome": prod.get("nome"), "unidades": it["units"],
                          "entrou_sozinho": entrou, "corrigido": corrigido,
                          "custo_unit": round(it["valor"] / it["units"], 4)})
+        # ---- acerta a conta/forma de cada parcela ----
+        # o GC cria os pagamentos da compra sempre na conta CAIXA e, com mais de uma
+        # forma, repete a primeira em todas. Então reescrevo cada parcela com o pote
+        # certo (o PUT exige o body COMPLETO: mandar só um campo zera o valor).
+        try:
+            codigo = str(d.get("codigo") or "")
+            pgs = [x for x in gcapi.get_all("/pagamentos", {"data_inicio": data, "data_fim": data})
+                   if (x.get("descricao") or "") == f"Compra de nº {codigo}"]
+            usados = set()
+            for parte in partes:
+                f = parte.get("forma") or "Caixa"
+                v = round(_num(parte.get("valor")), 2)
+                alvo = next((x for x in pgs if str(x.get("id")) not in usados
+                             and abs(_num(x.get("valor_total")) - v) < 0.01), None)
+                if not alvo:
+                    continue
+                usados.add(str(alvo.get("id")))
+                pot = POTES.get(f)
+                corpo = {"descricao": alvo.get("descricao"), "valor": f"{v:.2f}",
+                         "data_vencimento": (parte.get("vencimento") or data)[:10],
+                         "data_competencia": data, "plano_contas_id": "33015669"}
+                if f == "Boleto":
+                    corpo.update({"liquidado": "0", "forma_pagamento_id": BOLETO_FORMA_ID})
+                else:
+                    corpo.update({"liquidado": "1", "data_liquidacao": data,
+                                  "conta_bancaria_id": pot["conta"],
+                                  "forma_pagamento_id": pot["forma"]})
+                gcapi.put(f"/pagamentos/{alvo.get('id')}", corpo)
+        except Exception:
+            pass   # se falhar, a compra continua válida; só o rótulo do pote fica genérico
         # a reserva desconta só a parte paga com "Dinheiro" (pode ser parcial agora)
         em_reserva = round(sum(_num(p.get("valor")) for p in partes
                                if (p.get("forma") or "Caixa") == "Dinheiro"), 2)
@@ -870,7 +914,7 @@ def _fech_calc(data):
             continue
         if str(p.get("plano_contas_id")) == AJUSTE_CAIXA_PLANO:
             continue  # o próprio ajuste de fechamento NÃO é saída da gaveta (evita loop/erro)
-        if str(p.get("conta_bancaria_id")) == "696747" or str(p.get("forma_pagamento_id")) == "6055919":
+        if _saiu_da_gaveta(p):
             saidas += _num(p.get("valor_total")) or _num(p.get("valor"))
     return round(din, 2), round(saidas, 2)
 
@@ -989,7 +1033,7 @@ def api_fechamentos():
             d = (p.get("data_liquidacao") or "")[:10]
             if not d or str(p.get("plano_contas_id")) == AJUSTE_CAIXA_PLANO:
                 continue
-            if str(p.get("conta_bancaria_id")) == "696747" or str(p.get("forma_pagamento_id")) == "6055919":
+            if _saiu_da_gaveta(p):
                 saidas[d] += _num(p.get("valor_total")) or _num(p.get("valor"))
         aberturas, contados, moedas = {}, {}, {}
         for r in (gcapi.get_all("/recebimentos", {"data_inicio": ini, "data_fim": fim})
