@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """App web da Distribuidora da Praça — painel ao vivo + gravação direta no GestãoClick,
 protegido por senha. (Fase 1: login + leitura ao vivo.)"""
-import os, functools, time, re, calendar
+import os, functools, time, re, calendar, datetime
+from collections import defaultdict
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
 import gclient as gcapi
 
@@ -700,6 +701,70 @@ def api_fechamento_hoje():
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("fech_" + data, 45, build))
 
+@app.route("/api/fechamentos")
+@login_required
+def api_fechamentos():
+    """Últimos N dias de fechamento, AO VIVO (a tabela antiga vinha do snapshot dos
+    gráficos, que é gerado 8:30 e nunca trazia o contado — por isso um fechamento
+    feito à noite aparecia como 'sem contagem' no dia seguinte).
+
+    Regras (as mesmas do cálculo do dia): saída em dinheiro NÃO inclui o plano
+    'Ajuste de caixa' — lá dentro estão o 'Fechamento de caixa' do PDV (que é a
+    retirada da gaveta DEPOIS da contagem) e o próprio ajuste da quebra. Somar
+    isso derrubava o esperado pra negativo.
+    """
+    dias = max(1, min(31, int(request.args.get("dias") or 12)))
+    def build():
+        hoje = datetime.date.today()
+        ini = (hoje - datetime.timedelta(days=dias - 1)).isoformat()
+        fim = hoje.isoformat()
+        din = defaultdict(float)
+        for tipo in ("vendas_balcao", "produto"):
+            for v in gcapi.get_all("/vendas", {"tipo": tipo, "data_inicio": ini, "data_fim": fim}):
+                if tipo == "produto" and "ANOTA AI" not in (v.get("observacoes") or "").upper():
+                    continue  # em 'produto' só o delivery conta (o resto é saque/serviço)
+                d = (v.get("data") or v.get("data_venda") or "")[:10]
+                for w in (v.get("pagamentos") or []):
+                    p = w.get("pagamento", w)
+                    if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
+                        din[d] += _num(p.get("valor"))
+        saidas = defaultdict(float)
+        for p in gcapi.get_all("/pagamentos", {"data_inicio": ini, "data_fim": fim}):
+            if str(p.get("liquidado")) != "1":
+                continue
+            d = (p.get("data_liquidacao") or "")[:10]
+            if not d or str(p.get("plano_contas_id")) == AJUSTE_CAIXA_PLANO:
+                continue
+            if str(p.get("conta_bancaria_id")) == "696747" or str(p.get("forma_pagamento_id")) == "6055919":
+                saidas[d] += _num(p.get("valor_total")) or _num(p.get("valor"))
+        aberturas, contados, moedas = {}, {}, {}
+        for r in (gcapi.get_all("/recebimentos", {"data_inicio": ini, "data_fim": fim})
+                  + gcapi.get_all("/pagamentos", {"data_inicio": ini, "data_fim": fim})):
+            desc = (r.get("descricao") or "")
+            d = (r.get("data_liquidacao") or r.get("data_vencimento") or "")[:10]
+            if "ABERTURA DE CAIXA" in desc.upper():
+                aberturas[d] = _num(r.get("valor_total")) or _num(r.get("valor"))
+            m = re.search(r"FECHAMENTO (\d{4}-\d{2}-\d{2}).*?contado R\$ ?([\d.,]+)", desc, re.I)
+            if m:
+                contados[m.group(1)] = _num(m.group(2))
+                mm = re.search(r"moedas R\$ ?([\d.,]+)", desc, re.I)
+                if mm:
+                    moedas[m.group(1)] = _num(mm.group(1))
+        itens = []
+        for i in range(dias):
+            d = (hoje - datetime.timedelta(days=dias - 1 - i)).isoformat()
+            ab = aberturas.get(d, 200.0)
+            esp = round(ab + din.get(d, 0) - saidas.get(d, 0), 2)
+            c = contados.get(d)
+            itens.append({"data": d, "abertura": round(ab, 2), "dinheiro": round(din.get(d, 0), 2),
+                          "saidas": round(saidas.get(d, 0), 2), "esperado": esp,
+                          "contado": c, "quebra": None if c is None else round(c - esp, 2),
+                          "moedas": moedas.get(d)})
+        ult_moedas = next((x["moedas"] for x in reversed(itens) if x.get("moedas") is not None), None)
+        return {"itens": itens, "ultimas_moedas": ult_moedas,
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached(f"fechamentos_{dias}", 120, build))
+
 @app.route("/api/fechamento", methods=["POST"])
 @login_required
 def api_fechamento():
@@ -718,8 +783,14 @@ def api_fechamento():
     ajuste_id = None
     try:
         if abs(quebra) >= 0.01:
+            # o total de moedas fica gravado na descrição: é ele que permite ao dono
+            # contar moeda só na segunda e repetir o valor nos outros dias
+            moedas = _num(body.get("moedas"))
+            extra = f" · moedas R$ {moedas:.2f}" if moedas > 0 else ""
+            if body.get("moedas_repetidas"):
+                extra += " (moedas da última contagem)"
             desc = (f"FECHAMENTO {data} — contado R$ {contado:.2f} · esperado R$ {esperado:.2f} · "
-                    f"{'sobra' if quebra > 0 else 'falta'} R$ {abs(quebra):.2f}")
+                    f"{'sobra' if quebra > 0 else 'falta'} R$ {abs(quebra):.2f}{extra}")
             mov = {"descricao": desc, "valor": f"{abs(quebra):.2f}",
                    "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
                    "liquidado": "1", "plano_contas_id": AJUSTE_CAIXA_PLANO,
@@ -727,7 +798,7 @@ def api_fechamento():
             # sobra = entra dinheiro (recebimento) ; falta = sai dinheiro (pagamento)
             r = gcapi.post("/recebimentos" if quebra > 0 else "/pagamentos", mov)
             ajuste_id = (r.get("data") or {}).get("id") if isinstance(r.get("data"), dict) else None
-        _invalida("resumo", "hoje", "fech_hoje")
+        _invalida("resumo", "hoje", "fech_hoje", "fechamentos_12", "fechamentos_7", "fechamentos_31")
         return jsonify({"ok": True, "esperado": esperado, "contado": round(contado, 2),
                         "quebra": quebra, "dinheiro": din, "saidas": saidas,
                         "ajuste_id": ajuste_id})

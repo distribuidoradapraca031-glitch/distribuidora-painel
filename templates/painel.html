@@ -204,7 +204,8 @@ th.g,td.g{background:var(--accent-soft)}
       <div style="margin-top:10px">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Cédulas</div>
         <div id="gaveta-notas" class="dengrid"></div>
-        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 6px">Moedas</div>
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 6px">Moedas <span id="moedas-aviso" style="text-transform:none;letter-spacing:0"></span></div>
+        <div id="moedas-atalho" style="margin-bottom:8px"></div>
         <div id="gaveta-moedas" class="dengrid"></div>
         <div class="fres" id="gaveta-tot" style="margin-top:10px"></div>
       </div>
@@ -752,9 +753,10 @@ const LS_KEY='distribuidora_fech_anotacoes';
 const loadAnot=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return {}}};
 const saveAnot=(o)=>{try{localStorage.setItem(LS_KEY,JSON.stringify(o));return true}catch(e){return false}};
 const espByData={}; D.fechamentos.forEach(f=>espByData[f.data]=f.esperado);
+let FECH_LIVE=null;   // preenchido por loadFechamentos() — dados AO VIVO do sistema
 function renderFech(){
   const anot=loadAnot();
-  const linhas=D.fechamentos.slice(-12);
+  const linhas=(FECH_LIVE && FECH_LIVE.itens) ? FECH_LIVE.itens : D.fechamentos.slice(-12);
   document.getElementById('tbl-fech').innerHTML =
    '<table><thead><tr><th>Dia</th><th class="num">Troco inicial</th><th class="num">Dinheiro vendido</th><th class="num">Saídas dinheiro</th><th class="num">Esperado na gaveta</th><th class="num">Contado</th><th>Situação</th></tr></thead><tbody>' +
    linhas.map(f=>{
@@ -766,13 +768,22 @@ function renderFech(){
           : dif>0 ? '<span class="pill pwarn">sobra +'+fmt(dif)+'</span>'
                   : '<span class="pill pcrit">falta '+fmt(dif)+'</span>';
      }
-     const anotMark = anot[f.data]!=null ? ' <span style="color:var(--muted)">✍️</span>' : '';
+     const anotMark = (f.contado==null && anot[f.data]!=null) ? ' <span style="color:var(--muted)">✍️</span>'
+                    : (f.moedas!=null ? ' <span style="color:var(--muted)" title="moedas R$ '+fmt(f.moedas)+'">🪙</span>' : '');
      return '<tr><td>'+dbr(f.data)+'</td><td class="num">'+fmt(f.abertura)+'</td><td class="num">'+fmt(f.dinheiro)+'</td>'+
        '<td class="num">'+fmt(f.saidas)+'</td><td class="num">'+fmt(f.esperado)+'</td>'+
        '<td class="num">'+(contado!=null?fmt(contado)+anotMark:'—')+'</td><td>'+st+'</td></tr>';
    }).join('') + '</tbody></table>';
 }
 renderFech();
+
+// tabela ao vivo: o contado só existe no sistema (o snapshot dos gráficos é de 8:30)
+function loadFechamentos(f){ return fetch('/api/fechamentos?dias=12'+(f?'&fresh=1':'')).then(r=>r.json()).then(d=>{
+  FECH_LIVE=d;
+  d.itens.forEach(i=>{ espByData[i.data]=i.esperado; abByData[i.data]=i.abertura; });
+  if(window.pintaMoedas) window.pintaMoedas();
+  renderFech();
+}).catch(()=>{}); }
 
 const abByData={}; D.fechamentos.forEach(f=>abByData[f.data]=f.abertura);
 (function(){
@@ -797,12 +808,42 @@ const abByData={}; D.fechamentos.forEach(f=>abByData[f.data]=f.abertura);
       if(el.value!=='') any=true;
       document.getElementById('dv-'+key(v)).textContent='R$ '+fmt(sub);
     });
+    if(window.MOEDAS_REPETIDAS>0){ t+=window.MOEDAS_REPETIDAS; any=true; }
     document.getElementById('gaveta-tot').innerHTML='Total contado na gaveta: <span style="color:var(--accent)">R$ '+fmt(t)+'</span>';
     if(any){ cEl.value=t.toFixed(2); calc(); }
     return t;
   }
-  function clearGaveta(){ TODAS.forEach(v=>{document.getElementById(key(v)).value='';document.getElementById('dv-'+key(v)).textContent='R$ 0,00';}); document.getElementById('gaveta-tot').innerHTML=''; }
+  function clearGaveta(){ TODAS.forEach(v=>{document.getElementById(key(v)).value='';document.getElementById('dv-'+key(v)).textContent='R$ 0,00';}); document.getElementById('gaveta-tot').innerHTML=''; MOEDAS_REPETIDAS=0; }
   TODAS.forEach(v=>document.getElementById(key(v)).addEventListener('input',sumGaveta));
+
+  // ---- moeda só na segunda ----
+  // moeda quase não muda de um dia pro outro e conferir tudo todo dia é o que mais
+  // atrasa o fechamento. Então: conta moeda na SEGUNDA e nos outros dias repete o
+  // valor da última contagem (fica gravado no sistema, junto do fechamento).
+  window.MOEDAS_REPETIDAS = 0;
+  window.somaMoedasDigitadas = function(){
+    return MOEDAS.reduce((t,v)=>t+((parseInt(document.getElementById(key(v)).value)||0)*v),0);
+  };
+  window.pintaMoedas = function(){
+    const box=document.getElementById('moedas-atalho'), av=document.getElementById('moedas-aviso');
+    if(!box) return;
+    const seg = new Date((document.getElementById('f-data').value||'')+'T12:00:00').getDay()===1;
+    const ult = FECH_LIVE ? FECH_LIVE.ultimas_moedas : null;
+    if(av) av.innerHTML = seg
+      ? '<span style="color:var(--accent);font-weight:600">— hoje é segunda: dia de contar a moeda 🪙</span>'
+      : (ult!=null ? '<span style="color:var(--muted)">— pode repetir a da última contagem</span>' : '');
+    box.innerHTML = (!seg && ult!=null)
+      ? '<button type="button" id="btn-moedas-rep" class="ghost" style="font-size:.8rem">🪙 Usar as moedas da última contagem (R$ '+fmt(ult)+')</button>'
+        +'<div class="note" style="margin:4px 0 0">Você não precisa contar moeda hoje — na segunda o painel pede a contagem completa.</div>'
+      : '';
+    const b=document.getElementById('btn-moedas-rep');
+    if(b) b.addEventListener('click',()=>{
+      MOEDAS.forEach(v=>{ const el=document.getElementById(key(v)); el.value=''; document.getElementById('dv-'+key(v)).textContent='R$ 0,00'; });
+      window.MOEDAS_REPETIDAS = ult;
+      sumGaveta();
+      b.textContent='🪙 Moedas: R$ '+fmt(ult)+' (repetido)'; b.disabled=true;
+    });
+  };
 
   function refEsp(){
     const e=espByData[dEl.value];
@@ -813,7 +854,7 @@ const abByData={}; D.fechamentos.forEach(f=>abByData[f.data]=f.abertura);
     calc();
   }
   function calc(){ if(res) res.textContent=''; }  // cálculo/esperado agora vêm AO VIVO do sistema (fech-live)
-  dEl.addEventListener('change',()=>{cEl.value='';abEl.value='';clearGaveta();refEsp();});
+  dEl.addEventListener('change',()=>{cEl.value='';abEl.value='';clearGaveta();refEsp();if(window.pintaMoedas)window.pintaMoedas();});
   cEl.addEventListener('input',calc);
   document.getElementById('f-salvar').addEventListener('click',()=>{
     const c=parseFloat(cEl.value);
@@ -1524,11 +1565,15 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const cc=parseFloat((g('f-contado')||{}).value), msg=g('f-resultado');
     if(isNaN(cc)){ if(msg) msg.innerHTML='<span style="color:var(--crit)">Conte a gaveta (ou digite o contado) primeiro.</span>'; return; }
     const b=g('f-salvar'); if(b){ b.disabled=true; b.textContent='gravando…'; }
-    post('/api/fechamento',{data:(g('f-data')&&g('f-data').value)||'',contado:cc,troco:parseFloat((g('f-abertura')||{}).value)||0}).then(res=>{
+    const moedas = (window.MOEDAS_REPETIDAS>0) ? window.MOEDAS_REPETIDAS
+                 : (window.somaMoedasDigitadas ? window.somaMoedasDigitadas() : 0);
+    post('/api/fechamento',{data:(g('f-data')&&g('f-data').value)||'',contado:cc,
+                            troco:parseFloat((g('f-abertura')||{}).value)||0,
+                            moedas:moedas, moedas_repetidas:(window.MOEDAS_REPETIDAS>0)}).then(res=>{
       if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; }
       if(res.ok){ const q=res.quebra; const t=Math.abs(q)<0.01?'bateu ✓':q>0?'sobra R$ '+fmt(q)+' (lancei uma entrada de ajuste)':'falta R$ '+fmt(-q)+' (lancei uma saída de ajuste)';
         if(msg) msg.innerHTML='<span style="color:var(--good)">✅ Fechamento GRAVADO no sistema: esperado R$ '+fmt(res.esperado)+' · contado R$ '+fmt(res.contado)+' — '+t+'. O caixa agora bate.</span>';
-        loadResumo(true); loadGastosMes(true); loadFechHoje(true); }
+        loadResumo(true); loadGastosMes(true); loadFechHoje(true); loadFechamentos(true); }
       else { if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui gravar')+'</span>'; }
     }).catch(()=>{ if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; } if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
   };
@@ -1552,11 +1597,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();
