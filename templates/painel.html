@@ -1414,7 +1414,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         if(!confirm('Apagar a compra '+b.dataset.cod+'? O estoque volta ao que era e o pagamento é apagado.')) return;
         b.disabled=true; b.textContent='…';
         post('/api/compra-excluir',{id:b.dataset.id}).then(r=>{
-          if(r.ok){ toast('🗑️ Compra '+(r.codigo||'')+' apagada · estoque devolvido'+(r.ajustados&&r.ajustados.length?' (acertei '+r.ajustados.length+' item(ns))':'')+'.');
+          if(r.ok){ toast('🗑️ Compra '+(r.codigo||'')+' apagada · estoque devolvido'+(r.ajustados&&r.ajustados.length?' (acertei '+r.ajustados.length+' item(ns))':'')+(r.reserva_devolvida?' · R$ '+fmt(r.reserva_devolvida)+' voltou pra reserva':'')+'.');
+            if(window.loadReserva) loadReserva(true);
             loadComprasHist(true); loadResumo(true); loadPagar(true); loadABC(true); }
           else { b.disabled=false; b.textContent='✕'; toast('❌ '+(r.erro||'não consegui apagar')); }
         }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });

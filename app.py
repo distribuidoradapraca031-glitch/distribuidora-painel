@@ -228,6 +228,35 @@ def _eh_interno(desc):
     d = (desc or "")
     return d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
 
+def _reserva_saldo():
+    """Quanto tem hoje no Dinheiro Reserva = [RES+] guardado − [RES-] gasto."""
+    dep = out = 0.0
+    for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+        d = (p.get("descricao") or "")
+        v = _num(p.get("valor_total")) or _num(p.get("valor"))
+        if d.startswith(RES_DEP_TAG):
+            dep += v
+        elif d.startswith(RES_OUT_TAG):
+            out += v
+    return round(dep - out, 2)
+
+def _reserva_apaga_saida(codigo):
+    """Tira o [RES-] de uma compra que foi apagada (senão a reserva fica devendo à toa)."""
+    if not codigo:
+        return 0.0
+    total = 0.0
+    for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+        d = (p.get("descricao") or "")
+        if d.startswith(RES_OUT_TAG) and str(codigo) in d:
+            try:
+                gcapi.delete(f"/pagamentos/{p.get('id')}")
+                total += _num(p.get("valor_total")) or _num(p.get("valor"))
+            except Exception:
+                pass
+    if total:
+        _invalida("reserva")
+    return round(total, 2)
+
 def _reserva_saida(valor, desc, data):
     """Desconta da reserva: grava um [RES-] (só ledger do painel) quando um pagamento
     foi feito com a fonte Dinheiro reserva."""
@@ -666,9 +695,10 @@ def api_compra_excluir():
                     "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
                     "estoque": str(alvo)})
                 ajustes.append(l["nome"])
+        devolvido = _reserva_apaga_saida(c.get("codigo"))   # devolve o que saiu da reserva
         _invalida("resumo", "pagar", "catalogo", "reserva", "abc", "compras_painel", "fatores_compra")
         return jsonify({"ok": True, "codigo": c.get("codigo"), "ajustados": ajustes,
-                        "itens": len(linhas)})
+                        "itens": len(linhas), "reserva_devolvida": devolvido})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
@@ -727,6 +757,18 @@ def api_compra():
     partes = [p for p in (body.get("pagamentos") or []) if _num(p.get("valor")) > 0]
     if not partes:
         partes = [{"forma": forma, "valor": total}]
+    # não deixa a reserva ficar negativa (o dono pediu): se o que ele quer tirar
+    # passa do que tem guardado, avisa antes de gravar qualquer coisa
+    quer_reserva = round(sum(_num(p.get("valor")) for p in partes
+                             if (p.get("forma") or "Caixa") == "Dinheiro"), 2)
+    if quer_reserva > 0 and not body.get("forcar_reserva"):
+        saldo = _reserva_saldo()
+        if quer_reserva > saldo + 0.01:
+            return jsonify({"ok": False, "reserva_insuficiente": True, "saldo": saldo,
+                            "pedido": quer_reserva,
+                            "erro": f"a reserva tem R$ {saldo:.2f} e você quer tirar "
+                                    f"R$ {quer_reserva:.2f} dela. Ajuste o valor ou troque "
+                                    f"a forma (Caixa/PIX)."}), 400
     if len(partes) > 4:
         return jsonify({"ok": False, "erro": "no máximo 4 formas de pagamento"}), 400
     soma = round(sum(_num(p.get("valor")) for p in partes), 2)
