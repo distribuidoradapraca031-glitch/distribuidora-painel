@@ -277,6 +277,7 @@ th.g,td.g{background:var(--accent-soft)}
   <p class="note">Três alvos por produto pela velocidade de venda: <strong>7</strong>, <strong>15</strong> e <strong>30 dias</strong>. A ideia é comprar o <strong>mês (30d)</strong> do que der; no que não couber no caixa, cai pra 15 ou 7 dias. Classe A = produtos que fazem 80% do faturamento. Do lado do 30d tem o <strong>estoque atual</strong> (do sistema) e um campo <strong>Contei</strong> pra você lançar a contagem física quando precisar.</p>
   <div class="banner">⚠️ O estoque do sistema está negativo na maioria dos itens (compras nem sempre são lançadas), então a sugestão usa só a velocidade de venda. Desconte o que você ainda tem na prateleira.</div>
   <div class="tblwrap tall" id="tbl-compras"></div>
+  <span class="stamp" id="abc-stamp"></span>
   <div id="inv-resumo-box"></div>
 </section>
 
@@ -654,15 +655,23 @@ const alvoCel=(a,forte)=>{
     : '<span class="buy">'+fmt0(a.un)+'</span> un';
   return '<td class="num'+(forte?' g':'')+'">'+txt+'</td>';
 };
-(function(){
+window.ABC_LIVE=null;      // /api/abc — curva ABC calculada na hora
+function renderCompras(){
   const LS='distribuidora_inventario';
   const load=()=>{try{return JSON.parse(localStorage.getItem(LS))||{}}catch(e){return{}}};
   const save=o=>{try{localStorage.setItem(LS,JSON.stringify(o));return true}catch(e){return false}};
   const cont=load();
-  const estAtual={}; ((D.catalogo&&D.catalogo.produtos)||[]).forEach(p=>{estAtual[p.nome]=p.estoque;});
+  // fardo só existe no snapshot (não vem da API) — casa por nome
+  const fardoDe={}; D.sugestoes.forEach(s=>{ if(s.fardo) fardoDe[s.nome]=s.fardo; });
+  const SUG = (window.ABC_LIVE&&window.ABC_LIVE.sugestoes)
+      ? window.ABC_LIVE.sugestoes.map(s=>Object.assign({},s,{fardo:fardoDe[s.nome]||null}))
+      : D.sugestoes;
+  const estAtual={};
+  if(window.ABC_LIVE&&window.ABC_LIVE.sugestoes) SUG.forEach(s=>{estAtual[s.nome]=s.estoque;});
+  else ((D.catalogo&&D.catalogo.produtos)||[]).forEach(p=>{estAtual[p.nome]=p.estoque;});
   document.getElementById('tbl-compras').innerHTML =
    '<table><thead><tr><th>Produto</th><th>Classe</th><th class="num">Vende/dia</th><th class="num">Comprar 7d</th><th class="num">Comprar 15d</th><th class="num g">Comprar 30d</th><th class="num">Estoque</th><th class="num">Contei</th><th>Fardo</th></tr></thead><tbody>' +
-   D.sugestoes.map(s=>{
+   SUG.map(s=>{
      const est = (estAtual[s.nome]!=null) ? estAtual[s.nome] : s.estoque;
      const estCor = est==null ? 'var(--muted)' : est<=0 ? 'var(--crit)' : est<(s.vel_dia*3) ? 'var(--warn)' : 'var(--ink)';
      const nm = String(s.nome).replace(/"/g,'&quot;');
@@ -681,7 +690,7 @@ const alvoCel=(a,forte)=>{
     if(n) document.getElementById('inv-resumo-btn').addEventListener('click',()=>{
       const c=load();
       const L=['INVENTÁRIO / CONTAGEM DE ESTOQUE — '+dbr2(hoje),''];
-      D.sugestoes.forEach(s=>{ if(c[s.nome]==null) return; const e=(estAtual[s.nome]!=null)?estAtual[s.nome]:(s.estoque||0); const dif=Math.round(c[s.nome]-e);
+      SUG.forEach(s=>{ if(c[s.nome]==null) return; const e=(estAtual[s.nome]!=null)?estAtual[s.nome]:(s.estoque||0); const dif=Math.round(c[s.nome]-e);
         L.push('• '+s.nome+': sistema '+fmt0(e)+', contei '+fmt0(c[s.nome])+' ('+(dif>0?'+':'')+fmt0(dif)+')'); });
       L.push('','Ajusta o estoque do sistema pra bater com a contagem.');
       copyBtn('inv-resumo-box', L.join('\n'));
@@ -695,20 +704,37 @@ const alvoCel=(a,forte)=>{
     });
   });
   refreshBtn();
-})();
+}
+renderCompras();
 
 // ---- top 10 ----
-document.getElementById('tbl-top').innerHTML =
- '<table><thead><tr><th>#</th><th>Produto</th><th class="num">Faturou 30d</th><th class="num">Un 7d</th></tr></thead><tbody>' +
- D.sugestoes.slice(0,10).map((s,i)=>'<tr><td>'+(i+1)+'</td><td class="nome">'+s.nome+'</td><td class="num">R$ '+fmt(s.fat30)+'</td><td class="num">'+fmt0(s.vendeu7)+'</td></tr>').join('') +
- '</tbody></table>';
+function renderTop(){
+  const SUG=(window.ABC_LIVE&&window.ABC_LIVE.sugestoes)||D.sugestoes;
+  document.getElementById('tbl-top').innerHTML =
+   '<table><thead><tr><th>#</th><th>Produto</th><th class="num">Faturou 30d</th><th class="num">Un 7d</th></tr></thead><tbody>' +
+   SUG.slice(0,10).map((s,i)=>'<tr><td>'+(i+1)+'</td><td class="nome">'+s.nome+'</td><td class="num">R$ '+fmt(s.fat30)+'</td><td class="num">'+fmt0(s.vendeu7)+'</td></tr>').join('') +
+   '</tbody></table>';
+}
+renderTop();
 
 // ---- parados ----
-const capTotal = D.parados.reduce((a,p)=>a+p.capital,0);
-document.getElementById('tbl-parados').innerHTML =
- '<table><thead><tr><th>Produto</th><th class="num">Estoque</th><th class="num">Capital preso</th><th class="num">Un 30d</th></tr></thead><tbody>' +
- D.parados.map(p=>'<tr><td class="nome">'+p.nome+'</td><td class="num">'+fmt0(p.estoque)+'</td><td class="num">R$ '+fmt(p.capital)+'</td><td class="num">'+fmt0(p.vendeu30)+'</td></tr>').join('') +
- '</tbody><tfoot><tr><td>Total preso</td><td></td><td class="num">R$ '+fmt(capTotal)+'</td><td></td></tr></tfoot></table>';
+function renderParados(){
+  const PAR=(window.ABC_LIVE&&window.ABC_LIVE.parados)||D.parados;
+  const capTotal = PAR.reduce((a,p)=>a+p.capital,0);
+  document.getElementById('tbl-parados').innerHTML =
+   '<table><thead><tr><th>Produto</th><th class="num">Estoque</th><th class="num">Capital preso</th><th class="num">Un 30d</th></tr></thead><tbody>' +
+   PAR.map(p=>'<tr><td class="nome">'+p.nome+'</td><td class="num">'+fmt0(p.estoque)+'</td><td class="num">R$ '+fmt(p.capital)+'</td><td class="num">'+fmt0(p.vendeu30)+'</td></tr>').join('') +
+   '</tbody><tfoot><tr><td>Total preso</td><td></td><td class="num">R$ '+fmt(capTotal)+'</td><td></td></tr></tfoot></table>';
+}
+renderParados();
+
+// curva ABC ao vivo: recalcula com o estoque do momento (o snapshot é de 8:30)
+function loadABC(f){ return fetch('/api/abc'+(f?'?fresh=1':'')).then(r=>r.json()).then(d=>{
+  window.ABC_LIVE=d;
+  renderCompras(); renderTop(); renderParados();
+  const st=document.getElementById('abc-stamp');
+  if(st) st.textContent='curva ABC recalculada agora ('+d.gerado_em+') · classe A '+d.abc_resumo.A+' · B '+d.abc_resumo.B+' · C '+d.abc_resumo.C;
+}).catch(()=>{}); }
 
 // ---- notas de compra (rotina de segunda) ----
 (function(){
@@ -1301,7 +1327,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const b=g('iv-salvar'); b.disabled=true; b.textContent='…';
       post('/api/inventario',{produto_id:p.id,contagem:c}).then(res=>{
         b.disabled=false; b.textContent='Salvar no sistema';
-        if(res.ok){ const dif=res.dif; msg.innerHTML='<span style="color:var(--good)">✅ '+esc(res.nome)+' ajustado pra '+res.depois+' (era '+fmt0(res.antes)+', '+(dif>=0?'+':'')+dif+').</span>'; isis.value=res.depois; ic.value=''; loadResumo(true); }
+        if(res.ok){ const dif=res.dif; msg.innerHTML='<span style="color:var(--good)">✅ '+esc(res.nome)+' ajustado pra '+res.depois+' (era '+fmt0(res.antes)+', '+(dif>=0?'+':'')+dif+').</span>'; isis.value=res.depois; ic.value=''; loadResumo(true); loadABC(true); }
         else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
       }).catch(()=>{ b.disabled=false; b.textContent='Salvar no sistema'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
@@ -1599,11 +1625,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

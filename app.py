@@ -636,7 +636,7 @@ def api_inventario():
     }
     try:
         gcapi.put(f"/produtos/{pid}", payload)
-        _invalida("resumo", "catalogo")
+        _invalida("resumo", "catalogo", "abc")
         return jsonify({"ok": True, "antes": antes, "depois": contagem,
                         "dif": contagem - antes, "nome": cur.get("nome")})
     except Exception as e:
@@ -700,6 +700,71 @@ def api_fechamento_hoje():
                 "esperado": round(troco + din - saidas, 2),
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("fech_" + data, 45, build))
+
+@app.route("/api/abc")
+@login_required
+def api_abc():
+    """Curva ABC + sugestão de compra + parados, tudo AO VIVO.
+
+    Antes isso vinha do snapshot dos gráficos (gerado 8:30 no Mac e publicado no
+    deploy), então acerto de estoque feito durante o dia não aparecia. Agora sai
+    direto do GestãoClick: venda dos últimos 30 dias + estoque do momento.
+    """
+    def build():
+        hoje = datetime.date.today()
+        ini30 = (hoje - datetime.timedelta(days=29)).isoformat()
+        d7 = (hoje - datetime.timedelta(days=6)).isoformat()
+        un30, fat30, un7 = defaultdict(float), defaultdict(float), defaultdict(float)
+        for v in gcapi.get_all("/vendas", {"tipo": "vendas_balcao",
+                                           "data_inicio": ini30, "data_fim": hoje.isoformat()}):
+            d = (v.get("data") or "")[:10]
+            for w in (v.get("produtos") or []):
+                p = w.get("produto", w)
+                pid = str(p.get("produto_id") or "")
+                q = _num(p.get("quantidade"))
+                un30[pid] += q
+                fat30[pid] += _num(p.get("valor_total"))
+                if d >= d7:
+                    un7[pid] += q
+        prods = {str(p.get("id")): p for p in gcapi.get_all("/produtos")
+                 if str(p.get("ativo")) == "1"}
+        total_fat = sum(fat30.values()) or 1.0
+        ordem = sorted(fat30.items(), key=lambda kv: -kv[1])
+        acum, classe = 0.0, {}
+        for pid, f in ordem:
+            acum += f
+            classe[pid] = "A" if acum <= 0.8 * total_fat else ("B" if acum <= 0.95 * total_fat else "C")
+        itens = []
+        for pid, f in ordem:
+            p = prods.get(pid)
+            if not p:
+                continue
+            vel = un30[pid] / 30.0
+            est = _num(p.get("estoque"))
+            def alvo(dias):
+                falta = vel * dias - est
+                return {"un": int(falta + 0.999)} if falta > 0 else {"un": 0}
+            itens.append({"pid": pid, "nome": p.get("nome"), "classe": classe.get(pid, "C"),
+                          "vel_dia": round(vel, 2), "fat30": round(f, 2),
+                          "vendeu30": round(un30[pid], 1), "vendeu7": round(un7[pid], 1),
+                          "estoque": est, "custo": _num(p.get("valor_custo")),
+                          "c7": alvo(7), "c15": alvo(15), "c30": alvo(30)})
+        # parados: tem estoque parado e não vendeu nada na semana
+        parados = [{"nome": p.get("nome"), "estoque": _num(p.get("estoque")),
+                    "capital": round(_num(p.get("estoque")) * _num(p.get("valor_custo")), 2),
+                    "vendeu30": round(un30.get(pid, 0), 1)}
+                   for pid, p in prods.items()
+                   if _num(p.get("estoque")) > 0 and un7.get(pid, 0) == 0]
+        parados.sort(key=lambda x: -x["capital"])
+        resumo = {"A": sum(1 for c in classe.values() if c == "A"),
+                  "B": sum(1 for c in classe.values() if c == "B"),
+                  "C": sum(1 for c in classe.values() if c == "C")}
+        return {"sugestoes": itens[:150], "parados": parados[:30], "abc_resumo": resumo,
+                "negativos": sum(1 for p in prods.values() if _num(p.get("estoque")) < 0),
+                "valor_estoque": round(sum(_num(p.get("estoque")) * _num(p.get("valor_custo"))
+                                           for p in prods.values()), 2),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("abc", 900, build))  # pesado (30 dias de venda): cache 15 min
 
 @app.route("/api/fechamentos")
 @login_required
