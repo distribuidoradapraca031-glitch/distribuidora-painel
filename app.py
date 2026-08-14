@@ -756,7 +756,8 @@ def api_fechamentos():
             ab = aberturas.get(d, 200.0)
             esp = round(ab + din.get(d, 0) - saidas.get(d, 0), 2)
             c = contados.get(d)
-            itens.append({"data": d, "abertura": round(ab, 2), "dinheiro": round(din.get(d, 0), 2),
+            itens.append({"data": d, "abertura": round(ab, 2), "abertura_real": d in aberturas,
+                          "dinheiro": round(din.get(d, 0), 2),
                           "saidas": round(saidas.get(d, 0), 2), "esperado": esp,
                           "contado": c, "quebra": None if c is None else round(c - esp, 2),
                           "moedas": moedas.get(d)})

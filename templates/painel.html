@@ -758,7 +758,7 @@ function renderFech(){
   const anot=loadAnot();
   const linhas=(FECH_LIVE && FECH_LIVE.itens) ? FECH_LIVE.itens : D.fechamentos.slice(-12);
   document.getElementById('tbl-fech').innerHTML =
-   '<table><thead><tr><th>Dia</th><th class="num">Troco inicial</th><th class="num">Dinheiro vendido</th><th class="num">Saídas dinheiro</th><th class="num">Esperado na gaveta</th><th class="num">Contado</th><th>Situação</th></tr></thead><tbody>' +
+   '<table><thead><tr><th>Dia</th><th class="num">Troco (abertura)</th><th class="num">Dinheiro vendido</th><th class="num">Saídas dinheiro</th><th class="num">Esperado na gaveta</th><th class="num">Contado</th><th>Situação</th></tr></thead><tbody>' +
    linhas.map(f=>{
      const contado = anot[f.data]!=null ? anot[f.data] : f.contado;
      let st='<span class="pill pB">sem contagem</span>';
@@ -770,7 +770,9 @@ function renderFech(){
      }
      const anotMark = (f.contado==null && anot[f.data]!=null) ? ' <span style="color:var(--muted)">✍️</span>'
                     : (f.moedas!=null ? ' <span style="color:var(--muted)" title="moedas R$ '+fmt(f.moedas)+'">🪙</span>' : '');
-     return '<tr><td>'+dbr(f.data)+'</td><td class="num">'+fmt(f.abertura)+'</td><td class="num">'+fmt(f.dinheiro)+'</td>'+
+     const abMark = (f.abertura_real===false)
+        ? ' <span style="color:var(--warn)" title="você não lançou a abertura nesse dia — usei R$ 200 de referência">≈</span>' : '';
+     return '<tr><td>'+dbr(f.data)+'</td><td class="num">'+fmt(f.abertura)+abMark+'</td><td class="num">'+fmt(f.dinheiro)+'</td>'+
        '<td class="num">'+fmt(f.saidas)+'</td><td class="num">'+fmt(f.esperado)+'</td>'+
        '<td class="num">'+(contado!=null?fmt(contado)+anotMark:'—')+'</td><td>'+st+'</td></tr>';
    }).join('') + '</tbody></table>';
