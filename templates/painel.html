@@ -324,6 +324,16 @@ th.g,td.g{background:var(--accent-soft)}
         </select>
       </label>
     </div>
+    <div id="cp-split-box" style="margin-top:8px">
+      <label style="font-size:.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="cp-split"> <strong>Dividir o pagamento</strong> (paguei parte no PIX, parte em dinheiro…)
+      </label>
+      <div id="cp-split-linhas" hidden style="margin-top:8px;padding:10px;border:1px dashed var(--line);border-radius:8px">
+        <p class="note" style="margin:0 0 8px">Use quantas linhas precisar (até 4). <strong>Deixe uma em branco</strong> e ela é ignorada — a soma tem que fechar com o total da compra.</p>
+        <div id="cp-split-rows"></div>
+        <div class="fres" id="cp-split-tot" style="margin-top:6px"></div>
+      </div>
+    </div>
     <div style="border-top:1px dashed var(--line);margin:12px 0 4px"></div>
     <div class="fform">
       <label style="flex:1 1 220px">Produto
@@ -1035,6 +1045,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   valEl.addEventListener('input',fromTotal);
   function render(){
     const arr=load(), box=document.getElementById('tbl-cp-itens');
+    if(window.cpSplitPinta) setTimeout(window.cpSplitPinta,0);   // total mudou: reconfere a divisão
     if(!arr.length){box.innerHTML='';return;}
     let totUn=0,totV=0;
     const rows=arr.map(x=>{const un=x.qtd*x.mult, cu=un>0?x.valor/un:0; totUn+=un; totV+=x.valor;
@@ -1281,6 +1292,15 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const forma=g('cp-forma').value, data=g('cp-data').value;
       const payload={ fornecedor_id:forn.value, data:data, forma:forma,
         itens: itens.map(x=>({produto_id:x.pid, quantidade:x.qtd, mult:x.mult, valor:x.valor})) };
+      if(window.cpSplitAtivo && window.cpSplitAtivo()){
+        const partes=window.cpSplitPartes();
+        const totalCompra=itens.reduce((a,x)=>a+(+x.valor||0),0);
+        const soma=partes.reduce((a,p)=>a+p.valor,0);
+        if(!partes.length){ msg.innerHTML='<span style="color:var(--crit)">Preencha pelo menos uma forma de pagamento.</span>'; return; }
+        if(Math.abs(soma-totalCompra)>0.02){
+          msg.innerHTML='<span style="color:var(--crit)">As formas somam R$ '+fmt(soma)+' e a compra é R$ '+fmt(totalCompra)+'. Ajuste os valores.</span>'; return; }
+        payload.pagamentos=partes;
+      }
       nb.disabled=true; nb.textContent='gravando…';
       post('/api/compra',payload).then(res=>{
         nb.disabled=false; nb.textContent='Gerar compra';
@@ -1292,6 +1312,47 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         } else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui lançar')+'</span>'; }
       }).catch(()=>{ nb.disabled=false; nb.textContent='Gerar compra'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
+  })();
+
+  /* ---------- Compra sem nota: dividir o pagamento em até 4 formas ---------- */
+  (function(){
+    const chk=g('cp-split'), box=g('cp-split-linhas'), rows=g('cp-split-rows');
+    if(!chk||!rows) return;
+    const FORMAS=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['PIX','PIX'],['Boleto','Boleto (a pagar)']];
+    const inp='font:inherit;font-size:.85rem;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)';
+    rows.innerHTML=[0,1,2,3].map(i=>
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'+
+      '<span style="font-size:.8rem;color:var(--muted);width:16px">'+(i+1)+'</span>'+
+      '<select class="cps-forma" style="'+inp+';width:150px">'+
+        FORMAS.map(f=>'<option value="'+f[0]+'"'+(f[0]===['PIX','Caixa','Dinheiro','Boleto'][i]?' selected':'')+'>'+f[1]+'</option>').join('')+
+      '</select>'+
+      '<label style="font-size:.8rem;color:var(--muted);display:inline-flex;align-items:center;gap:4px">R$ '+
+      '<input type="number" step="0.01" inputmode="decimal" class="cps-valor" placeholder="0,00" style="'+inp+';width:110px"></label>'+
+      '</div>').join('');
+    function partes(){
+      const out=[];
+      rows.querySelectorAll('div').forEach(r=>{
+        const f=r.querySelector('.cps-forma'), v=parseFloat((r.querySelector('.cps-valor')||{}).value);
+        if(f && !isNaN(v) && v>0) out.push({forma:f.value, valor:+v.toFixed(2)});
+      });
+      return out;
+    }
+    function totalItens(){ let it=[]; try{ it=JSON.parse(localStorage.getItem('distribuidora_compra_itens'))||[] }catch(e){}
+      return it.reduce((a,x)=>a+(+x.valor||0),0); }
+    function pinta(){
+      const p=partes(), s=p.reduce((a,x)=>a+x.valor,0), t=totalItens(), dif=+(t-s).toFixed(2);
+      g('cp-split-tot').innerHTML = !p.length
+        ? '<span style="color:var(--muted)">nenhuma forma preenchida ainda</span>'
+        : 'somando <b>R$ '+fmt(s)+'</b> de <b>R$ '+fmt(t)+'</b> — '+
+          (Math.abs(dif)<0.02 ? '<span style="color:var(--good)">fecha certinho ✓</span>'
+           : dif>0 ? '<span style="color:var(--warn)">falta R$ '+fmt(dif)+'</span>'
+                   : '<span style="color:var(--crit)">passou R$ '+fmt(-dif)+'</span>');
+    }
+    chk.addEventListener('change',()=>{ box.hidden=!chk.checked; g('cp-forma').disabled=chk.checked; if(chk.checked) pinta(); });
+    rows.addEventListener('input',pinta);
+    window.cpSplitAtivo=()=>chk.checked;
+    window.cpSplitPartes=partes;
+    window.cpSplitPinta=pinta;
   })();
 
   /* ---------- Lancar gasto: AO VIVO ---------- */

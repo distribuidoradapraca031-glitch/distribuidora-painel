@@ -566,22 +566,34 @@ def api_compra():
             "valor_custo": round(custo_unit, 4), "valor_total": round(valor, 2),
             "detalhes": "compra sem nota (painel)",
         }})
-    if forma == "Boleto":
-        # a prazo: fica em contas a pagar, não sai do caixa agora
-        pagamentos = [{"pagamento": {
-            "data_vencimento": data, "valor": round(total, 2),
-            "forma_pagamento_id": BOLETO_FORMA_ID, "plano_contas_id": "33015669",
-            "liquidado": "0",
-        }}]
-        condicao = "a_prazo"
-    else:
-        pot = POTES.get(forma, POTES["Caixa"])
-        pagamentos = [{"pagamento": {
-            "data_vencimento": data, "valor": round(total, 2),
-            "forma_pagamento_id": pot["forma"], "plano_contas_id": "33015669",
-            "conta_bancaria_id": pot["conta"], "liquidado": "1", "data_liquidacao": data,
-        }}]
-        condicao = "a_vista"
+    # pagamento pode vir dividido: [{"forma": "PIX", "valor": 300}, {"forma": "Caixa", ...}]
+    # (o dono às vezes paga parte no PIX e parte em dinheiro). Sem a lista, cai no
+    # comportamento antigo: uma forma só, com o total.
+    partes = [p for p in (body.get("pagamentos") or []) if _num(p.get("valor")) > 0]
+    if not partes:
+        partes = [{"forma": forma, "valor": total}]
+    if len(partes) > 4:
+        return jsonify({"ok": False, "erro": "no máximo 4 formas de pagamento"}), 400
+    soma = round(sum(_num(p.get("valor")) for p in partes), 2)
+    if abs(soma - round(total, 2)) > 0.02:
+        return jsonify({"ok": False, "erro": f"as formas somam R$ {soma:.2f} e a compra é "
+                                             f"R$ {total:.2f} — ajuste os valores"}), 400
+    pagamentos = []
+    for p in partes:
+        f = p.get("forma") or "Caixa"
+        v = round(_num(p.get("valor")), 2)
+        if f == "Boleto":     # a prazo: vira conta a pagar, não sai do caixa agora
+            pagamentos.append({"pagamento": {
+                "data_vencimento": (p.get("vencimento") or data)[:10], "valor": v,
+                "forma_pagamento_id": BOLETO_FORMA_ID, "plano_contas_id": "33015669",
+                "liquidado": "0"}})
+        else:
+            pot = POTES.get(f, POTES["Caixa"])
+            pagamentos.append({"pagamento": {
+                "data_vencimento": data, "valor": v,
+                "forma_pagamento_id": pot["forma"], "plano_contas_id": "33015669",
+                "conta_bancaria_id": pot["conta"], "liquidado": "1", "data_liquidacao": data}})
+    condicao = "a_prazo" if all(p.get("forma") == "Boleto" for p in partes) else "a_vista"
     payload = {
         "codigo": _proximo_codigo_compra(), "fornecedor_id": forn,
         "data_emissao": data, "situacao_id": "1979927", "condicao_pagamento": condicao,
@@ -593,9 +605,12 @@ def api_compra():
         if r.get("status") != "success":
             return jsonify({"ok": False, "erro": str(r.get("data") or r)[:200]}), 502
         d = r.get("data") or {}
-        if forma == "Dinheiro":
-            _reserva_saida(total, f"Compra {d.get('codigo') or ''}".strip(), data)
-        _invalida("resumo", "pagar", "catalogo", "reserva")
+        # a reserva desconta só a parte paga com "Dinheiro" (pode ser parcial agora)
+        em_reserva = round(sum(_num(p.get("valor")) for p in partes
+                               if (p.get("forma") or "Caixa") == "Dinheiro"), 2)
+        if em_reserva > 0:
+            _reserva_saida(em_reserva, f"Compra {d.get('codigo') or ''}".strip(), data)
+        _invalida("resumo", "pagar", "catalogo", "reserva", "abc")
         return jsonify({"ok": True, "id": d.get("id"), "codigo": d.get("codigo"),
                         "total": round(total, 2), "itens": len(produtos)})
     except Exception as e:
