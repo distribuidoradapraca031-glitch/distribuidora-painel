@@ -537,6 +537,48 @@ def _proximo_codigo_compra():
     except Exception:
         return str(810807)
 
+def _produto_bruto(pid):
+    """Cadastro do produto direto do GC (sem cache)."""
+    p = gcapi.get(f"/produtos/{pid}").get("data")
+    if isinstance(p, list):
+        p = p[0] if p else {}
+    return p.get("Produto", p) if isinstance(p, dict) else {}
+
+def _fardo_cadastrado(prod):
+    """Quantas unidades vêm no fardo, do jeito que o dono confirmou.
+
+    O GestãoClick tem a "unidade de compra" dele, mas a API não lê nem escreve esse
+    campo — então guardo o número na DESCRIÇÃO do produto como [fardo=N]. É esse
+    valor que aparece pro dono na tela de compra, e é ele que manda no estoque.
+    """
+    m = re.search(r"\[fardo=(\d+(?:[.,]\d+)?)\]", prod.get("descricao") or "", re.I)
+    return _num(m.group(1)) if m else None
+
+def _grava_fardo(prod, n):
+    """Guarda [fardo=N] na descrição do produto, preservando o texto que já existir."""
+    desc = re.sub(r"\s*\[fardo=[^\]]*\]", "", prod.get("descricao") or "", flags=re.I).strip()
+    novo = (desc + f" [fardo={int(n)}]").strip()
+    gcapi.put(f"/produtos/{prod.get('id')}", {
+        "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
+        "descricao": novo})
+
+@app.route("/api/fardo", methods=["POST"])
+@login_required
+def api_fardo():
+    """Salva quantas unidades vêm no fardo de um produto (o dono corrige na tela)."""
+    body = request.get_json(force=True, silent=True) or {}
+    pid = str(body.get("produto_id") or "").strip()
+    n = _num(body.get("fardo"))
+    if not pid or n <= 0:
+        return jsonify({"ok": False, "erro": "produto e quantidade do fardo são obrigatórios"}), 400
+    try:
+        p = _produto_bruto(pid)
+        _grava_fardo(p, n)
+        _invalida("catalogo")
+        return jsonify({"ok": True, "nome": p.get("nome"), "fardo": int(n)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
 @app.route("/api/compra", methods=["POST"])
 @login_required
 def api_compra():
@@ -550,22 +592,25 @@ def api_compra():
         return jsonify({"ok": False, "erro": "escolha o fornecedor"}), 400
     if not itens:
         return jsonify({"ok": False, "erro": "adicione ao menos um item"}), 400
-    produtos, total = [], 0.0
+    produtos, total, plano = [], 0.0, []
     for it in itens:
         pid = str(it.get("produto_id") or "").strip()
-        qtd = _num(it.get("quantidade"))
-        mult = _num(it.get("mult")) or 1
-        valor = _num(it.get("valor"))
+        qtd = _num(it.get("quantidade"))          # quantos FARDOS/caixas
+        mult = _num(it.get("mult")) or 1          # unidades dentro de cada fardo
+        valor = _num(it.get("valor"))             # valor total pago nesse item
         if not pid or qtd <= 0 or valor <= 0:
             return jsonify({"ok": False, "erro": "item incompleto"}), 400
-        units = qtd * mult
-        custo_unit = valor / units if units else 0
+        units = qtd * mult                        # unidades que TÊM que entrar no estoque
         total += valor
+        # o GC multiplica a quantidade pela conversão do cadastro dele (que a API não
+        # lê nem escreve), então mando em FARDOS e confiro o estoque depois.
         produtos.append({"produto": {
-            "produto_id": pid, "quantidade": units,
-            "valor_custo": round(custo_unit, 4), "valor_total": round(valor, 2),
+            "produto_id": pid, "quantidade": qtd,
+            "valor_custo": round(valor / qtd, 4), "valor_total": round(valor, 2),
             "detalhes": "compra sem nota (painel)",
         }})
+        plano.append({"pid": pid, "qtd": qtd, "mult": mult, "units": units, "valor": valor,
+                      "antes": _num(_produto_bruto(pid).get("estoque"))})
     # pagamento pode vir dividido: [{"forma": "PIX", "valor": 300}, {"forma": "Caixa", ...}]
     # (o dono às vezes paga parte no PIX e parte em dinheiro). Sem a lista, cai no
     # comportamento antigo: uma forma só, com o total.
@@ -605,6 +650,30 @@ def api_compra():
         if r.get("status") != "success":
             return jsonify({"ok": False, "erro": str(r.get("data") or r)[:200]}), 502
         d = r.get("data") or {}
+        # ---- confere o que ENTROU de verdade ----
+        # o GC aplica a conversão de compra dele (que a API não enxerga). Então leio o
+        # estoque depois: se não entrou o que devia, acerto na hora e gravo o custo
+        # por UNIDADE. Assim não tem mais "lancei 10 e entraram 120".
+        conf = []
+        for it in plano:
+            prod = _produto_bruto(it["pid"])
+            depois = _num(prod.get("estoque"))
+            entrou = round(depois - it["antes"], 2)
+            corrigido = False
+            if abs(entrou - it["units"]) > 0.01:
+                gcapi.put(f"/produtos/{it['pid']}", {
+                    "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
+                    "estoque": str(round(it["antes"] + it["units"], 2))})
+                corrigido = True
+            # custo sempre por unidade (o GC copia o valor da linha, que é do fardo)
+            gcapi.put(f"/produtos/{it['pid']}", {
+                "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
+                "valor_custo": f"{it['valor'] / it['units']:.4f}"})
+            if it["mult"] > 1 and _fardo_cadastrado(prod) != it["mult"]:
+                _grava_fardo(prod, it["mult"])       # aprende o fardo que o dono usou
+            conf.append({"nome": prod.get("nome"), "unidades": it["units"],
+                         "entrou_sozinho": entrou, "corrigido": corrigido,
+                         "custo_unit": round(it["valor"] / it["units"], 4)})
         # a reserva desconta só a parte paga com "Dinheiro" (pode ser parcial agora)
         em_reserva = round(sum(_num(p.get("valor")) for p in partes
                                if (p.get("forma") or "Caixa") == "Dinheiro"), 2)
@@ -612,7 +681,8 @@ def api_compra():
             _reserva_saida(em_reserva, f"Compra {d.get('codigo') or ''}".strip(), data)
         _invalida("resumo", "pagar", "catalogo", "reserva", "abc")
         return jsonify({"ok": True, "id": d.get("id"), "codigo": d.get("codigo"),
-                        "total": round(total, 2), "itens": len(produtos)})
+                        "total": round(total, 2), "itens": len(produtos),
+                        "conferencia": conf})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
@@ -628,7 +698,8 @@ def api_produto():
         p = p[0] if p else {}
     p = p.get("Produto", p) if isinstance(p, dict) else {}
     return jsonify({"ok": True, "nome": p.get("nome"),
-                    "estoque": _num(p.get("estoque")), "custo": _num(p.get("valor_custo"))})
+                    "estoque": _num(p.get("estoque")), "custo": _num(p.get("valor_custo")),
+                    "fardo": _fardo_cadastrado(p)})
 
 @app.route("/api/inventario", methods=["POST"])
 @login_required

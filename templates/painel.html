@@ -345,12 +345,14 @@ th.g,td.g{background:var(--accent-soft)}
           <option value="UN">Unidade</option><option value="CX">Caixa</option><option value="FD">Fardo</option><option value="DZ">Dúzia</option>
         </select>
       </label>
-      <label>Un. por embalagem<input type="number" step="1" inputmode="numeric" id="cp-mult" placeholder="1" style="width:120px"></label>
+      <label>Un. por fardo<input type="number" step="1" inputmode="numeric" id="cp-mult" placeholder="1" style="width:110px"></label>
       <label>Valor por unidade (R$)<input type="number" step="0.01" inputmode="decimal" id="cp-valunit" placeholder="0,00" style="width:130px"></label>
+      <label>Valor do fardo (R$)<input type="number" step="0.01" inputmode="decimal" id="cp-valfardo" placeholder="0,00" style="width:130px"></label>
       <label>Valor pago total (R$)<input type="number" step="0.01" inputmode="decimal" id="cp-valor" placeholder="0,00" style="width:130px"></label>
       <button id="cp-additem">Adicionar item</button>
     </div>
     <div class="fres" id="cp-itemmsg"></div>
+    <div id="cp-fardo-box" style="margin-top:6px"></div>
     <div class="tblwrap" id="tbl-cp-itens" style="margin-top:8px"></div>
     <div class="fform" style="margin-top:10px">
       <button id="cp-gerar">Gerar compra</button>
@@ -358,6 +360,20 @@ th.g,td.g{background:var(--accent-soft)}
     </div>
     <div class="fres" id="cp-msg"></div>
     <div id="cp-out-box"></div>
+    <div style="border-top:1px dashed var(--line);margin-top:14px;padding-top:10px">
+      <p class="note" style="margin:0">
+        <strong>Como preencher (leia se bater dúvida):</strong><br>
+        • <strong>Qtd</strong> = quantos <strong>fardos/caixas</strong> você comprou (não o total de garrafas).<br>
+        • <strong>Un. por fardo</strong> = quantas unidades vêm dentro. Eu preencho com o que está
+          <strong>gravado no sistema</strong> pra esse produto; se estiver errado, <strong>corrija aqui</strong>
+          e eu <strong>atualizo o cadastro</strong> na hora — da próxima vez ele já vem certo.<br>
+        • Ex.: 10 fardos × 12 = <strong>120 garrafas</strong> no estoque. Digitar 10 na Qtd com 12 no fardo
+          entra 120, e não 10.<br>
+        • <strong>Valor por unidade</strong> e <strong>Valor do fardo</strong> se preenchem sozinhos um pelo
+          outro (e o total também). Depois de gravar, eu <strong>confiro o estoque</strong> e digo exatamente
+          quanto entrou — se o sistema aplicar uma conversão diferente, eu acerto na hora.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -1029,10 +1045,60 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   dataEl.value=hoje;
   const valunitEl=document.getElementById('cp-valunit');
   function cpUnits(){ const q=parseFloat(qtdEl.value)||0, m=parseFloat(multEl.value)||1; return q*m; }
-  function fromUnit(){ const u=parseFloat(valunitEl.value), un=cpUnits(); if(!isNaN(u)&&un>0) valEl.value=(u*un).toFixed(2); }   // unidade → total
-  function fromTotal(){ const t=parseFloat(valEl.value), un=cpUnits(); if(!isNaN(t)&&un>0) valunitEl.value=(t/un).toFixed(2); }  // total → unidade
-  function onProd(){ const p=prodByNome[prodEl.value.trim()]; if(p&&p.fardo){multEl.value=p.fardo; if(unidEl.value==='UN')unidEl.value='FD';} if(valunitEl.value)fromUnit(); }
+  const valfardoEl=document.getElementById('cp-valfardo');
+  function espelha(){                       // unidade ⇄ fardo ⇄ total, sempre coerentes
+    const m=parseFloat(multEl.value)||1, q=parseFloat(qtdEl.value)||0, un=cpUnits();
+    const u=parseFloat(valunitEl.value);
+    if(!isNaN(u)){ valfardoEl.value=(u*m).toFixed(2); if(un>0) valEl.value=(u*un).toFixed(2); }
+    else if(!isNaN(parseFloat(valfardoEl.value))){
+      const vf=parseFloat(valfardoEl.value); valunitEl.value=(vf/m).toFixed(2);
+      if(q>0) valEl.value=(vf*q).toFixed(2);
+    }
+  }
+  function fromUnit(){ espelha(); }                                                    // unidade → fardo/total
+  function fromFardo(){ const vf=parseFloat(valfardoEl.value), m=parseFloat(multEl.value)||1,
+                              q=parseFloat(qtdEl.value)||0;
+    if(!isNaN(vf)){ valunitEl.value=(vf/m).toFixed(2); if(q>0) valEl.value=(vf*q).toFixed(2); } }
+  function fromTotal(){ const t=parseFloat(valEl.value), un=cpUnits(), m=parseFloat(multEl.value)||1;
+    if(!isNaN(t)&&un>0){ valunitEl.value=(t/un).toFixed(2); valfardoEl.value=(t/un*m).toFixed(2); } }
+
+  // mostra o fardo que está GRAVADO no sistema e deixa o dono corrigir
+  let FARDO_SISTEMA=null, FARDO_PID=null;
+  function pintaFardo(){
+    const box=document.getElementById('cp-fardo-box'); if(!box) return;
+    const p=prodByNome[prodEl.value.trim()];
+    if(!p){ box.innerHTML=''; return; }
+    const m=parseFloat(multEl.value)||0;
+    const igual = FARDO_SISTEMA!=null && m===FARDO_SISTEMA;
+    box.innerHTML = '<div class="note" style="margin:0">'+
+      (FARDO_SISTEMA!=null
+        ? '📦 No sistema esse produto está gravado como <strong>fardo de '+fmt0(FARDO_SISTEMA)+'</strong>.'
+        : '📦 Esse produto <strong>ainda não tem fardo gravado</strong> no sistema.')+
+      (m>0 && !igual
+        ? ' Você digitou <strong>'+fmt0(m)+'</strong> — <button type="button" id="cp-fardo-salvar" class="ghost" style="font-size:.78rem;padding:3px 8px">gravar '+fmt0(m)+' no cadastro</button>'
+        : (igual ? ' <span style="color:var(--good)">bate com o que você digitou ✓</span>' : ''))+
+      '</div>';
+    const b=document.getElementById('cp-fardo-salvar');
+    if(b) b.addEventListener('click',()=>{
+      b.disabled=true; b.textContent='gravando…';
+      post('/api/fardo',{produto_id:FARDO_PID,fardo:m}).then(r=>{
+        if(r.ok){ FARDO_SISTEMA=r.fardo; pintaFardo(); toast('📦 Fardo de '+r.fardo+' gravado em '+r.nome+'.'); }
+        else { b.disabled=false; b.textContent='tentar de novo'; toast('❌ '+(r.erro||'não consegui')); }
+      }).catch(()=>{ b.disabled=false; b.textContent='tentar de novo'; });
+    });
+  }
+  function onProd(){
+    const p=prodByNome[prodEl.value.trim()];
+    FARDO_SISTEMA=null; FARDO_PID=p?p.id:null;
+    if(p&&p.fardo){multEl.value=p.fardo; if(unidEl.value==='UN')unidEl.value='FD';}
+    if(valunitEl.value)espelha();
+    if(p) fetch('/api/produto?id='+encodeURIComponent(p.id)).then(r=>r.json()).then(d=>{
+      if(d.ok && d.fardo){ FARDO_SISTEMA=d.fardo; multEl.value=d.fardo; if(unidEl.value==='UN')unidEl.value='FD'; espelha(); }
+      pintaFardo();
+    }).catch(()=>pintaFardo());
+  }
   prodEl.addEventListener('change',onProd);
+  valfardoEl.addEventListener('input',fromFardo);
   unidEl.addEventListener('change',()=>{
     if(unidEl.value==='UN')multEl.value=1;
     else if(unidEl.value==='DZ')multEl.value=12;
@@ -1041,7 +1107,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   });
   valunitEl.addEventListener('input',fromUnit);
   qtdEl.addEventListener('input',()=>{ if(valunitEl.value)fromUnit(); });
-  multEl.addEventListener('input',()=>{ if(valunitEl.value)fromUnit(); });
+  multEl.addEventListener('input',()=>{ if(valunitEl.value)fromUnit(); pintaFardo(); });
   valEl.addEventListener('input',fromTotal);
   function render(){
     const arr=load(), box=document.getElementById('tbl-cp-itens');
@@ -1305,7 +1371,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       post('/api/compra',payload).then(res=>{
         nb.disabled=false; nb.textContent='Gerar compra';
         if(res.ok){
-          msg.innerHTML='<span style="color:var(--good)">✅ Compra lançada no sistema ('+res.itens+' item(ns), R$ '+fmt(res.total)+') — estoque e custo atualizados'+(forma==='Boleto'?' · ficou em contas a pagar':'')+'.</span>';
+          const conf=(res.conferencia||[]).map(c=>
+            '<div style="font-size:.82rem">• <strong>'+esc(c.nome)+'</strong>: entraram <strong>'+fmt0(c.unidades)+' unidades</strong>'+
+            ' · custo R$ '+fmt(c.custo_unit)+'/un'+
+            (c.corrigido?' <span style="color:var(--warn)">(o sistema tinha colocado '+fmt0(c.entrou_sozinho)+' — corrigi)</span>':'')+'</div>').join('');
+          msg.innerHTML='<span style="color:var(--good)">✅ Compra lançada no sistema ('+res.itens+' item(ns), R$ '+fmt(res.total)+')'+(forma==='Boleto'?' · ficou em contas a pagar':'')+'.</span>'+conf;
           localStorage.setItem('distribuidora_compra_itens','[]');
           const t=g('tbl-cp-itens'); if(t) t.innerHTML=''; const ob=g('cp-out-box'); if(ob) ob.innerHTML='';
           loadResumo(true); loadPagar(true);
