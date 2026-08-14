@@ -360,6 +360,12 @@ th.g,td.g{background:var(--accent-soft)}
     </div>
     <div class="fres" id="cp-msg"></div>
     <div id="cp-out-box"></div>
+    <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:12px">
+      <div class="eyebrow">Histórico · últimas compras lançadas</div>
+      <p class="note" style="margin:2px 0 8px">Confira o que entrou. Se lançou errado, clique em <strong>✕ apagar</strong>: eu desfaço a compra, <strong>devolvo o estoque</strong> e apago o pagamento — aí é só lançar de novo certo.</p>
+      <div class="tblwrap" id="tbl-compras-hist"></div>
+      <span class="stamp" id="cph-stamp"></span>
+    </div>
     <div style="border-top:1px dashed var(--line);margin-top:14px;padding-top:10px">
       <p class="note" style="margin:0">
         <strong>Como preencher (leia se bater dúvida):</strong><br>
@@ -1063,7 +1069,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     if(!isNaN(t)&&un>0){ valunitEl.value=(t/un).toFixed(2); valfardoEl.value=(t/un*m).toFixed(2); } }
 
   // mostra o fardo que está GRAVADO no sistema e deixa o dono corrigir
-  let FARDO_SISTEMA=null, FARDO_PID=null;
+  let FARDO_SISTEMA=null, FARDO_PID=null, FARDO_ORIGEM='';
   function pintaFardo(){
     const box=document.getElementById('cp-fardo-box'); if(!box) return;
     const p=prodByNome[prodEl.value.trim()];
@@ -1072,7 +1078,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const igual = FARDO_SISTEMA!=null && m===FARDO_SISTEMA;
     box.innerHTML = '<div class="note" style="margin:0">'+
       (FARDO_SISTEMA!=null
-        ? '📦 No sistema esse produto está gravado como <strong>fardo de '+fmt0(FARDO_SISTEMA)+'</strong>.'
+        ? '📦 No sistema esse produto vem em <strong>fardo de '+fmt0(FARDO_SISTEMA)+'</strong>'+
+          (FARDO_ORIGEM==='compra anterior'?' <span style="color:var(--muted)">(peguei da última compra dele)</span>':'')+'.'
         : '📦 Esse produto <strong>ainda não tem fardo gravado</strong> no sistema.')+
       (m>0 && !igual
         ? ' Você digitou <strong>'+fmt0(m)+'</strong> — <button type="button" id="cp-fardo-salvar" class="ghost" style="font-size:.78rem;padding:3px 8px">gravar '+fmt0(m)+' no cadastro</button>'
@@ -1093,7 +1100,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     if(p&&p.fardo){multEl.value=p.fardo; if(unidEl.value==='UN')unidEl.value='FD';}
     if(valunitEl.value)espelha();
     if(p) fetch('/api/produto?id='+encodeURIComponent(p.id)).then(r=>r.json()).then(d=>{
-      if(d.ok && d.fardo){ FARDO_SISTEMA=d.fardo; multEl.value=d.fardo; if(unidEl.value==='UN')unidEl.value='FD'; espelha(); }
+      if(d.ok && d.fardo){ FARDO_SISTEMA=d.fardo; FARDO_ORIGEM=d.fardo_origem||''; multEl.value=d.fardo;
+        if(unidEl.value==='UN')unidEl.value='FD'; espelha(); }
       pintaFardo();
     }).catch(()=>pintaFardo());
   }
@@ -1378,11 +1386,41 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           msg.innerHTML='<span style="color:var(--good)">✅ Compra lançada no sistema ('+res.itens+' item(ns), R$ '+fmt(res.total)+')'+(forma==='Boleto'?' · ficou em contas a pagar':'')+'.</span>'+conf;
           localStorage.setItem('distribuidora_compra_itens','[]');
           const t=g('tbl-cp-itens'); if(t) t.innerHTML=''; const ob=g('cp-out-box'); if(ob) ob.innerHTML='';
-          loadResumo(true); loadPagar(true);
+          loadResumo(true); loadPagar(true); loadComprasHist(true); loadABC(true);
         } else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui lançar')+'</span>'; }
       }).catch(()=>{ nb.disabled=false; nb.textContent='Gerar compra'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
   })();
+
+  /* ---------- Histórico das compras lançadas (conferir e desfazer) ---------- */
+  window.loadComprasHist=function(f){
+    return fetch('/api/compras-painel'+(f?'?fresh=1':'')).then(r=>r.json()).then(d=>{
+      const box=g('tbl-compras-hist'); if(!box) return;
+      if(!d.itens||!d.itens.length){ box.innerHTML='<p class="note" style="margin:0">Nenhuma compra lançada ainda.</p>'; return; }
+      box.innerHTML='<table><thead><tr><th>Data</th><th>Fornecedor</th><th>O que entrou</th>'+
+        '<th class="num">Valor</th><th>Pagamento</th><th></th></tr></thead><tbody>'+
+        d.itens.map(c=>{
+          const prods=c.produtos.map(p=>'<div style="font-size:.8rem">'+esc(p.nome||'—')+
+            ' <span style="color:var(--muted)">'+fmt0(p.qtd)+(p.unid?' '+p.unid:'')+
+            (p.fardo>1?' × '+fmt0(p.fardo):'')+' = <strong>'+fmt0(p.unidades)+' un</strong></span></div>').join('');
+          const pags=c.pagamentos.map(p=>'<div style="font-size:.78rem">'+esc(p.forma)+' <span style="color:var(--muted)">R$ '+fmt(p.valor)+'</span></div>').join('');
+          return '<tr><td>'+dbr(c.data)+'</td><td class="nome">'+esc(c.fornecedor)+
+            (c.do_painel?'':' <span class="pill pB" style="font-size:.65rem">nota</span>')+'</td>'+
+            '<td>'+prods+'</td><td class="num">R$ '+fmt(c.valor)+'</td><td>'+pags+'</td>'+
+            '<td><button class="linkx cph-del" data-id="'+c.id+'" data-cod="'+esc(c.codigo||'')+'" title="apagar e devolver o estoque">✕</button></td></tr>';
+        }).join('')+'</tbody></table>';
+      const st=g('cph-stamp'); if(st) st.textContent='atualizado '+d.gerado_em;
+      box.querySelectorAll('.cph-del').forEach(b=>b.addEventListener('click',()=>{
+        if(!confirm('Apagar a compra '+b.dataset.cod+'? O estoque volta ao que era e o pagamento é apagado.')) return;
+        b.disabled=true; b.textContent='…';
+        post('/api/compra-excluir',{id:b.dataset.id}).then(r=>{
+          if(r.ok){ toast('🗑️ Compra '+(r.codigo||'')+' apagada · estoque devolvido'+(r.ajustados&&r.ajustados.length?' (acertei '+r.ajustados.length+' item(ns))':'')+'.');
+            loadComprasHist(true); loadResumo(true); loadPagar(true); loadABC(true); }
+          else { b.disabled=false; b.textContent='✕'; toast('❌ '+(r.erro||'não consegui apagar')); }
+        }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+      }));
+    }).catch(()=>{});
+  };
 
   /* ---------- Compra sem nota: dividir o pagamento em até 4 formas ---------- */
   (function(){
@@ -1756,11 +1794,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

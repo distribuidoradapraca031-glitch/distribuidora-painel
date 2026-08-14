@@ -562,6 +562,102 @@ def _grava_fardo(prod, n):
         "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
         "descricao": novo})
 
+def _fatores_das_compras():
+    """Fator de fardo que o GestãoClick usa em cada produto.
+
+    O cadastro do produto não expõe a "unidade de compra" pela API, MAS a linha da
+    compra devolve `quantidade_saida` = quantas unidades entram por embalagem. Então
+    aprendo o fator olhando as compras já lançadas (a mais recente vale).
+    """
+    def build():
+        fat = {}
+        for c in sorted(gcapi.get_all("/compras"), key=lambda x: (x.get("data_emissao") or "")):
+            for w in (c.get("produtos") or []):
+                p = w.get("produto", w)
+                qs = _num(p.get("quantidade_saida"))
+                if qs > 0:
+                    fat[str(p.get("produto_id"))] = qs
+        return fat
+    return cached("fatores_compra", 3600, build)
+
+@app.route("/api/compras-painel")
+@login_required
+def api_compras_painel():
+    """Histórico das últimas compras lançadas (pro dono conferir e corrigir)."""
+    def build():
+        cs = sorted(gcapi.get_all("/compras"),
+                    key=lambda c: ((c.get("data_emissao") or ""), str(c.get("id"))), reverse=True)
+        itens = []
+        for c in cs[:15]:
+            prods = []
+            for w in (c.get("produtos") or []):
+                p = w.get("produto", w)
+                q = _num(p.get("quantidade"))
+                fator = _num(p.get("quantidade_saida")) or 1
+                prods.append({"produto_id": str(p.get("produto_id")), "nome": p.get("nome_produto"),
+                              "qtd": q, "fardo": fator, "unidades": round(q * fator, 2),
+                              "valor": _num(p.get("valor_total")),
+                              "unid": p.get("unidade") or "", "painel": "painel" in (p.get("detalhes") or "")})
+            pags = [{"forma": (w.get("pagamento", w)).get("nome_forma_pagamento") or "—",
+                     "valor": _num((w.get("pagamento", w)).get("valor"))}
+                    for w in (c.get("pagamentos") or [])]
+            itens.append({"id": str(c.get("id")), "codigo": c.get("codigo"),
+                          "data": (c.get("data_emissao") or "")[:10],
+                          "fornecedor": c.get("nome_fornecedor") or "—",
+                          "valor": _num(c.get("valor_total")), "situacao": c.get("nome_situacao"),
+                          "nota": c.get("numero_nfe") or "", "produtos": prods, "pagamentos": pags,
+                          "do_painel": any(p["painel"] for p in prods)})
+        return {"itens": itens, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("compras_painel", 120, build))
+
+@app.route("/api/compra-excluir", methods=["POST"])
+@login_required
+def api_compra_excluir():
+    """Apaga uma compra lançada errado e devolve o estoque ao que era.
+
+    Compra confirmada não pode ser excluída direto: reabre ('Em aberto', que reverte
+    o estoque) e só então apaga. Depois confiro o estoque item a item, porque a
+    reversão do GC usa a conversão dele — que pode não ser a que eu usei ao lançar.
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    cid = str(body.get("id") or "").strip()
+    if not cid:
+        return jsonify({"ok": False, "erro": "sem id da compra"}), 400
+    try:
+        c = gcapi.get(f"/compras/{cid}").get("data")
+        c = c[0] if isinstance(c, list) else c
+        c = c.get("Compra", c)
+        linhas, produtos_put = [], []
+        for w in (c.get("produtos") or []):
+            p = w.get("produto", w)
+            pid = str(p.get("produto_id"))
+            q = _num(p.get("quantidade"))
+            prod = _produto_bruto(pid)
+            fardo = _fardo_cadastrado(prod) or _num(p.get("quantidade_saida")) or 1
+            linhas.append({"pid": pid, "nome": prod.get("nome"), "antes": _num(prod.get("estoque")),
+                           "units": q * fardo})
+            produtos_put.append({"produto": {"produto_id": pid, "quantidade": q,
+                                             "valor_custo": _num(p.get("valor_custo")),
+                                             "valor_total": _num(p.get("valor_total"))}})
+        gcapi.put(f"/compras/{cid}", {"fornecedor_id": c.get("fornecedor_id"),
+                                      "situacao_id": "1979925", "produtos": produtos_put})
+        time.sleep(0.4)
+        gcapi.delete(f"/compras/{cid}")
+        ajustes = []
+        for l in linhas:
+            prod = _produto_bruto(l["pid"])
+            alvo = round(l["antes"] - l["units"], 2)
+            if abs(_num(prod.get("estoque")) - alvo) > 0.01:
+                gcapi.put(f"/produtos/{l['pid']}", {
+                    "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
+                    "estoque": str(alvo)})
+                ajustes.append(l["nome"])
+        _invalida("resumo", "pagar", "catalogo", "reserva", "abc", "compras_painel", "fatores_compra")
+        return jsonify({"ok": True, "codigo": c.get("codigo"), "ajustados": ajustes,
+                        "itens": len(linhas)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
 @app.route("/api/fardo", methods=["POST"])
 @login_required
 def api_fardo():
@@ -697,9 +793,16 @@ def api_produto():
     if isinstance(p, list):
         p = p[0] if p else {}
     p = p.get("Produto", p) if isinstance(p, dict) else {}
+    # fardo: primeiro o que o dono confirmou ([fardo=N] na descrição); se não tiver,
+    # o fator que o próprio GC usou na última compra desse produto
+    fardo = _fardo_cadastrado(p)
+    origem = "confirmado" if fardo else None
+    if not fardo:
+        fardo = _fatores_das_compras().get(pid)
+        origem = "compra anterior" if fardo else None
     return jsonify({"ok": True, "nome": p.get("nome"),
                     "estoque": _num(p.get("estoque")), "custo": _num(p.get("valor_custo")),
-                    "fardo": _fardo_cadastrado(p)})
+                    "fardo": fardo, "fardo_origem": origem})
 
 @app.route("/api/inventario", methods=["POST"])
 @login_required
