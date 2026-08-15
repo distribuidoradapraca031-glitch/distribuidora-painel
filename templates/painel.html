@@ -170,6 +170,24 @@ th.g,td.g{background:var(--accent-soft)}
   <div class="tblwrap" id="tbl-reserva" style="margin-top:10px"></div>
 </section>
 
+<section class="card" id="card-sobra">
+  <div class="eyebrow">Caixa · sobra de caixa</div>
+  <h2>💵 Sobra de caixa</h2>
+  <div id="sobra-saldo-box" style="margin:8px 0"></div>
+  <p class="note">O <strong>outro monte de dinheiro</strong> que você guarda — separado da reserva. É o que você usa pra pagar as <strong>contas menores</strong> do dia a dia. Também fica <strong>fora da gaveta</strong> (não conta no fechamento). Quando você paga escolhendo a fonte <strong>Sobra de caixa</strong>, eu <strong>desconto daqui sozinho</strong>.</p>
+  <div class="fbox" style="margin-top:8px">
+    <strong style="font-size:.9rem">➕ Guardar na sobra de caixa</strong>
+    <div class="fform" style="margin-top:6px">
+      <label>Guardei (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-valor" placeholder="0,00" style="width:120px"></label>
+      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="sob-desc" placeholder="ex.: sobra da semana" style="width:100%"></label>
+      <label>Data<input type="date" id="sob-data"></label>
+      <button id="sob-add">Guardar</button>
+    </div>
+    <div class="fres" id="sob-msg"></div>
+  </div>
+  <div class="tblwrap" id="tbl-sobra" style="margin-top:10px"></div>
+</section>
+
 <section class="card">
   <div class="eyebrow">Caixa · saque (troca cartão/PIX → dinheiro)</div>
   <h2>💸 Registrar saque</h2>
@@ -320,7 +338,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Data<input type="date" id="cp-data"></label>
       <label>Pagamento
         <select id="cp-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
+          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
         </select>
       </label>
     </div>
@@ -489,7 +507,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="ex-valor" placeholder="0,00" style="width:110px"></label>
       <label>Pagamento
         <select id="ex-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
+          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
         </select>
       </label>
       <label>Data<input type="date" id="ex-data"></label>
@@ -1020,7 +1038,7 @@ CAT.produtos.forEach(p=>{ prodByNome[p.nome]=p; });
   if(dl) dl.innerHTML = CAT.produtos.map(p=>'<option value="'+String(p.nome).replace(/"/g,'&quot;')+'" label="est '+fmt0(p.estoque)+(p.fardo?(' · fardo '+p.fardo):'')+'">').join('');
 })();
 const unNome = u=>({UN:'un',CX:'caixa(s)',FD:'fardo(s)',DZ:'dúzia(s)'}[u]||u);
-const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)'}[f]||('pagamento '+f));
+const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',Sobra:'sai da Sobra de caixa (o outro monte) — desconta lá em cima',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)'}[f]||('pagamento '+f));
 function copyBtn(boxId, txt){
   const box=document.getElementById(boxId);
   const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -1255,6 +1273,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         kpiCard('A pagar em aberto','k-pagar','')+
         kpiCard('Faturamento total hoje','k-hoje-t','k-hoje-t-sub')+
         kpiCard('Dinheiro reserva','k-reserva','')+
+        kpiCard('Sobra de caixa','k-sobra','')+
         kpiCard('Vendas hoje (balcão)','k-hoje','k-hoje-sub')+
         kpiCard('Vendas hoje (delivery)','k-hoje-d','k-hoje-d-sub')+
       '</section>';
@@ -1416,6 +1435,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         post('/api/compra-excluir',{id:b.dataset.id}).then(r=>{
           if(r.ok){ toast('🗑️ Compra '+(r.codigo||'')+' apagada · estoque devolvido'+(r.ajustados&&r.ajustados.length?' (acertei '+r.ajustados.length+' item(ns))':'')+(r.reserva_devolvida?' · R$ '+fmt(r.reserva_devolvida)+' voltou pra reserva':'')+'.');
             if(window.loadReserva) loadReserva(true);
+            if(window.loadSobra) loadSobra(true);
             loadComprasHist(true); loadResumo(true); loadPagar(true); loadABC(true); }
           else { b.disabled=false; b.textContent='✕'; toast('❌ '+(r.erro||'não consegui apagar')); }
         }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
@@ -1427,7 +1447,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   (function(){
     const chk=g('cp-split'), box=g('cp-split-linhas'), rows=g('cp-split-rows');
     if(!chk||!rows) return;
-    const FORMAS=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['PIX','PIX'],['Boleto','Boleto (a pagar)']];
+    const FORMAS=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Boleto','Boleto (a pagar)']];
     const inp='font:inherit;font-size:.85rem;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)';
     rows.innerHTML=[0,1,2,3].map(i=>
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'+
@@ -1644,8 +1664,50 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
+  /* ---------- Sobra de caixa (o outro monte, separado da reserva) ---------- */
+  function loadSobra(f){ return fetch('/api/sobra'+qf(f)).then(r=>r.json()).then(d=>{
+    const neg=d.saldo<0, mostra=neg?0:d.saldo;   // nunca mostra negativo
+    const sb=g('sobra-saldo-box');
+    if(sb) sb.innerHTML='<div style="font-size:1.9rem;font-weight:800;line-height:1.05">R$ '+fmt(mostra)+'</div>'+
+      (neg
+        ? '<div class="note" style="margin:3px 0 0;color:var(--accent)">⏳ aguardando o <b>saldo de hoje</b> — já usei R$ '+fmt(d.gasto)+' da sobra. Me manda o valor guardado que eu acerto.</div>'
+        : '<div class="note" style="margin:3px 0 0">guardado R$ '+fmt(d.guardado)+' · já usado da sobra R$ '+fmt(d.gasto)+'</div>');
+    if(g('k-sobra')) g('k-sobra').textContent='R$ '+fmt(mostra);
+    const box=g('tbl-sobra'); if(!box) return;
+    if(!d.movimentos||!d.movimentos.length){ box.innerHTML='<p class="note" style="margin:0">Sem movimento na sobra de caixa ainda.</p>'; return; }
+    box.innerHTML='<table><thead><tr><th>Data</th><th>Movimento</th><th class="num">Valor</th><th></th></tr></thead><tbody>'+
+      d.movimentos.map(m=>{const pos=m.valor>=0;return '<tr><td>'+dbr(m.data)+'</td>'+
+        '<td class="nome">'+(pos?'⬆️ guardei':'⬇️ paguei')+(m.desc&&m.desc!=='guardei'?' · '+esc(m.desc):'')+'</td>'+
+        '<td class="num" style="color:'+(pos?'var(--good)':'var(--crit)')+'">'+(pos?'+':'−')+'R$ '+fmt(Math.abs(m.valor))+'</td>'+
+        '<td class="num"><button class="sob-del" data-id="'+m.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button></td></tr>';}).join('')+
+      '</tbody></table>';
+    box.querySelectorAll('.sob-del').forEach(b=>b.addEventListener('click',()=>{
+      if(!confirm('Excluir esse movimento da sobra de caixa?')) return;
+      b.disabled=true; b.textContent='…';
+      post('/api/excluir-conta',{id:b.dataset.id}).then(res=>{
+        if(res.ok){ toast('🗑️ Movimento excluído.'); loadSobra(true); }
+        else{ b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui')); }
+      }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+    }));
+  }).catch(()=>{}); }
+  (function(){
+    const btn=g('sob-add'); if(!btn) return;
+    const sd=g('sob-data'); if(sd&&!sd.value) sd.value=hoje;
+    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
+    nb.addEventListener('click',()=>{
+      const msg=g('sob-msg'), v=parseFloat(g('sob-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
+      nb.disabled=true;
+      post('/api/sobra',{valor:v, descricao:g('sob-desc').value, data:g('sob-data').value||hoje}).then(res=>{
+        nb.disabled=false;
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na sobra de caixa.</span>'; g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
   /* ---------- Previsões por categoria (topo do contas a pagar) ---------- */
-  const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['PIX','PIX']];
+  const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX']];
   function loadPrevisoes(f){ return fetch('/api/previsoes'+qf(f)).then(r=>r.json()).then(d=>{
     // popula o select do formulário (uma vez) com as categorias do servidor
     const sel=g('prev-cat');
@@ -1813,11 +1875,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadSobra(); loadPagar(); loadGastosMes(); loadRecursoProprio(); loadPrevisoes(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadPagar(true),loadGastosMes(true),loadRecursoProprio(true),loadPrevisoes(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
   }
 })();

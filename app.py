@@ -172,6 +172,7 @@ RESERVA_CONTA_ID = "681760"  # onde fica a reserva/banco — FORA da gaveta
 POTES = {
     "Caixa":    {"conta": GAVETA_CONTA,     "forma": "6055919"},  # gaveta + Dinheiro
     "Dinheiro": {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # RESERVA em dinheiro (fora da gaveta)
+    "Sobra":    {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # SOBRA DE CAIXA (fora da gaveta)
     "PIX":      {"conta": RESERVA_CONTA_ID, "forma": "6055931"},  # conta bancária + PIX
 }
 
@@ -222,6 +223,14 @@ RP_TAG = "[RP]"
 RES_DEP_TAG = "[RES+]"
 RES_OUT_TAG = "[RES-]"
 
+# ---- SOBRA DE CAIXA (o outro bolo de dinheiro, separado da reserva) ----
+# O dono guarda DOIS montes de dinheiro fora da gaveta: a RESERVA (cofre, notas altas,
+# quitação de dívida) e a SOBRA DE CAIXA, que ele usa no dia a dia pra pagar conta
+# menor. Mesma mecânica da reserva: saldo = [SOB+] − [SOB-], registros liquidado=0 que
+# só o painel lê. Pagar com a fonte "Sobra" sai FORA da gaveta (não mexe no fechamento).
+SOB_DEP_TAG = "[SOB+]"
+SOB_OUT_TAG = "[SOB-]"
+
 def _sem_tag(desc, tag):
     d = desc or ""
     if d.startswith(tag):
@@ -234,7 +243,8 @@ def _rp_nota(desc):
 def _eh_interno(desc):
     """Registro de controle do painel (recurso próprio / reserva) — some dos blocos normais."""
     d = (desc or "")
-    return d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
+    return (d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
+            or d.startswith(SOB_DEP_TAG) or d.startswith(SOB_OUT_TAG))
 
 def _reserva_saldo():
     """Quanto tem hoje no Dinheiro Reserva = [RES+] guardado − [RES-] gasto."""
@@ -276,6 +286,46 @@ def _reserva_saida(valor, desc, data):
         _invalida("reserva")
     except Exception:
         pass
+
+def _sobra_saldo():
+    """Quanto tem hoje na Sobra de Caixa = [SOB+] guardado − [SOB-] gasto."""
+    dep = out = 0.0
+    for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+        d = (p.get("descricao") or "")
+        v = _num(p.get("valor_total")) or _num(p.get("valor"))
+        if d.startswith(SOB_DEP_TAG):
+            dep += v
+        elif d.startswith(SOB_OUT_TAG):
+            out += v
+    return round(dep - out, 2)
+
+def _sobra_saida(valor, desc, data):
+    """Desconta da sobra de caixa: grava um [SOB-] (só ledger do painel)."""
+    try:
+        gcapi.post("/pagamentos", {
+            "descricao": f"{SOB_OUT_TAG} {desc}"[:180], "valor": f"{_num(valor):.2f}",
+            "data_vencimento": data, "data_competencia": data, "liquidado": "0",
+            "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+        _invalida("sobra")
+    except Exception:
+        pass
+
+def _sobra_apaga_saida(codigo):
+    """Tira o [SOB-] de uma compra apagada (senão a sobra fica devendo à toa)."""
+    if not codigo:
+        return 0.0
+    total = 0.0
+    for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+        d = (p.get("descricao") or "")
+        if d.startswith(SOB_OUT_TAG) and str(codigo) in d:
+            try:
+                gcapi.delete(f"/pagamentos/{p.get('id')}")
+                total += _num(p.get("valor_total")) or _num(p.get("valor"))
+            except Exception:
+                pass
+    if total:
+        _invalida("sobra")
+    return round(total, 2)
 
 # ---- PREVISÕES (topo do contas a pagar): lista fixa de categorias recorrentes ----
 # cada item que o dono adiciona vira um pagamento em aberto com descrição
@@ -440,6 +490,8 @@ def api_baixa():
         gcapi.put(f"/pagamentos/{pid}", payload)
         if forma == "Dinheiro":
             _reserva_saida(payload["valor"], payload["descricao"] or "Conta", _hoje())
+        elif forma == "Sobra":
+            _sobra_saida(payload["valor"], payload["descricao"] or "Conta", _hoje())
         # demais formas da mesma conta: um lançamento por parte, já liquidado
         for parte in partes[1:]:
             f2 = parte.get("forma") or "Caixa"
@@ -456,7 +508,9 @@ def api_baixa():
                 "conta_bancaria_id": pot2["conta"], "forma_pagamento_id": pot2["forma"]})
             if f2 == "Dinheiro":
                 _reserva_saida(v2, desc2, _hoje())
-        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva")
+            elif f2 == "Sobra":
+                _sobra_saida(v2, desc2, _hoje())
+        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva", "sobra")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -503,7 +557,9 @@ def api_gasto():
         d = r.get("data") or {}
         if forma == "Dinheiro":
             _reserva_saida(valor, desc, data)
-        _invalida("pagar", "resumo", "reserva")
+        elif forma == "Sobra":
+            _sobra_saida(valor, desc, data)
+        _invalida("pagar", "resumo", "reserva", "sobra")
         return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -729,7 +785,8 @@ def api_compra_excluir():
                     "estoque": str(alvo)})
                 ajustes.append(l["nome"])
         devolvido = _reserva_apaga_saida(c.get("codigo"))   # devolve o que saiu da reserva
-        _invalida("resumo", "pagar", "catalogo", "reserva", "abc", "compras_painel", "fatores_compra")
+        devolvido += _sobra_apaga_saida(c.get("codigo"))     # e o que saiu da sobra de caixa
+        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "compras_painel", "fatores_compra")
         return jsonify({"ok": True, "codigo": c.get("codigo"), "ajustados": ajustes,
                         "itens": len(linhas), "reserva_devolvida": devolvido})
     except Exception as e:
@@ -801,6 +858,17 @@ def api_compra():
                             "pedido": quer_reserva,
                             "erro": f"a reserva tem R$ {saldo:.2f} e você quer tirar "
                                     f"R$ {quer_reserva:.2f} dela. Ajuste o valor ou troque "
+                                    f"a forma (Caixa/PIX)."}), 400
+    # mesma proteção pra sobra de caixa
+    quer_sobra = round(sum(_num(p.get("valor")) for p in partes
+                           if (p.get("forma") or "Caixa") == "Sobra"), 2)
+    if quer_sobra > 0 and not body.get("forcar_reserva"):
+        saldo_s = _sobra_saldo()
+        if quer_sobra > saldo_s + 0.01:
+            return jsonify({"ok": False, "reserva_insuficiente": True, "saldo": saldo_s,
+                            "pedido": quer_sobra,
+                            "erro": f"a sobra de caixa tem R$ {saldo_s:.2f} e você quer tirar "
+                                    f"R$ {quer_sobra:.2f} dela. Ajuste o valor ou troque "
                                     f"a forma (Caixa/PIX)."}), 400
     if len(partes) > 4:
         return jsonify({"ok": False, "erro": "no máximo 4 formas de pagamento"}), 400
@@ -907,7 +975,11 @@ def api_compra():
                                if (p.get("forma") or "Caixa") == "Dinheiro"), 2)
         if em_reserva > 0:
             _reserva_saida(em_reserva, f"Compra {d.get('codigo') or ''}".strip(), data)
-        _invalida("resumo", "pagar", "catalogo", "reserva", "abc")
+        em_sobra = round(sum(_num(p.get("valor")) for p in partes
+                             if (p.get("forma") or "Caixa") == "Sobra"), 2)
+        if em_sobra > 0:
+            _sobra_saida(em_sobra, f"Compra {d.get('codigo') or ''}".strip(), data)
+        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc")
         return jsonify({"ok": True, "id": d.get("id"), "codigo": d.get("codigo"),
                         "total": round(total, 2), "itens": len(produtos),
                         "conferencia": conf})
@@ -1440,7 +1512,7 @@ def api_excluir_conta():
         return jsonify({"ok": False, "erro": "sem id"}), 400
     try:
         gcapi.delete(f"/pagamentos/{pid}")
-        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva")
+        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva", "sobra")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1535,6 +1607,51 @@ def api_reserva():
                 "gasto": round(out, 2), "movimentos": movs[:40],
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("reserva", 45, build))
+
+@app.route("/api/sobra", methods=["GET", "POST"])
+@login_required
+def api_sobra():
+    """GET: saldo da Sobra de Caixa (o outro monte de dinheiro, fora da reserva).
+    POST: guarda um valor na sobra ([SOB+]). Tudo só no painel (liquidado=0)."""
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        valor = _num(body.get("valor"))
+        data = (body.get("data") or _hoje())[:10]
+        nota = (body.get("descricao") or "").strip()
+        if valor <= 0:
+            return jsonify({"ok": False, "erro": "valor inválido"}), 400
+        desc = f"{SOB_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
+        try:
+            gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
+                "data_vencimento": data, "data_competencia": data, "liquidado": "0",
+                "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+            _invalida("sobra", "pagar", "previsoes")
+            return jsonify({"ok": True})
+        except Exception as e:
+            return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
+        dep = out = 0.0
+        movs = []
+        for p in pgs:
+            desc = (p.get("descricao") or "")
+            v = _num(p.get("valor_total")) or _num(p.get("valor"))
+            data = (p.get("data_competencia") or p.get("data_vencimento") or "")[:10]
+            if desc.startswith(SOB_DEP_TAG):
+                dep += v
+                movs.append({"id": p.get("id"), "data": data, "tipo": "guardei",
+                             "desc": _sem_tag(desc, SOB_DEP_TAG) or "guardei", "valor": v})
+            elif desc.startswith(SOB_OUT_TAG):
+                out += v
+                movs.append({"id": p.get("id"), "data": data, "tipo": "gastei",
+                             "desc": _sem_tag(desc, SOB_OUT_TAG) or "gasto", "valor": -v})
+        movs.sort(key=lambda x: x["data"] or "", reverse=True)
+        return {"saldo": round(dep - out, 2), "guardado": round(dep, 2),
+                "gasto": round(out, 2), "movimentos": movs[:40],
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("sobra", 45, build))
 
 
 if __name__ == "__main__":
