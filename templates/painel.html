@@ -182,7 +182,16 @@ th.g,td.g{background:var(--accent-soft)}
       <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="sob-desc" placeholder="ex.: sobra da semana" style="width:100%"></label>
       <label>Data<input type="date" id="sob-data"></label>
       <button id="sob-add">Guardar</button>
+      <button id="sob-set" class="ghost" title="use depois de contar o dinheiro: deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
     </div>
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar as notas da sobra</summary>
+      <div style="margin-top:8px">
+        <div id="sob-notas" class="dengrid"></div>
+        <div id="sob-tot" style="margin-top:8px;font-size:.9rem;font-weight:700"></div>
+        <p class="note" style="margin-top:4px">Digite <strong>quantas notas</strong> de cada valor você tem. Eu somo e jogo no campo de cima — daí é só <strong>Já contei: é esse o total</strong>.</p>
+      </div>
+    </details>
     <div class="fres" id="sob-msg"></div>
   </div>
   <div class="tblwrap" id="tbl-sobra" style="margin-top:10px"></div>
@@ -1690,6 +1699,37 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
     }));
   }).catch(()=>{}); }
+  (function(){   // contador de notas da sobra -> preenche o campo "Guardei"
+    const box=g('sob-notas'); if(!box) return;
+    const SN=[200,100,50,20,10,5,2], k=v=>'sden-'+v;
+    box.innerHTML=SN.map(v=>'<label class="denc">R$ '+fmt0(v)+'<input type="number" min="0" step="1" inputmode="numeric" id="'+k(v)+'" placeholder="0"><span class="dv" id="sdv-'+k(v)+'">R$ 0,00</span></label>').join('');
+    function soma(){
+      let t=0, any=false;
+      SN.forEach(v=>{const el=g(k(v)); const q=parseInt(el.value)||0; t+=q*v; if(el.value!=='') any=true;
+        g('sdv-'+k(v)).textContent='R$ '+fmt(q*v);});
+      g('sob-tot').innerHTML='Total contado: <span style="color:var(--accent)">R$ '+fmt(t)+'</span>';
+      if(any) g('sob-valor').value=t.toFixed(2);
+    }
+    SN.forEach(v=>g(k(v)).addEventListener('input',soma));
+  })();
+  (function(){
+    const btn=g('sob-set'); if(!btn) return;
+    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
+    nb.addEventListener('click',()=>{
+      const msg=g('sob-msg'), v=parseFloat(g('sob-valor').value);
+      if(isNaN(v)||v<0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor contado.</span>'; return; }
+      nb.disabled=true;
+      post('/api/sobra',{ajustar_para:v, descricao:g('sob-desc').value, data:g('sob-data').value||hoje}).then(res=>{
+        nb.disabled=false;
+        if(res.ok){
+          const d=res.delta||0;
+          msg.innerHTML='<span style="color:var(--good)">✅ Saldo da sobra ajustado para R$ '+fmt(v)+
+            (d? ' ('+(d>0?'+':'−')+'R$ '+fmt(Math.abs(d))+' de diferença)':' (já estava certo)')+'.</span>';
+          g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true);
+        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
   (function(){
     const btn=g('sob-add'); if(!btn) return;
     const sd=g('sob-data'); if(sd&&!sd.value) sd.value=hoje;

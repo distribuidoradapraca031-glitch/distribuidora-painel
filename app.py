@@ -1615,9 +1615,30 @@ def api_sobra():
     POST: guarda um valor na sobra ([SOB+]). Tudo só no painel (liquidado=0)."""
     if request.method == "POST":
         body = request.get_json(force=True, silent=True) or {}
-        valor = _num(body.get("valor"))
         data = (body.get("data") or _hoje())[:10]
         nota = (body.get("descricao") or "").strip()
+        # "ajustar_para": o dono contou o dinheiro e o saldo tem que FICAR nesse valor.
+        # Gravo só a diferença (pra mais ou pra menos) e o histórico continua inteiro.
+        if body.get("ajustar_para") is not None:
+            alvo = _num(body.get("ajustar_para"))
+            if alvo < 0:
+                return jsonify({"ok": False, "erro": "valor inválido"}), 400
+            atual = _sobra_saldo()
+            delta = round(alvo - atual, 2)
+            if abs(delta) < 0.01:
+                return jsonify({"ok": True, "saldo": atual, "delta": 0.0})
+            tag = SOB_DEP_TAG if delta > 0 else SOB_OUT_TAG
+            rot = "contagem" + (f" — {nota}" if nota else "")
+            try:
+                gcapi.post("/pagamentos", {"descricao": f"{tag} {rot}"[:180],
+                    "valor": f"{abs(delta):.2f}", "data_vencimento": data,
+                    "data_competencia": data, "liquidado": "0",
+                    "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+                _invalida("sobra", "pagar", "previsoes")
+                return jsonify({"ok": True, "saldo": alvo, "delta": delta})
+            except Exception as e:
+                return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+        valor = _num(body.get("valor"))
         if valor <= 0:
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{SOB_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
