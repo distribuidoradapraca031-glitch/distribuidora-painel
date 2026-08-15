@@ -1679,6 +1679,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
               '<span style="font-size:.72rem;color:var(--muted)">previsto R$ '+fmt(it.valor)+'</span>'+
               '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">pago R$<input class="pv-valor" type="number" step="0.01" inputmode="decimal" value="'+it.valor+'" title="valor real que você pagou (com juros, se teve)" style="width:80px;'+inp+'"></label>'+
               '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select>'+
+              '<button class="pv-mais" title="paguei essa conta com DUAS formas (ex.: parte no PIX, parte da gaveta)" style="font:inherit;font-size:.72rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:3px 7px;border-radius:6px;cursor:pointer">+ 2ª forma</button>'+
+              '<span class="pv-p2" hidden style="display:none;gap:4px;align-items:center">'+
+                '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">e mais R$<input class="pv-valor2" type="number" step="0.01" inputmode="decimal" placeholder="0,00" style="width:74px;'+inp+'"></label>'+
+                '<select class="pv-forma2" style="'+inp+'">'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select>'+
+              '</span>'+
               '<button class="pv-pay" data-id="'+it.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--good);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">paguei</button>'+
               '<button class="pv-del" data-id="'+it.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
             '</span></div>').join('')+
@@ -1692,14 +1697,27 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const det=wrap.querySelector('tr.prev-det[data-ci="'+r.dataset.ci+'"]');
       if(det){ det.hidden=!det.hidden; const ch=r.querySelector('.chev'); if(ch) ch.textContent=det.hidden?'▸':'▾'; }
     }));
+    wrap.querySelectorAll('.pv-mais').forEach(b=>b.addEventListener('click',()=>{
+      const p2=b.parentNode.querySelector('.pv-p2');
+      const abrir=p2.hidden;
+      p2.hidden=!abrir; p2.style.display=abrir?'inline-flex':'none';
+      b.textContent=abrir?'– 2ª forma':'+ 2ª forma';
+      if(!abrir) p2.querySelector('.pv-valor2').value='';
+    }));
     wrap.querySelectorAll('.pv-pay').forEach(b=>b.addEventListener('click',()=>{
       const box=b.parentNode;
       const forma=box.querySelector('.pv-forma').value;
       const valor=parseFloat(box.querySelector('.pv-valor').value)||0;
       if(valor<=0){ toast('❌ digite o valor pago'); return; }
+      const p2=box.querySelector('.pv-p2');
+      const v2=(p2&&!p2.hidden)?(parseFloat(p2.querySelector('.pv-valor2').value)||0):0;
+      const f2=(p2&&!p2.hidden)?p2.querySelector('.pv-forma2').value:null;
+      if(p2&&!p2.hidden&&v2<=0){ toast('❌ digite o valor da 2ª forma (ou feche ela)'); return; }
+      const partes=v2>0?[{forma,valor},{forma:f2,valor:v2}]:null;
+      const rotulo=v2>0?('R$ '+fmt(valor)+' ('+forma+') + R$ '+fmt(v2)+' ('+f2+')'):('R$ '+fmt(valor)+' ('+forma+')');
       b.disabled=true; b.textContent='…';
-      post('/api/baixa',{id:b.dataset.id,forma,valor}).then(res=>{
-        if(res.ok){ toast('✅ Pago R$ '+fmt(valor)+' ('+forma+') e descontado.'); loadPrevisoes(true); loadGastosMes(true); loadResumo(true); }
+      post('/api/baixa',partes?{id:b.dataset.id,partes}:{id:b.dataset.id,forma,valor}).then(res=>{
+        if(res.ok){ toast('✅ Pago '+rotulo+' e descontado.'); loadPrevisoes(true); loadGastosMes(true); loadResumo(true); }
         else{ b.disabled=false; b.textContent='paguei'; toast('❌ '+(res.erro||'não consegui')); }
       }).catch(()=>{ b.disabled=false; b.textContent='paguei'; toast('❌ erro de conexão'); });
     }));

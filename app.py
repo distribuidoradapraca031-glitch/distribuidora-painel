@@ -408,6 +408,15 @@ def api_baixa():
     valor_real = _num(body.get("valor"))  # valor de fato pago (pode ter juros / ser variável)
     if not pid:
         return jsonify({"ok": False, "erro": "sem id"}), 400
+    # o dono às vezes paga UMA conta com DUAS formas (ex.: aluguel de 1.035 = 1.000 no PIX
+    # + 35 da gaveta). Nesse caso a conta original fica com a 1ª parte e as outras viram
+    # lançamentos irmãos, pra cada pote ser descontado do jeito certo.
+    partes = [x for x in (body.get("partes") or []) if _num(x.get("valor")) > 0]
+    if partes:
+        if len(partes) > 3:
+            return jsonify({"ok": False, "erro": "no máximo 3 formas"}), 400
+        forma = partes[0].get("forma") or "Caixa"
+        valor_real = _num(partes[0].get("valor"))
     pot = POTES.get(forma, POTES["Caixa"])
     # preserva os campos da conta e só marca como paga
     cur = gcapi.get(f"/pagamentos/{pid}")
@@ -431,6 +440,22 @@ def api_baixa():
         gcapi.put(f"/pagamentos/{pid}", payload)
         if forma == "Dinheiro":
             _reserva_saida(payload["valor"], payload["descricao"] or "Conta", _hoje())
+        # demais formas da mesma conta: um lançamento por parte, já liquidado
+        for parte in partes[1:]:
+            f2 = parte.get("forma") or "Caixa"
+            v2 = round(_num(parte.get("valor")), 2)
+            pot2 = POTES.get(f2, POTES["Caixa"])
+            desc2 = f"{payload['descricao']} ({f2})"
+            gcapi.post("/pagamentos", {
+                "descricao": desc2, "valor": f"{v2:.2f}",
+                "plano_contas_id": payload["plano_contas_id"],
+                "data_vencimento": payload["data_vencimento"],
+                "data_competencia": payload["data_competencia"],
+                "fornecedor_id": payload["fornecedor_id"],
+                "liquidado": "1", "data_liquidacao": _hoje(),
+                "conta_bancaria_id": pot2["conta"], "forma_pagamento_id": pot2["forma"]})
+            if f2 == "Dinheiro":
+                _reserva_saida(v2, desc2, _hoje())
         _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva")
         return jsonify({"ok": True})
     except Exception as e:
