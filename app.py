@@ -118,7 +118,7 @@ def api_pagar():
                    and not _eh_interno(p.get("descricao"))]
         itens = [{
             "id": p.get("id"),
-            "desc": p.get("descricao") or p.get("nome_plano_conta") or "—",
+            "desc": _nota_conta(p) or p.get("nome_plano_conta") or "—",
             "fornecedor": p.get("nome_fornecedor") or "",
             "venc": (p.get("data_vencimento") or "")[:10],
             "valor": _num(p.get("valor_total")) or _num(p.get("valor")),
@@ -280,7 +280,7 @@ def _reserva_saida(valor, desc, data):
     foi feito com a fonte Dinheiro reserva."""
     try:
         gcapi.post("/pagamentos", {
-            "descricao": f"{RES_OUT_TAG} {desc}"[:180], "valor": f"{_num(valor):.2f}",
+            "descricao": f"{RES_OUT_TAG} {_sem_cat(desc)}"[:180], "valor": f"{_num(valor):.2f}",
             "data_vencimento": data, "data_competencia": data, "liquidado": "0",
             "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
         _invalida("reserva")
@@ -303,7 +303,7 @@ def _sobra_saida(valor, desc, data):
     """Desconta da sobra de caixa: grava um [SOB-] (só ledger do painel)."""
     try:
         gcapi.post("/pagamentos", {
-            "descricao": f"{SOB_OUT_TAG} {desc}"[:180], "valor": f"{_num(valor):.2f}",
+            "descricao": f"{SOB_OUT_TAG} {_sem_cat(desc)}"[:180], "valor": f"{_num(valor):.2f}",
             "data_vencimento": data, "data_competencia": data, "liquidado": "0",
             "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
         _invalida("sobra")
@@ -330,6 +330,35 @@ def _sobra_apaga_saida(codigo):
 # ---- PREVISÕES (topo do contas a pagar): lista fixa de categorias recorrentes ----
 # cada item que o dono adiciona vira um pagamento em aberto com descrição
 # "[PREV] <categoria> — <obs>". Começam zeradas; somam conforme o dono insere.
+# ---- CATEGORIA ESCOLHIDA (manda mais que o texto digitado) ----
+# O dono escolhe a categoria no formulário e depois escreve uma observação livre.
+# Antes eu classificava lendo a observação, e "Almoço Igor e Biel" virava pró-labore do
+# Igor. Ele mandou parar: vale SEMPRE a categoria que ele escolheu. Então carimbo
+# "[cat:<categoria>]" no começo da descrição e leio isso primeiro; a observação fica só
+# como texto, e o painel tira a etiqueta antes de mostrar.
+CAT_TAG_RE = re.compile(r"^\[cat:([^\]]+)\]\s*")
+
+def _cat_marcada(desc):
+    m = CAT_TAG_RE.match(desc or "")
+    return m.group(1).strip() if m else None
+
+def _sem_cat(desc):
+    return CAT_TAG_RE.sub("", desc or "").strip()
+
+# categoria do formulário -> linha do resumo "gastos do mês"
+CAT_RESUMO = {
+    "Lanche": "Lanches", "Almoço": "Lanches", "Padaria": "Lanches",
+    "Sacolas / gelo / copos": "Sacolas / gelo / copos",
+    "Motoboy / entrega": "PH Motoca", "PH Motoca": "PH Motoca",
+    "Igor (pró-labore / retirada)": "Igor (pró-labore / retirada)",
+    "Pró-labore Igor": "Igor (pró-labore / retirada)",
+    "Retirada do sócio (Igor)": "Igor (pró-labore / retirada)",
+    "Biel (Gabriel)": "Biel (Gabriel)", "Pagamento Biel": "Biel (Gabriel)",
+    "Funcionário Gabriel (FDS)": "Biel (Gabriel)",
+    "Retirada do sócio (Victor)": "Retirada Victor",
+    "Outros": "Gastos adicionais",
+}
+
 PREV_TAG = "[PREV]"
 CATEGORIAS_PREV = [
     ("Aluguel (IPTU)", "33015630"),
@@ -404,6 +433,9 @@ PREV_KEYWORDS = [
 def _categoria_conta(p):
     """Categoria (das 17) de uma conta a pagar, ou None se não for previsão/recorrente."""
     desc = p.get("descricao") or ""
+    marcada = _cat_marcada(desc)   # categoria escolhida no formulário manda
+    if marcada:
+        return None if marcada == "Outros" else marcada
     c = _prev_categoria(desc)      # itens [PREV] que o dono adiciona
     if c:
         return c
@@ -423,7 +455,7 @@ def _nota_conta(p):
     desc = (p.get("descricao") or "")
     if desc.startswith(PREV_TAG):
         return _prev_nota(desc)
-    return re.sub(r"\[provisao\]|\[PREV\]", "", desc, flags=re.I).strip()
+    return re.sub(r"\[provisao\]|\[PREV\]", "", _sem_cat(desc), flags=re.I).strip()
 
 def _ultimo_dia_mes(d):
     """'AAAA-MM-DD' do último dia do mês da data d ('AAAA-MM-...')."""
@@ -524,7 +556,7 @@ def api_gasto():
     valor = _num(body.get("valor"))
     forma = body.get("forma") or "Caixa"
     data = (body.get("data") or _hoje())[:10]
-    desc = (body.get("descricao") or "").strip() or cat
+    desc = f"[cat:{cat}] " + ((body.get("descricao") or "").strip() or cat)
     if valor <= 0:
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
     plano = CATS.get(cat, CATS["Outros"])
@@ -1277,8 +1309,11 @@ def _cat_resumo(p):
     """Bucket do resumo do topo. Separa Victor/Igor e reconhece os nomes do dono;
     o que não casar cai em 'Gastos adicionais' (nunca no plano 'Compras' bugado)."""
     desc = (p.get("descricao") or "")
+    marcada = _cat_marcada(desc)
+    if marcada:                       # o dono escolheu no formulário: vale essa, ponto
+        return CAT_RESUMO.get(marcada, marcada)
     du = desc.upper()
-    # COMIDA VEM PRIMEIRO, antes do nome das pessoas: "Almoço Igor e Biel" é o almoço
+    # (só pros lançamentos ANTIGOS, sem etiqueta) COMIDA VEM PRIMEIRO, antes do nome das pessoas: "Almoço Igor e Biel" é o almoço
     # que o dono pagou PRA eles, não pró-labore do Igor. Antes caía em "Igor (pró-labore)"
     # e sumia dos Lanches. Aceita as digitadas rápido também ("almço", "almoco").
     COMIDA = ("LANCH", "ALMO", "ALMÇ", "ALMOC", "PADARIA", "PÃO", "PAO",
