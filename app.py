@@ -559,7 +559,7 @@ def api_gasto():
             _reserva_saida(valor, desc, data)
         elif forma == "Sobra":
             _sobra_saida(valor, desc, data)
-        _invalida("pagar", "resumo", "reserva", "sobra")
+        _invalida("pagar", "resumo", "reserva", "sobra", "gastos_mes")
         return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1278,6 +1278,13 @@ def _cat_resumo(p):
     o que não casar cai em 'Gastos adicionais' (nunca no plano 'Compras' bugado)."""
     desc = (p.get("descricao") or "")
     du = desc.upper()
+    # COMIDA VEM PRIMEIRO, antes do nome das pessoas: "Almoço Igor e Biel" é o almoço
+    # que o dono pagou PRA eles, não pró-labore do Igor. Antes caía em "Igor (pró-labore)"
+    # e sumia dos Lanches. Aceita as digitadas rápido também ("almço", "almoco").
+    COMIDA = ("LANCH", "ALMO", "ALMÇ", "ALMOC", "PADARIA", "PÃO", "PAO",
+              "MARMITA", "JANTA", "REFEIÇ", "REFEIC")
+    if any(k in du for k in COMIDA):
+        return "Lanches"
     if "IGOR" in du and "INSS" not in du:      # pró-labore e retirada do Igor = mesma linha
         return "Igor (pró-labore / retirada)"
     if "RETIRADA" in du:
@@ -1286,8 +1293,6 @@ def _cat_resumo(p):
         return "Biel (Gabriel)"
     if "MOTOCA" in du or "MOTOBOY" in du:
         return "PH Motoca"
-    if any(k in du for k in ("LANCHE", "ALMO", "PADARIA", "PÃO", "PAO")):
-        return "Lanches"
     c = _categoria_conta(p)   # aluguel, energia, contab, DAS, seguro... viram linha própria
     if c and c not in ("Retirada Victor", "PH Motoca", "Biel (Gabriel)",
                        "Igor (pró-labore / retirada)", "Motoboy / entrega"):
