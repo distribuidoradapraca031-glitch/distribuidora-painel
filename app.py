@@ -814,8 +814,21 @@ def api_compra():
         # o GC aplica a conversão de compra dele (que a API não enxerga). Então leio o
         # estoque depois: se não entrou o que devia, acerto na hora e gravo o custo
         # por UNIDADE. Assim não tem mais "lancei 10 e entraram 120".
-        conf = []
+        # o MESMO produto pode aparecer em mais de uma linha da compra (dois fardos com
+        # preço diferente, por exemplo). Conferindo linha a linha, a 2ª linha lê o
+        # estoque que a 1ª acabou de gravar, acha que "entrou demais" e sobrescreve —
+        # sobra só a última linha. Foi isso que comeu 48 un de JACK POWER na compra
+        # 810812 (14/08/2026). Então junto por produto e confiro UMA vez, com a soma.
+        agreg = {}
         for it in plano:
+            a = agreg.get(it["pid"])
+            if a is None:
+                agreg[it["pid"]] = dict(it)
+            else:
+                a["units"] += it["units"]
+                a["valor"] += it["valor"]
+        conf = []
+        for it in agreg.values():
             prod = _produto_bruto(it["pid"])
             depois = _num(prod.get("estoque"))
             entrou = round(depois - it["antes"], 2)
