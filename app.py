@@ -7,6 +7,14 @@ from collections import defaultdict
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
 import gclient as gcapi
 
+# O servidor da nuvem roda em UTC: depois das 21h daqui já era "amanhã" pra ele, e o
+# fechamento da noite caía no dia seguinte. Tudo no painel usa a hora de Minas.
+os.environ.setdefault("TZ", "America/Sao_Paulo")
+try:
+    time.tzset()
+except AttributeError:      # Windows não tem tzset
+    pass
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _carrega_painel_data():
