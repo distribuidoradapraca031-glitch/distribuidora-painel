@@ -220,7 +220,7 @@ th.g,td.g{background:var(--accent-soft)}
     <strong style="font-size:.9rem">✍️ Anotar o fechamento de hoje</strong>
     <p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada que eu somo sozinho e já jogo no <strong>Contado</strong>. A <strong>abertura vem do sistema</strong> (o troco que você lançou ao abrir o caixa). Quando terminar, clique <strong>Registrar fechamento no sistema</strong> que eu <strong>gravo direto no GestãoClick</strong> (lanço o ajuste pra o caixa bater) — não precisa mandar no chat.</p>
     <div class="fform">
-      <label>Dia<input type="date" id="f-data"></label>
+      <label>Dia<input type="date" id="f-data" max=""></label>
       <label>Abertura / troco (R$)<input type="number" step="0.01" inputmode="decimal" id="f-abertura" placeholder="0,00"></label>
       <label>Contado na gaveta (R$)<input type="number" step="0.01" inputmode="decimal" id="f-contado" placeholder="0,00"></label>
       <label>Esperado (auto)<input type="text" id="f-esperado" readonly placeholder="—"></label>
@@ -1262,7 +1262,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   const g = id => document.getElementById(id);
   const post = (u,b) => fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
   const qf = f => f ? '?fresh=1' : '';
-  const FORMAS = ['Caixa','Dinheiro','PIX'];
+  // PIX PRIMEIRO de propósito: boleto sai da CONTA, não da gaveta. Com "Caixa" no topo,
+  // dar baixa em 3 boletos seguidos sem mexer no seletor tirou R$ 1.522,96 da gaveta em
+  // 17/08/2026 e jogou o esperado do fechamento pra -1.079,71.
+  const FORMAS = [['PIX','PIX (conta)'],['Caixa','Caixa (gaveta)'],
+                  ['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa']];
   const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
   function toast(html){ let t=g('toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.innerHTML=html; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4200); }
 
@@ -1355,7 +1359,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           '<tr><td>'+(i.venc&&i.venc.length>=10?dbr(i.venc):'—')+'</td><td class="nome">'+esc(i.desc)+(i.fornecedor?(' <span style="color:var(--muted)">'+esc(i.fornecedor)+'</span>'):'')+'</td>'+
           '<td class="num">R$ '+fmt(i.valor)+'</td>'+
           '<td><span style="display:inline-flex;gap:4px;align-items:center">'+
-            '<select class="bx-forma" style="font:inherit;font-size:.76rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)">'+FORMAS.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
+            '<select class="bx-forma" style="font:inherit;font-size:.76rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)">'+FORMAS.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select>'+
             '<button class="bx-btn" data-id="'+i.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--accent);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">baixar</button>'+
             '<button class="bx-del" data-id="'+i.id+'" title="excluir (boleto de golpe)" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
           '</span></td></tr>'

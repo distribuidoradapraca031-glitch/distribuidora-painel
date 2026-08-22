@@ -1263,12 +1263,23 @@ def api_fechamento():
     sistema (faltou = saída; sobrou = entrada) pra o caixa BATER com a gaveta."""
     body = request.get_json(force=True, silent=True) or {}
     data = (body.get("data") or _hoje())[:10]
+    if data > _hoje():
+        return jsonify({"ok": False, "erro": f"a data {data[8:10]}/{data[5:7]} ainda não "
+                        "aconteceu — não dá pra fechar um dia no futuro. Confira o campo Dia."}), 400
     ab = _abertura_caixa(data)                       # usa a abertura real do GC
     troco = ab if ab is not None else (_num(body.get("troco")) or 200.0)
     contado = _num(body.get("contado"))
     if body.get("contado") in (None, ""):
         return jsonify({"ok": False, "erro": "conte a gaveta primeiro"}), 400
     din, saidas = _fech_calc(data)
+    # Dia SEM abertura e SEM nenhum movimento = quase sempre o dono errou o campo Dia. Se
+    # deixar passar, o esperado cai no chute de R$ 200 e a quebra sai gigante e falsa —
+    # foi o que criou uma "sobra" de R$ 319 em 20/08/2026 (fechamento feito na noite do 19).
+    if ab is None and din == 0 and saidas == 0 and not body.get("forcar_dia_vazio"):
+        return jsonify({"ok": False, "dia_vazio": True,
+                        "erro": f"o dia {data[8:10]}/{data[5:7]} não tem abertura de caixa nem "
+                                "nenhuma venda em dinheiro no sistema. Confira se a data está "
+                                "certa antes de fechar."}), 400
     esperado = round(troco + din - saidas, 2)
     quebra = round(contado - esperado, 2)
     ajuste_id = None
