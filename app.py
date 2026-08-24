@@ -542,7 +542,7 @@ def api_baixa():
                 _reserva_saida(v2, desc2, _hoje())
             elif f2 == "Sobra":
                 _sobra_saida(v2, desc2, _hoje())
-        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva", "sobra")
+        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva", "sobra", "mapa")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -591,7 +591,7 @@ def api_gasto():
             _reserva_saida(valor, desc, data)
         elif forma == "Sobra":
             _sobra_saida(valor, desc, data)
-        _invalida("pagar", "resumo", "reserva", "sobra", "gastos_mes")
+        _invalida("pagar", "resumo", "reserva", "sobra", "gastos_mes", "mapa")
         return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -818,7 +818,7 @@ def api_compra_excluir():
                 ajustes.append(l["nome"])
         devolvido = _reserva_apaga_saida(c.get("codigo"))   # devolve o que saiu da reserva
         devolvido += _sobra_apaga_saida(c.get("codigo"))     # e o que saiu da sobra de caixa
-        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "compras_painel", "fatores_compra")
+        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "compras_painel", "fatores_compra", "mapa")
         return jsonify({"ok": True, "codigo": c.get("codigo"), "ajustados": ajustes,
                         "itens": len(linhas), "reserva_devolvida": devolvido})
     except Exception as e:
@@ -1011,7 +1011,7 @@ def api_compra():
                              if (p.get("forma") or "Caixa") == "Sobra"), 2)
         if em_sobra > 0:
             _sobra_saida(em_sobra, f"Compra {d.get('codigo') or ''}".strip(), data)
-        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc")
+        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "mapa")
         return jsonify({"ok": True, "id": d.get("id"), "codigo": d.get("codigo"),
                         "total": round(total, 2), "itens": len(produtos),
                         "conferencia": conf})
@@ -1442,7 +1442,7 @@ def api_saque():
             "conta_bancaria_id": "696747", "forma_pagamento_id": "6055919",
         }
         gcapi.post("/pagamentos", sangria)
-        _invalida("resumo", "hoje", "pagar", "saque_resumo")
+        _invalida("resumo", "hoje", "pagar", "saque_resumo", "mapa")
         return jsonify({"ok": True, "venda_id": vid, "total": total,
                         "sangria": valor, "taxa": taxa, "ganho": ganho})
     except Exception as e:
@@ -1526,6 +1526,93 @@ def api_previsoes():
                 "mes": hoje[:7], "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("previsoes", 60, build))
 
+# ---- MAPA MENSAL (aba Contas) ----
+# Uma tabela só com TUDO que falta pagar: cada categoria numa linha, os meses até
+# dezembro nas colunas. A mercadoria (nota de compra / boleto do DDA), que antes
+# ficava num quadro separado, virou a categoria "Mercadoria (notas)" aqui dentro.
+MERCADORIA_CAT = "Mercadoria (notas)"
+MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul",
+             "ago", "set", "out", "nov", "dez"]
+
+@app.route("/api/mapa")
+@login_required
+def api_mapa():
+    """Mapa do que está em aberto: linhas = categorias (+ mercadoria), colunas =
+    atrasado + cada mês até dezembro. Cada linha traz seus itens pra abrir e pagar."""
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
+        hoje = _hoje()
+        ano, m0 = int(hoje[:4]), int(hoje[5:7])
+        meses = [f"{ano:04d}-{m:02d}" for m in range(m0, 13)]
+        cats = [lbl for lbl, _ in CATEGORIAS_PREV] + [MERCADORIA_CAT]
+        def nova():
+            return {"atrasado": 0.0, "depois": 0.0, "n": 0,
+                    "mes": {m: 0.0 for m in meses}, "itens": []}
+        linhas = {c: nova() for c in cats}
+        for p in pgs:
+            if str(p.get("liquidado")) == "1":
+                continue                              # pago já saiu do mapa
+            desc = p.get("descricao") or ""
+            if _eh_interno(desc):
+                continue                              # recurso próprio / reserva
+            if "[PROVISAO]" in desc.upper():
+                continue                              # estimativa velha minha, não é conta lançada
+            cat = _categoria_conta(p) or MERCADORIA_CAT
+            if cat not in linhas:
+                linhas[cat] = nova()
+                cats.append(cat)
+            venc = (p.get("data_vencimento") or "")[:10]
+            val = _num(p.get("valor_total")) or _num(p.get("valor"))
+            atrasado = bool(venc and venc < hoje)
+            if atrasado:
+                col = "atrasado"
+            elif not venc or venc[:7] in meses:
+                col = venc[:7] if venc else meses[0]  # sem data cai no mês corrente
+            else:
+                col = "depois"                        # vence depois de dezembro
+            L = linhas[cat]
+            L["n"] += 1
+            if col in ("atrasado", "depois"):
+                L[col] += val
+            else:
+                L["mes"][col] += val
+            L["itens"].append({"id": p.get("id"),
+                               "nota": _nota_conta(p) or p.get("nome_plano_conta") or "—",
+                               "fornecedor": p.get("nome_fornecedor") or "",
+                               "venc": venc, "valor": val,
+                               "atrasado": atrasado, "col": col})
+        saida, tot_mes = [], {m: 0.0 for m in meses}
+        tot_atr = tot_dep = 0.0
+        for c in cats:
+            L = linhas[c]
+            total = L["atrasado"] + L["depois"] + sum(L["mes"].values())
+            tot_atr += L["atrasado"]
+            tot_dep += L["depois"]
+            for m in meses:
+                tot_mes[m] += L["mes"][m]
+            L["itens"].sort(key=lambda x: x["venc"] or "9999")
+            saida.append({"cat": c, "n": L["n"],
+                          "atrasado": round(L["atrasado"], 2),
+                          "depois": round(L["depois"], 2),
+                          "mes": {m: round(v, 2) for m, v in L["mes"].items()},
+                          "total": round(total, 2), "itens": L["itens"]})
+        # quem tem conta em aberto sobe (maior primeiro); as categorias zeradas
+        # ficam no fim, na ordem de sempre, só pra lembrar que existem.
+        ordem = {c: i for i, c in enumerate(cats)}
+        saida.sort(key=lambda L: (0, -L["total"]) if L["n"] else (1, ordem[L["cat"]]))
+        return {"meses": [{"key": m, "label": MES_CURTO[int(m[5:7]) - 1],
+                           "atual": m == hoje[:7]} for m in meses],
+                "linhas": saida,
+                "cats_form": [lbl for lbl, _ in CATEGORIAS_PREV],
+                "tot_atrasado": round(tot_atr, 2),
+                "tot_depois": round(tot_dep, 2),
+                "tot_mes": {m: round(v, 2) for m, v in tot_mes.items()},
+                "tot_mes_atual": round(tot_mes.get(hoje[:7], 0.0), 2),
+                "total": round(tot_atr + tot_dep + sum(tot_mes.values()), 2),
+                "hoje": hoje, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("mapa", 60, build))
+
 @app.route("/api/previsao", methods=["POST"])
 @login_required
 def api_previsao():
@@ -1548,7 +1635,7 @@ def api_previsao():
     try:
         r = gcapi.post("/pagamentos", payload)
         d = r.get("data") or {}
-        _invalida("previsoes", "pagar")
+        _invalida("previsoes", "pagar", "mapa")
         return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1563,7 +1650,7 @@ def api_excluir_conta():
         return jsonify({"ok": False, "erro": "sem id"}), 400
     try:
         gcapi.delete(f"/pagamentos/{pid}")
-        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva", "sobra")
+        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva", "sobra", "mapa")
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1590,7 +1677,7 @@ def api_recurso_proprio():
         try:
             r = gcapi.post("/pagamentos", payload)
             d = r.get("data") or {}
-            _invalida("recurso_proprio", "pagar", "previsoes")
+            _invalida("recurso_proprio", "pagar", "previsoes", "mapa")
             return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1631,7 +1718,7 @@ def api_reserva():
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "liquidado": "0",
                 "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
-            _invalida("reserva", "pagar", "previsoes")
+            _invalida("reserva", "pagar", "previsoes", "mapa")
             return jsonify({"ok": True})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1685,7 +1772,7 @@ def api_sobra():
                     "valor": f"{abs(delta):.2f}", "data_vencimento": data,
                     "data_competencia": data, "liquidado": "0",
                     "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
-                _invalida("sobra", "pagar", "previsoes")
+                _invalida("sobra", "pagar", "previsoes", "mapa")
                 return jsonify({"ok": True, "saldo": alvo, "delta": delta})
             except Exception as e:
                 return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -1697,7 +1784,7 @@ def api_sobra():
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "liquidado": "0",
                 "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
-            _invalida("sobra", "pagar", "previsoes")
+            _invalida("sobra", "pagar", "previsoes", "mapa")
             return jsonify({"ok": True})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
