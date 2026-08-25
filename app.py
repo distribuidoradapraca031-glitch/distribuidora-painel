@@ -1313,8 +1313,11 @@ RESUMO_FIXOS = ["PH Motoca", "Biel (Gabriel)", "Retirada Victor",
                 "Lanches", "Gastos adicionais"]
 
 def _eh_mercadoria(desc):
-    """Pagamento de mercadoria = nota/compra (GC nomeia 'Compra de nº ...')."""
-    return (desc or "").upper().startswith("COMPRA DE")
+    """Pagamento de mercadoria = nota/compra (GC nomeia 'Compra de nº ...') ou boleto
+    do DDA do fornecedor lançado na mão, que não tem nota vinculada mas é mercadoria
+    do mesmo jeito — senão o pagamento dele cai em 'gastos adicionais' no mês."""
+    d = (desc or "").upper()
+    return d.startswith("COMPRA DE") or "BOLETO DDA" in d
 
 def _cat_resumo(p):
     """Bucket do resumo do topo. Separa Victor/Igor e reconhece os nomes do dono;
