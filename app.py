@@ -1284,22 +1284,26 @@ def api_fechamento():
     quebra = round(contado - esperado, 2)
     ajuste_id = None
     try:
-        if abs(quebra) >= 0.01:
-            # o total de moedas fica gravado na descrição: é ele que permite ao dono
-            # contar moeda só na segunda e repetir o valor nos outros dias
-            moedas = _num(body.get("moedas"))
-            extra = f" · moedas R$ {moedas:.2f}" if moedas > 0 else ""
-            if body.get("moedas_repetidas"):
-                extra += " (moedas da última contagem)"
-            desc = (f"FECHAMENTO {data} — contado R$ {contado:.2f} · esperado R$ {esperado:.2f} · "
-                    f"{'sobra' if quebra > 0 else 'falta'} R$ {abs(quebra):.2f}{extra}")
-            mov = {"descricao": desc, "valor": f"{abs(quebra):.2f}",
-                   "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
-                   "liquidado": "1", "plano_contas_id": AJUSTE_CAIXA_PLANO,
-                   "conta_bancaria_id": "696747", "forma_pagamento_id": "6055919"}
-            # sobra = entra dinheiro (recebimento) ; falta = sai dinheiro (pagamento)
-            r = gcapi.post("/recebimentos" if quebra > 0 else "/pagamentos", mov)
-            ajuste_id = (r.get("data") or {}).get("id") if isinstance(r.get("data"), dict) else None
+        # o total de moedas fica gravado na descrição: é ele que permite ao dono
+        # contar moeda só na segunda e repetir o valor nos outros dias
+        moedas = _num(body.get("moedas"))
+        extra = f" · moedas R$ {moedas:.2f}" if moedas > 0 else ""
+        if body.get("moedas_repetidas"):
+            extra += " (moedas da última contagem)"
+        resultado = (f"{'sobra' if quebra > 0 else 'falta'} R$ {abs(quebra):.2f}"
+                     if abs(quebra) >= 0.01 else "sem quebra")
+        desc = (f"FECHAMENTO {data} — contado R$ {contado:.2f} · esperado R$ {esperado:.2f} · "
+                f"{resultado}{extra}")
+        mov = {"descricao": desc, "valor": f"{abs(quebra):.2f}",
+               "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+               "liquidado": "1", "plano_contas_id": AJUSTE_CAIXA_PLANO,
+               "conta_bancaria_id": "696747", "forma_pagamento_id": "6055919"}
+        # sobra = entra dinheiro (recebimento) ; falta = sai dinheiro (pagamento). Caixa que
+        # bate certinho não tem ajuste a fazer, mas o registro entra do mesmo jeito com valor
+        # R$ 0,00 (não mexe em saldo nenhum) — senão o dia continuava aparecendo no painel
+        # como "sem contagem" mesmo depois de conferido.
+        r = gcapi.post("/pagamentos" if quebra <= -0.01 else "/recebimentos", mov)
+        ajuste_id = (r.get("data") or {}).get("id") if isinstance(r.get("data"), dict) else None
         _invalida("resumo", "hoje", "fech_hoje", "fechamentos_12", "fechamentos_7", "fechamentos_31")
         return jsonify({"ok": True, "esperado": esperado, "contado": round(contado, 2),
                         "quebra": quebra, "dinheiro": din, "saidas": saidas,
