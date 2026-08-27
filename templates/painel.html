@@ -541,6 +541,15 @@ th.g,td.g{background:var(--accent-soft)}
 <section class="kpis" id="d-kpis"></section>
 
 <section class="card">
+  <div class="eyebrow">Delivery · robô</div>
+  <h2>Pedidos do app entrando sozinhos</h2>
+  <p class="note">O robô puxa os pedidos do Anota AI e lança no sistema já com nota fiscal, de 10 em 10 minutos. Agora ele roda <strong>na nuvem</strong> — não depende mais de computador ligado. Abrir o painel também dispara uma busca.</p>
+  <div id="d-robo" style="margin:10px 0"></div>
+  <button id="btn-sync">Puxar pedidos agora</button>
+  <span class="stamp" id="d-robo-stamp"></span>
+</section>
+
+<section class="card">
   <div class="eyebrow">Delivery · <span id="d-periodo"></span></div>
   <h2>Faturamento do delivery por dia</h2>
   <p class="note">🟢 <strong>Ao vivo do sistema</strong> — os pedidos do app que o sync trouxe pro GestãoClick no mês atual. Atualiza sozinho, não congela mais. Toque nas barras pra ver o valor.</p>
@@ -1316,6 +1325,19 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(g('k-hoje-d-sub')) g('k-hoje-d-sub').textContent = d.n+' pedido(s) do app hoje';
       _fatDeliv=d.total||0; _updFatTotal();
     }).catch(()=>{}); }
+  function pintaRobo(d){
+    const box=g('d-robo'); if(!box) return;
+    const linhas=[];
+    if(d.rodando) linhas.push('<div class="note">🔄 <strong>Buscando pedidos agora…</strong></div>');
+    linhas.push('<div class="note">Última busca: <strong>'+(d.quando||'ainda não rodou')+'</strong>'
+      +(d.faz_min!=null?' (há '+d.faz_min+' min)':'')
+      +(d.na_lista!=null?' · '+d.na_lista+' pedido(s) na lista do app':'')
+      +' · <strong>'+(d.novos||0)+'</strong> lançado(s) na última busca</div>');
+    (d.pendentes||[]).forEach(p=>linhas.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ pedido #'+p.ref+': '+p.motivo+'</div>'));
+    (d.erros||[]).forEach(p=>linhas.push('<div class="note" style="color:var(--bad,#b91c1c)">⛔ '+(p.ref&&p.ref!=='-'?'pedido #'+p.ref+': ':'')+p.erro+'</div>'));
+    box.innerHTML=linhas.join('');
+  }
+  function loadRobo(){ return fetch('/api/sync-status').then(r=>r.json()).then(pintaRobo).catch(()=>{}); }
   function loadDelivery(f){ return fetch('/api/delivery'+qf(f)).then(r=>r.json()).then(d=>{
     const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     const mesNome=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'mês';
@@ -1905,7 +1927,16 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
+  const bsync=g('btn-sync');
+  if(bsync) bsync.addEventListener('click',()=>{
+    bsync.disabled=true; bsync.textContent='Buscando…';
+    fetch('/api/sync-anota',{method:'POST'}).then(r=>r.json()).then(d=>{
+      pintaRobo({quando:d.quando,novos:(d.novos||[]).length,na_lista:d.na_lista,
+                 pendentes:d.pendentes,erros:d.erros,faz_min:0});
+      return Promise.all([loadHojeDelivery(true),loadDelivery(true),loadHoje(true)]);
+    }).catch(()=>{}).finally(()=>{ bsync.disabled=false; bsync.textContent='Puxar pedidos agora'; });
+  });
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');

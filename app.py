@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """App web da Distribuidora da Praça — painel ao vivo + gravação direta no GestãoClick,
 protegido por senha. (Fase 1: login + leitura ao vivo.)"""
-import os, functools, time, re, calendar, datetime
+import os, functools, time, re, calendar, datetime, threading
 from collections import defaultdict
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
 import gclient as gcapi
@@ -640,6 +640,10 @@ def api_hoje():
 def api_hoje_delivery():
     """Vendas de DELIVERY de hoje (Anota AI), ao vivo. Delivery entra como venda
     tipo 'produto' com cliente DELIVERY e observação 'Anota AI' — separa do saque."""
+    # abrir o painel serve de gatilho: se já passou o intervalo, busca pedido novo em
+    # segundo plano (a resposta não espera). Cobre o tempo em que o serviço estava dormindo.
+    threading.Thread(target=_sync_anota, daemon=True).start()
+
     def build():
         h = _hoje()
         vendas = gcapi.get_all("/vendas", {"tipo": "produto", "data_inicio": h, "data_fim": h})
@@ -1818,6 +1822,79 @@ def api_sobra():
                 "gasto": round(out, 2), "movimentos": movs[:40],
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("sobra", 45, build))
+
+
+# ---- ROBÔ DO DELIVERY (Anota AI) ----
+# Antes isso rodava só no MacBook do dono (launchd de 30 em 30 min): quando o Mac dormia,
+# o robô parava e o pedido sumia da lista do Anota antes de virar venda. Agora roda aqui
+# dentro: de 10 em 10 min e também toda vez que o painel é aberto (se já passou o
+# intervalo). O dedupe é pelo próprio GestãoClick, então rodar nos dois lugares ao mesmo
+# tempo não duplica pedido.
+try:
+    import anota
+except Exception:                      # sem credencial do Anota o painel continua de pé
+    anota = None
+
+SYNC_INTERVALO = 600                   # 10 min
+_sync = {"ultimo": None, "em": 0.0, "rodando": False}
+_sync_lock = threading.Lock()
+
+
+def _sync_anota(forcar=False):
+    """Puxa os pedidos novos. Respeita o intervalo (o painel chama a cada abertura)."""
+    if anota is None:
+        return {"ok": False, "novos": [], "pendentes": [], "erros":
+                [{"ref": "-", "erro": "robô do delivery não carregou (falta credencial)"}]}
+    with _sync_lock:
+        if _sync["rodando"]:
+            return _sync["ultimo"] or {"ok": True, "novos": [], "rodando": True}
+        if not forcar and _sync["em"] and time.time() - _sync["em"] < SYNC_INTERVALO:
+            return _sync["ultimo"]
+        _sync["rodando"] = True
+    try:
+        r = anota.rodar(post=True)
+    except Exception as e:
+        r = {"ok": False, "quando": time.strftime("%d/%m/%Y %H:%M"), "novos": [],
+             "pendentes": [], "erros": [{"ref": "-", "erro": str(e)[:200]}]}
+    finally:
+        _sync["rodando"] = False
+    _sync["ultimo"], _sync["em"] = r, time.time()
+    if r.get("novos"):                 # venda nova muda faturamento, caixa e delivery
+        _invalida("hoje_deliv", "delivery", "hoje", "resumo", "fech_hoje",
+                  "fechamentos_7", "fechamentos_12", "fechamentos_31")
+    return r
+
+
+def _sync_loop():
+    time.sleep(20)                     # deixa o serviço subir antes da primeira busca
+    while True:
+        try:
+            _sync_anota()
+        except Exception:
+            pass
+        time.sleep(SYNC_INTERVALO)
+
+
+@app.route("/api/sync-anota", methods=["POST"])
+@login_required
+def api_sync_anota():
+    """Botão 'puxar pedidos agora' do painel."""
+    return jsonify(_sync_anota(forcar=True) or {"ok": True, "novos": []})
+
+
+@app.route("/api/sync-status")
+@login_required
+def api_sync_status():
+    u = _sync["ultimo"] or {}
+    return jsonify({"quando": u.get("quando"), "novos": len(u.get("novos") or []),
+                    "ultimos": (u.get("novos") or [])[-5:],
+                    "pendentes": u.get("pendentes") or [], "erros": u.get("erros") or [],
+                    "na_lista": u.get("na_lista"), "rodando": _sync["rodando"],
+                    "faz_min": round((time.time() - _sync["em"]) / 60) if _sync["em"] else None})
+
+
+if anota is not None and os.environ.get("SYNC_ANOTA", "1") == "1":
+    threading.Thread(target=_sync_loop, daemon=True).start()
 
 
 if __name__ == "__main__":

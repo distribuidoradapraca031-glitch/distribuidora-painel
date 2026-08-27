@@ -1,0 +1,5530 @@
+{
+ "BUDWEISER ZERO ALCOOL 350ML": {
+  "anota_title": "Budweiser Zero Alcool 350ml",
+  "categoria": "Promoções",
+  "gc_id": "88678698",
+  "gc_nome": "BUDWEISER LT 350 ML ZERO",
+  "candidatos": [
+   [
+    0.77,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "BUDWEISER LT 350 ML ZERO",
+  "manual": true
+ },
+ "SKOL PILSEN 550ML MEGA LATAO": {
+  "anota_title": "Skol Pilsen 550ml MEGA LATÃO",
+  "categoria": "Promoções",
+  "gc_id": null,
+  "gc_nome": null,
+  "candidatos": [
+   [
+    0.33,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ],
+   [
+    0.33,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ],
+   [
+    0.33,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "SKOL BEATS GREN MIX LATA",
+  "manual": false
+ },
+ "BRAHMA LITRINHO 300ML": {
+  "anota_title": "Brahma Litrinho 300ml",
+  "categoria": "Cervejas Litrinho 300ml",
+  "gc_id": "84577932",
+  "gc_nome": "LITRINHO BRAHMA 330 ML",
+  "candidatos": [
+   [
+    0.6,
+    "LITRINHO ANTARCTICA PILSEN 300ML",
+    "88678754"
+   ],
+   [
+    0.6,
+    "LITRINHO ORIGINAL  300 ML",
+    "85768200"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "LITRINHO ANTARCTICA PILSEN 300ML",
+  "manual": true
+ },
+ "SKOL PILSEN LITRINHO 300ML": {
+  "anota_title": "Skol Pilsen Litrinho 300ml",
+  "categoria": "Cervejas Litrinho 300ml",
+  "gc_id": "84578034",
+  "gc_nome": "LITRINHO SKOL 330 ML",
+  "candidatos": [
+   [
+    0.77,
+    "LITRINHO ANTARCTICA PILSEN 300ML",
+    "88678754"
+   ],
+   [
+    0.43,
+    "LITRINHO ORIGINAL  300 ML",
+    "85768200"
+   ],
+   [
+    0.33,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "LITRINHO ANTARCTICA PILSEN 300ML",
+  "manual": true
+ },
+ "ORIGINAL LITRINHO 300ML": {
+  "anota_title": "Original Litrinho 300ml",
+  "categoria": "Cervejas Litrinho 300ml",
+  "gc_id": "85768200",
+  "gc_nome": "LITRINHO ORIGINAL  300 ML",
+  "candidatos": [
+   [
+    1.1,
+    "LITRINHO ORIGINAL  300 ML",
+    "85768200"
+   ],
+   [
+    0.6,
+    "LITRINHO ANTARCTICA PILSEN 300ML",
+    "88678754"
+   ],
+   [
+    0.5,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "LITRINHO ORIGINAL  300 ML",
+  "manual": false
+ },
+ "BOHEMIA LITRINHO 300ML": {
+  "anota_title": "Bohemia Litrinho 300ml",
+  "categoria": "Cervejas Litrinho 300ml",
+  "gc_id": "84577927",
+  "gc_nome": "LITRINHO BOHEMIA 330 ML",
+  "candidatos": [
+   [
+    0.6,
+    "LITRINHO ANTARCTICA PILSEN 300ML",
+    "88678754"
+   ],
+   [
+    0.6,
+    "LITRINHO ORIGINAL  300 ML",
+    "85768200"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "LITRINHO ANTARCTICA PILSEN 300ML",
+  "manual": true
+ },
+ "IMPERIO LATAO 473ML": {
+  "anota_title": "Imperio Latão 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577995",
+  "gc_nome": "IMPERIO LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "IMPERIO LT 473 ML",
+    "84577995"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "IMPERIO LT 473 ML",
+  "manual": false
+ },
+ "KAISER 473ML": {
+  "anota_title": "Kaiser 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577999",
+  "gc_nome": "KAISER LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "KAISER LT 473 ML",
+    "84577999"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "KAISER LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID KAISER LATAO 473ML": {
+  "anota_title": "CX/12 UNID KAISER LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577999",
+  "gc_nome": "KAISER LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "KAISER LT 473 ML",
+    "84577999"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "KAISER LT 473 ML",
+  "manual": false
+ },
+ "ITAIPAVA 473ML": {
+  "anota_title": "Itaipava 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577998",
+  "gc_nome": "ITAIPAVA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ITAIPAVA LT 473 ML",
+    "84577998"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ITAIPAVA LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID ITAIPAVA LATAO 473ML": {
+  "anota_title": "CX/12 UNID ITAIPAVA LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577998",
+  "gc_nome": "ITAIPAVA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ITAIPAVA LT 473 ML",
+    "84577998"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "ITAIPAVA LT 473 ML",
+  "manual": false
+ },
+ "LAUT PILSEN 473ML": {
+  "anota_title": "Laut Pilsen 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "85750292",
+  "gc_nome": "CERVEJA LAUT LATÃO 473 ML",
+  "candidatos": [
+   [
+    0.6,
+    "CERVEJA LAUT LATÃO 473 ML",
+    "85750292"
+   ],
+   [
+    0.6,
+    "SKOL PILSEN LT 473 ML",
+    "84578035"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "CERVEJA LAUT LATÃO 473 ML",
+  "manual": true
+ },
+ "PETRA 473ML": {
+  "anota_title": "Petra 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578014",
+  "gc_nome": "PETRA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "PETRA LT 473 ML",
+    "84578014"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "PETRA LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID PETRA LATAO 473ML": {
+  "anota_title": "CX/12 UNID PETRA LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578014",
+  "gc_nome": "PETRA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "PETRA LT 473 ML",
+    "84578014"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "PETRA LT 473 ML",
+  "manual": false
+ },
+ "BRUDER BG BAIXA GASTRONOMIA 473ML": {
+  "anota_title": "Bruder BG (Baixa Gastronomia) 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "85696082",
+  "gc_nome": "BG LATAO 473 ML",
+  "candidatos": [
+   [
+    0.35,
+    "BG LATAO 473 ML",
+    "85696082"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.35,
+  "sugestao": "BG LATAO 473 ML",
+  "manual": true
+ },
+ "CX 12 UNID BG LATAO 473ML": {
+  "anota_title": "CX/12 UNID BG LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "85696082",
+  "gc_nome": "BG LATAO 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BG LATAO 473 ML",
+    "85696082"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "BG LATAO 473 ML",
+  "manual": false
+ },
+ "BRAHMA 473ML": {
+  "anota_title": "Brahma 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577933",
+  "gc_nome": "BRAHMA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BRAHMA LT 473 ML",
+    "84577933"
+   ],
+   [
+    1.1,
+    "BRAHMA DUPLO MALTE LT 473 ML",
+    "84577929"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "BRAHMA LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID BRAHMA LATAO 473ML": {
+  "anota_title": "CX/12 UNID BRAHMA LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577933",
+  "gc_nome": "BRAHMA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BRAHMA LT 473 ML",
+    "84577933"
+   ],
+   [
+    1.1,
+    "BRAHMA DUPLO MALTE LT 473 ML",
+    "84577929"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "BRAHMA LT 473 ML",
+  "manual": false
+ },
+ "BOHEMIA 473ML": {
+  "anota_title": "Bohemia 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577928",
+  "gc_nome": "BOHEMIA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BOHEMIA LT 473 ML",
+    "84577928"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "BOHEMIA LT 473 ML",
+  "manual": false
+ },
+ "SKOL PILSEN 473ML": {
+  "anota_title": "Skol Pilsen 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578035",
+  "gc_nome": "SKOL PILSEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SKOL PILSEN LT 473 ML",
+    "84578035"
+   ],
+   [
+    0.5,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ],
+   [
+    0.5,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SKOL PILSEN LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID SKOL LATAO 473ML": {
+  "anota_title": "CX/12 UNID SKOL LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578035",
+  "gc_nome": "SKOL PILSEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SKOL PILSEN LT 473 ML",
+    "84578035"
+   ],
+   [
+    1.0,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ],
+   [
+    1.0,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "SKOL PILSEN LT 473 ML",
+  "manual": false
+ },
+ "AMSTEL 473ML": {
+  "anota_title": "Amstel 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577925",
+  "gc_nome": "AMSTEL LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "AMSTEL LT 473 ML",
+    "84577925"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "AMSTEL LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID AMSTEL LATAO 473ML": {
+  "anota_title": "CX/12 UNID AMSTEL LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577925",
+  "gc_nome": "AMSTEL LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "AMSTEL LT 473 ML",
+    "84577925"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "AMSTEL LT 473 ML",
+  "manual": false
+ },
+ "EISENBAHN 473ML": {
+  "anota_title": "Eisenbahn 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "86243195",
+  "gc_nome": "EISENBAHN LATAO 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "EISENBAHN LATAO 473ml",
+    "86243195"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "EISENBAHN LATAO 473ml",
+  "manual": false
+ },
+ "ORIGINAL 473ML": {
+  "anota_title": "Original 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578012",
+  "gc_nome": "ORIGINAL LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ORIGINAL LT 473 ML",
+    "84578012"
+   ],
+   [
+    1.0,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    1.0,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ORIGINAL LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID ORIGINAL LATAO 473ML": {
+  "anota_title": "CX/12 UNID ORIGINAL LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578012",
+  "gc_nome": "ORIGINAL LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ORIGINAL LT 473 ML",
+    "84578012"
+   ],
+   [
+    1.0,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    1.0,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "ORIGINAL LT 473 ML",
+  "manual": false
+ },
+ "SPATEN 473ML": {
+  "anota_title": "Spaten 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578038",
+  "gc_nome": "SPATEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SPATEN LT 473 ML",
+    "84578038"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SPATEN LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID SPATEN LATAO 473ML": {
+  "anota_title": "CX/12 UNID SPATEN LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578038",
+  "gc_nome": "SPATEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SPATEN LT 473 ML",
+    "84578038"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "SPATEN LT 473 ML",
+  "manual": false
+ },
+ "BUDWEISER 473ML": {
+  "anota_title": "Budweiser 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577937",
+  "gc_nome": "BUDWEISER LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BUDWEISER LT 473 ML",
+    "84577937"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "BUDWEISER LT 473 ML",
+  "manual": false
+ },
+ "STELLA ARTOIS 473ML": {
+  "anota_title": "Stella Artois 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578042",
+  "gc_nome": "STELLA LT ARTOIS 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "STELLA LT ARTOIS 473 ML",
+    "84578042"
+   ],
+   [
+    0.5,
+    "STELLA PURE GOLD",
+    "93348143"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "STELLA LT ARTOIS 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID STELLA ARTOIS LATAO 473ML": {
+  "anota_title": "CX/12 UNID STELLA ARTOIS LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578042",
+  "gc_nome": "STELLA LT ARTOIS 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "STELLA LT ARTOIS 473 ML",
+    "84578042"
+   ],
+   [
+    0.5,
+    "STELLA PURE GOLD",
+    "93348143"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "STELLA LT ARTOIS 473 ML",
+  "manual": false
+ },
+ "HEINEKEN 473ML": {
+  "anota_title": "Heineken 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577991",
+  "gc_nome": "HEINEKEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "HEINEKEN LT 473 ML",
+    "84577991"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "HEINEKEN LT 473 ML",
+  "manual": false
+ },
+ "CX 12 UNID HEINEKEN LATAO 473ML": {
+  "anota_title": "CX/12 UNID HEINEKEN LATÃO 473ML",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577991",
+  "gc_nome": "HEINEKEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "HEINEKEN LT 473 ML",
+    "84577991"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "HEINEKEN LT 473 ML",
+  "manual": false
+ },
+ "BRAHMA MALZBIER 350ML": {
+  "anota_title": "Brahma malzbier 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577934",
+  "gc_nome": "BRAHMA MALZBIER LT 350 ML",
+  "candidatos": [
+   [
+    0.6,
+    "BRAHMA ZERO LT 350 ML",
+    "84577935"
+   ],
+   [
+    0.6,
+    "BRAHMA MALZIBIER LT 350 ML",
+    "84577934"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "BRAHMA ZERO LT 350 ML",
+  "manual": true
+ },
+ "CARACU": {
+  "anota_title": "Caracu",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577944",
+  "gc_nome": "CARACU LT 350 ML",
+  "candidatos": [
+   [
+    1.0,
+    "CARACU LT 350 ML",
+    "84577944"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CARACU LT 350 ML",
+  "manual": false
+ },
+ "BUDWEISER ZERO 350ML": {
+  "anota_title": "Budweiser Zero 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "88678698",
+  "gc_nome": "BUDWEISER LT 350 ML ZERO",
+  "candidatos": [
+   [
+    1.1,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.6,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.6,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "BUDWEISER LT 350 ML ZERO",
+  "manual": false
+ },
+ "CERVEJA CORONA ZERO ALCOOL LATA 350ML": {
+  "anota_title": "Cerveja Corona Zero Álcool Lata 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "88678728",
+  "gc_nome": "CORONA LT 350 ML ZERO",
+  "candidatos": [
+   [
+    0.77,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "CORONA LT 350 ML ZERO",
+  "manual": true
+ },
+ "STELLA ARTOIS LONG NECK 330ML": {
+  "anota_title": "Stella Artois Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "84578040",
+  "gc_nome": "STELLA LONG NECK 330 ML",
+  "candidatos": [
+   [
+    0.85,
+    "STELLA LONG NECK 330 ML",
+    "84578040"
+   ],
+   [
+    0.6,
+    "HEINEKEN LONG NECK 330 ML ZERIO",
+    "86243152"
+   ],
+   [
+    0.6,
+    "SPATEN LONG NECK 330 ML",
+    "84578037"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.85,
+  "sugestao": "STELLA LONG NECK 330 ML",
+  "manual": true
+ },
+ "HEINEKEN ZERO LONG NECK 330ML": {
+  "anota_title": "Heineken Zero Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "84577992",
+  "gc_nome": "HENEKEN ZERO LONG NECK 330 ML",
+  "candidatos": [
+   [
+    0.85,
+    "HEINEKEN LONG NECK 330 ML ZERIO",
+    "86243152"
+   ],
+   [
+    0.85,
+    "HENEKEN ZERO LONG NECK 330 ML",
+    "84577992"
+   ],
+   [
+    0.85,
+    "HEINEKEN LONG NECK 330 ML",
+    "84577989"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.85,
+  "sugestao": "HEINEKEN LONG NECK 330 ML ZERIO",
+  "manual": true
+ },
+ "HEINEKEN LONG NECK 330ML": {
+  "anota_title": "Heineken Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "84577989",
+  "gc_nome": "HEINEKEN LONG NECK 330 ML",
+  "candidatos": [
+   [
+    1.1,
+    "HEINEKEN LONG NECK 330 ML ZERIO",
+    "86243152"
+   ],
+   [
+    1.1,
+    "HEINEKEN LONG NECK 330 ML",
+    "84577989"
+   ],
+   [
+    0.77,
+    "STELLA LONG NECK 330 ML",
+    "84578040"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "HEINEKEN LONG NECK 330 ML ZERIO",
+  "manual": true
+ },
+ "CORONA LONG NECK 330ML": {
+  "anota_title": "Corona Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "84577966",
+  "gc_nome": "CORONA LONG NECK 330 ML",
+  "candidatos": [
+   [
+    1.1,
+    "CORONA LONG NECK 330 ML",
+    "84577966"
+   ],
+   [
+    0.77,
+    "HEINEKEN LONG NECK 330 ML ZERIO",
+    "86243152"
+   ],
+   [
+    0.77,
+    "STELLA LONG NECK 330 ML",
+    "84578040"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "CORONA LONG NECK 330 ML",
+  "manual": false
+ },
+ "AMSTEL ULTRA LONG NECK 275ML": {
+  "anota_title": "Amstel ultra long neck 275ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "84733432",
+  "gc_nome": "AMSTEL  ULTRA 275ML",
+  "candidatos": [
+   [
+    0.6,
+    "AMSTEL  ULTRA 275ML",
+    "84733432"
+   ],
+   [
+    0.5,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "AMSTEL  ULTRA 275ML",
+  "manual": true
+ },
+ "IMPERIO ULTRA 275ML": {
+  "anota_title": "Imperio ultra 275ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "95534338",
+  "gc_nome": "IMPERIO ULTRA 275ML",
+  "candidatos": [
+   [
+    0.6,
+    "AMSTEL  ULTRA 275ML",
+    "84733432"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "AMSTEL  ULTRA 275ML",
+  "manual": true
+ },
+ "STELLA PURE GOLD": {
+  "anota_title": "Stella Pure Gold",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "93348143",
+  "gc_nome": "STELLA PURE GOLD",
+  "candidatos": [
+   [
+    1.0,
+    "STELLA PURE GOLD",
+    "93348143"
+   ],
+   [
+    0.33,
+    "MAÇO MARLBORO BRANCO (GOLD)",
+    "84734274"
+   ],
+   [
+    0.33,
+    "STELLA LT ARTOIS 473 ML",
+    "84578042"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "STELLA PURE GOLD",
+  "manual": false
+ },
+ "BRAHMA 600ML": {
+  "anota_title": "Brahma 600ml",
+  "categoria": "Cervejas Garrafa 600ml",
+  "gc_id": "84577930",
+  "gc_nome": "BRAHMA GF 600 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BRAHMA GF 600 ML",
+    "84577930"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "BRAHMA GF 600 ML",
+  "manual": false
+ },
+ "ORIGINAL 600ML": {
+  "anota_title": "Original 600ml",
+  "categoria": "Cervejas Garrafa 600ml",
+  "gc_id": "84578010",
+  "gc_nome": "ORIGINAL GF 600 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ORIGINAL GF 600 ML",
+    "84578010"
+   ],
+   [
+    1.0,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    1.0,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ORIGINAL GF 600 ML",
+  "manual": false
+ },
+ "HEINEKEN 600ML": {
+  "anota_title": "Heineken 600ml",
+  "categoria": "Cervejas Garrafa 600ml",
+  "gc_id": "84577988",
+  "gc_nome": "HEINEKEN GF 600 ML",
+  "candidatos": [
+   [
+    1.1,
+    "HEINEKEN GF 600 ML",
+    "84577988"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "HEINEKEN GF 600 ML",
+  "manual": false
+ },
+ "AMSTEL 600ML": {
+  "anota_title": "Amstel 600ml",
+  "categoria": "Cervejas Garrafa 600ml",
+  "gc_id": "84577924",
+  "gc_nome": "AMSTEL GF 600 ML",
+  "candidatos": [
+   [
+    1.1,
+    "AMSTEL GF 600 ML",
+    "84577924"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "AMSTEL GF 600 ML",
+  "manual": false
+ },
+ "KAISER 600ML": {
+  "anota_title": "Kaiser 600ml",
+  "categoria": "Cervejas Garrafa 600ml",
+  "gc_id": "84734128",
+  "gc_nome": "KAISER GARRAFA 600ML",
+  "candidatos": [
+   [
+    1.1,
+    "KAISER GARRAFA 600ML",
+    "84734128"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "KAISER GARRAFA 600ML",
+  "manual": false
+ },
+ "AGUA MINERAL IGARAPE 500ML": {
+  "anota_title": "Água Mineral Igarapé 500ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577920",
+  "gc_nome": "ÁGUA MINERAL 500 ML",
+  "candidatos": [
+   [
+    0.77,
+    "ÁGUA MINERAL C/GÁS 500 ML",
+    "84577922"
+   ],
+   [
+    0.77,
+    "ÁGUA MINERAL 500 ML",
+    "84577920"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "ÁGUA MINERAL C/GÁS 500 ML",
+  "manual": true
+ },
+ "AGUA MINERAL IGARAPE COM GAS 500ML": {
+  "anota_title": "Água Mineral Igarapé com Gás 500ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577922",
+  "gc_nome": "ÁGUA MINERAL C/GÁS 500 ML",
+  "candidatos": [
+   [
+    0.85,
+    "ÁGUA MINERAL C/GÁS 500 ML",
+    "84577922"
+   ],
+   [
+    0.6,
+    "ÁGUA MINERAL 500 ML",
+    "84577920"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.85,
+  "sugestao": "ÁGUA MINERAL C/GÁS 500 ML",
+  "manual": true
+ },
+ "AGUA MINERAL IGARAPE 1.5L": {
+  "anota_title": "Água Mineral Igarapé 1,5lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577919",
+  "gc_nome": "ÁGUA MINERAL 1,5L",
+  "candidatos": [
+   [
+    0.77,
+    "ÁGUA MINERAL C/GÁS 1,5L",
+    "84577921"
+   ],
+   [
+    0.77,
+    "ÁGUA MINERAL 1,5L",
+    "84577919"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "ÁGUA MINERAL C/GÁS 1,5L",
+  "manual": true
+ },
+ "AGUA MINERAL IGARAPE COM GAS 1.5L": {
+  "anota_title": "Água Mineral Igarapé com Gás 1,5lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577921",
+  "gc_nome": "ÁGUA MINERAL C/GÁS 1,5L",
+  "candidatos": [
+   [
+    0.85,
+    "ÁGUA MINERAL C/GÁS 1,5L",
+    "84577921"
+   ],
+   [
+    0.6,
+    "ÁGUA MINERAL 1,5L",
+    "84577919"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.85,
+  "sugestao": "ÁGUA MINERAL C/GÁS 1,5L",
+  "manual": true
+ },
+ "TONICA ANTARTICA 350ML": {
+  "anota_title": "Tônica Antartica 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577923",
+  "gc_nome": "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+  "candidatos": [
+   [
+    0.6,
+    "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+    "84577923"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+  "manual": true
+ },
+ "TONICA ANTARTICA ZERO 350ML": {
+  "anota_title": "Tônica Antartica Zero 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577923",
+  "gc_nome": "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+  "candidatos": [
+   [
+    0.43,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "CORONA LT 350 ML ZERO",
+  "manual": true
+ },
+ "GATORADE LIMAO 500ML": {
+  "anota_title": "Gatorade Limão 500ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577975",
+  "gc_nome": "GATORADE 500 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GATORADE 500 ML SABORES",
+    "84577975"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GATORADE 500 ML SABORES",
+  "manual": false
+ },
+ "GATORADE MORANGO E MARACUJA 500ML": {
+  "anota_title": "Gatorade Morango e Maracujá 500ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577975",
+  "gc_nome": "GATORADE 500 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GATORADE 500 ML SABORES",
+    "84577975"
+   ],
+   [
+    0.25,
+    "MASCATE MARACUJA CAJU LATA",
+    "88794391"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GATORADE 500 ML SABORES",
+  "manual": false
+ },
+ "GATORADE UVA 500ML": {
+  "anota_title": "Gatorade uva 500ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577975",
+  "gc_nome": "GATORADE 500 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GATORADE 500 ML SABORES",
+    "84577975"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GATORADE 500 ML SABORES",
+  "manual": false
+ },
+ "SUCO TIAL UVA 1L": {
+  "anota_title": "Suco Tial Uva 1lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578043",
+  "gc_nome": "SUCO TIAL 1L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "SUCO TIAL 1L SABORES",
+    "84578043"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SUCO TIAL 1L SABORES",
+  "manual": false
+ },
+ "SUCO TIAL MANGA 1L": {
+  "anota_title": "Suco Tial Manga 1lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578043",
+  "gc_nome": "SUCO TIAL 1L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "SUCO TIAL 1L SABORES",
+    "84578043"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SUCO TIAL 1L SABORES",
+  "manual": false
+ },
+ "SUCO TIAL PESSEGO 1L": {
+  "anota_title": "Suco Tial Pêssego 1lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578043",
+  "gc_nome": "SUCO TIAL 1L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "SUCO TIAL 1L SABORES",
+    "84578043"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SUCO TIAL 1L SABORES",
+  "manual": false
+ },
+ "COCA COLA 200ML": {
+  "anota_title": "Coca-cola 200ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578021",
+  "gc_nome": "REFRI  COQUINHA PET 200 ML",
+  "candidatos": [
+   [
+    0.6,
+    "COCA MINI 200ML",
+    "84658541"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "COCA MINI 200ML",
+  "manual": true
+ },
+ "COCA COLA 350ML": {
+  "anota_title": "Coca-cola 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84658530",
+  "gc_nome": "COCA LATA 350ML",
+  "candidatos": [
+   [
+    0.6,
+    "COCA LATA 350ML",
+    "84658530"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "COCA LATA 350ML",
+  "manual": true
+ },
+ "COCA COLA ZERO 350ML": {
+  "anota_title": "Coca-cola Zero 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "95534339",
+  "gc_nome": "COCA LATA 350ML ZERO",
+  "candidatos": [
+   [
+    0.43,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "CORONA LT 350 ML ZERO",
+  "manual": true
+ },
+ "GUARAPAN 2L": {
+  "anota_title": "Guarapan 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "85697107",
+  "gc_nome": "GUARAPAN  2L",
+  "candidatos": [
+   [
+    1.1,
+    "GUARAPAN  2L",
+    "85697107"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GUARAPAN  2L",
+  "manual": false
+ },
+ "SUKITA UVA 2L": {
+  "anota_title": "Sukita Uva 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578029",
+  "gc_nome": "REFRI SUKITA PET  2L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI SUKITA PET  2L SABORES",
+    "84578029"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI SUKITA PET  2L SABORES",
+  "manual": false
+ },
+ "SUKITA LARANJA 2L": {
+  "anota_title": "Sukita Laranja 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578029",
+  "gc_nome": "REFRI SUKITA PET  2L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI SUKITA PET  2L SABORES",
+    "84578029"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI SUKITA PET  2L SABORES",
+  "manual": false
+ },
+ "GUARANA ANTARCTICA 2L": {
+  "anota_title": "Guaraná Antarctica 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578027",
+  "gc_nome": "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+    "84578027"
+   ],
+   [
+    1.1,
+    "REFRI GUARANÁ ANTARCTICA PET 2L",
+    "84578026"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+  "manual": false
+ },
+ "GUARANA ANTARCTICA ZERO 2L": {
+  "anota_title": "Guaraná Antarctica Zero 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578027",
+  "gc_nome": "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+    "84578027"
+   ],
+   [
+    0.77,
+    "REFRI GUARANÁ ANTARCTICA PET 2L",
+    "84578026"
+   ],
+   [
+    0.43,
+    "REFRI COCA COLA ZERO 2L",
+    "85768201"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+  "manual": false
+ },
+ "SPRITE 2L": {
+  "anota_title": "Sprite 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84659015",
+  "gc_nome": "REFRI SPRITE ZERO  2LT",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI SPRITE ZERO  2LT",
+    "84659015"
+   ],
+   [
+    1.1,
+    "REFRI SPRITE 2LT",
+    "84659013"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI SPRITE ZERO  2LT",
+  "manual": false
+ },
+ "FANTA LARANJA 2L": {
+  "anota_title": "Fanta Laranja 2L",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84658571",
+  "gc_nome": "FANTA   2L",
+  "candidatos": [
+   [
+    0.6,
+    "FANTA  RETORNAVEL   2L",
+    "85768199"
+   ],
+   [
+    0.6,
+    "FANTA   2L",
+    "84658571"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "FANTA  RETORNAVEL   2L",
+  "manual": true
+ },
+ "COCA COLA 2L": {
+  "anota_title": "Coca-cola 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84578024",
+  "gc_nome": "REFRI COCA COLA PET 2L",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI COCA COLA ZERO 2L",
+    "85768201"
+   ],
+   [
+    1.1,
+    "REFRI COCA COLA RETORNAVEL  2L",
+    "84658554"
+   ],
+   [
+    1.1,
+    "REFRI COCA COLA ZERO RETORNAVEL 2L",
+    "84658492"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI COCA COLA ZERO 2L",
+  "manual": true
+ },
+ "COCA COLA ZERO 2L": {
+  "anota_title": "Coca-cola Zero 2lts",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "85768201",
+  "gc_nome": "REFRI COCA COLA ZERO 2L",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI COCA COLA ZERO 2L",
+    "85768201"
+   ],
+   [
+    1.1,
+    "REFRI COCA COLA ZERO RETORNAVEL 2L",
+    "84658492"
+   ],
+   [
+    0.77,
+    "REFRI COCA COLA RETORNAVEL  2L",
+    "84658554"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI COCA COLA ZERO 2L",
+  "manual": false
+ },
+ "COCA COLA 2L RETORNAVEL": {
+  "anota_title": "Coca-cola 2lts (Retornável)",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84658554",
+  "gc_nome": "REFRI COCA COLA RETORNAVEL  2L",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI COCA COLA RETORNAVEL  2L",
+    "84658554"
+   ],
+   [
+    1.1,
+    "REFRI COCA COLA ZERO RETORNAVEL 2L",
+    "84658492"
+   ],
+   [
+    0.77,
+    "REFRI COCA COLA ZERO 2L",
+    "85768201"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI COCA COLA RETORNAVEL  2L",
+  "manual": false
+ },
+ "COCA COLA ZERO 2L RETORNAVEL": {
+  "anota_title": "Coca-cola Zero 2lts (Retornável)",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84658492",
+  "gc_nome": "REFRI COCA COLA ZERO RETORNAVEL 2L",
+  "candidatos": [
+   [
+    1.1,
+    "REFRI COCA COLA ZERO RETORNAVEL 2L",
+    "84658492"
+   ],
+   [
+    0.85,
+    "REFRI COCA COLA ZERO 2L",
+    "85768201"
+   ],
+   [
+    0.85,
+    "REFRI COCA COLA RETORNAVEL  2L",
+    "84658554"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "REFRI COCA COLA ZERO RETORNAVEL 2L",
+  "manual": false
+ },
+ "FANTA 2L RETORNAVEL": {
+  "anota_title": "Fanta 2lts (Retornável)",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "85768199",
+  "gc_nome": "FANTA  RETORNAVEL   2L",
+  "candidatos": [
+   [
+    1.1,
+    "FANTA  RETORNAVEL   2L",
+    "85768199"
+   ],
+   [
+    0.6,
+    "FANTA   2L",
+    "84658571"
+   ],
+   [
+    0.6,
+    "REFRI COCA COLA RETORNAVEL  2L",
+    "84658554"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "FANTA  RETORNAVEL   2L",
+  "manual": false
+ },
+ "ICE SYN LIMAO 269ML": {
+  "anota_title": "Ice Syn Limão 269ml",
+  "categoria": "Drink's",
+  "gc_id": "84577994",
+  "gc_nome": "ICE SYN  300 ML SABORES",
+  "candidatos": [
+   [
+    0.33,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "MAÇO LUCKY STRIKE DOUBLE ICE",
+  "manual": true
+ },
+ "COROTE MARACUJA 500ML": {
+  "anota_title": "Corote maracujá 500ml",
+  "categoria": "Drink's",
+  "gc_id": "86799699",
+  "gc_nome": "COROTE 500 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "Corote  500 ml sabores",
+    "86799699"
+   ],
+   [
+    0.5,
+    "MASCATE MARACUJA CAJU LATA",
+    "88794391"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "Corote  500 ml sabores",
+  "manual": false
+ },
+ "COROTE LIMAO 500ML": {
+  "anota_title": "Corote Limão 500ml",
+  "categoria": "Drink's",
+  "gc_id": "86799699",
+  "gc_nome": "COROTE 500 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "Corote  500 ml sabores",
+    "86799699"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "Corote  500 ml sabores",
+  "manual": false
+ },
+ "SKOL BEATS SENSES 269ML": {
+  "anota_title": "Skol Beats Senses 269ml",
+  "categoria": "Drink's",
+  "gc_id": "84578032",
+  "gc_nome": "SKOL BEATS SENSES LATA 269 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    1.1,
+    "SKOL BEATS SENSES LATA 269 ML",
+    "84578032"
+   ],
+   [
+    0.77,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SKOL BEATS SENSES LONG NECK 269 ML",
+  "manual": true
+ },
+ "SKOL BEATS GT 269ML": {
+  "anota_title": "Skol Beats GT 269ml",
+  "categoria": "Drink's",
+  "gc_id": "84578030",
+  "gc_nome": "SKOL BEATS GT LATA 269 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ],
+   [
+    1.1,
+    "SKOL BEATS GT LATA 269 ML",
+    "84578030"
+   ],
+   [
+    0.77,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SKOL BEATS GT LONG NECK 269 ML",
+  "manual": true
+ },
+ "SKOL BEATS CAIPIRINHA 269ML": {
+  "anota_title": "Skol Beats Caipirinha 269ml",
+  "categoria": "Drink's",
+  "gc_id": "95534340",
+  "gc_nome": "SKOL BEATS CAIPIRINHA LATA 269 ML",
+  "candidatos": [
+   [
+    0.77,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    0.77,
+    "SKOL BEATS SENSES LATA 269 ML",
+    "84578032"
+   ],
+   [
+    0.77,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "SKOL BEATS SENSES LONG NECK 269 ML",
+  "manual": true
+ },
+ "SKOL BEATS RED MIX 269ML": {
+  "anota_title": "Skol Beats Red Mix 269ml",
+  "categoria": "Drink's",
+  "gc_id": "85750304",
+  "gc_nome": "SKOL BEATS RED MIX LATA",
+  "candidatos": [
+   [
+    1.0,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ],
+   [
+    1.0,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ],
+   [
+    0.75,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SKOL BEATS RED MIX LATA",
+  "manual": false
+ },
+ "SKOL BEATS GREEN MIX": {
+  "anota_title": "Skol Beats Green Mix",
+  "categoria": "Drink's",
+  "gc_id": "88750737",
+  "gc_nome": "SKOL BEATS GREEN MIX LATA",
+  "candidatos": [
+   [
+    0.75,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ],
+   [
+    0.75,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ],
+   [
+    0.75,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "SKOL BEATS GREN MIX LATA",
+  "manual": true
+ },
+ "SKOL BEATS GT LONG NECK 269ML": {
+  "anota_title": "Skol Beats GT Long Neck 269ml",
+  "categoria": "Drink's",
+  "gc_id": "84578031",
+  "gc_nome": "SKOL BEATS GT LONG NECK 269 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ],
+   [
+    0.9,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    0.8,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "SKOL BEATS GT LONG NECK 269 ML",
+  "manual": false
+ },
+ "SKOL BEATS SENSE LONG NECK 269ML": {
+  "anota_title": "Skol Beats Sense Long Neck 269ml",
+  "categoria": "Drink's",
+  "gc_id": "84578033",
+  "gc_nome": "SKOL BEATS SENSES LONG NECK 269 ML",
+  "candidatos": [
+   [
+    0.9,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    0.9,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ],
+   [
+    0.8,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.9,
+  "sugestao": "SKOL BEATS SENSES LONG NECK 269 ML",
+  "manual": true
+ },
+ "SKOL BEATS RED MIX LONG NECK 269ML": {
+  "anota_title": "Skol Beats Red Mix Long Neck 269ml",
+  "categoria": "Drink's",
+  "gc_id": "85696279",
+  "gc_nome": "SKOL BEATS RED MIX LONG NECK",
+  "candidatos": [
+   [
+    1.0,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ],
+   [
+    0.77,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    0.77,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SKOL BEATS RED MIX LONG NECK",
+  "manual": false
+ },
+ "SKOL BEATS GREEN MIX LONG NECK": {
+  "anota_title": "Skol Beats Green mix Long Neck",
+  "categoria": "Drink's",
+  "gc_id": "95534342",
+  "gc_nome": "SKOL BEATS GREEN MIX LONG NECK",
+  "candidatos": [
+   [
+    0.83,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ],
+   [
+    0.67,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    0.67,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.83,
+  "sugestao": "SKOL BEATS RED MIX LONG NECK",
+  "manual": true
+ },
+ "XEQUE MATE DRAFT RUM 335ML": {
+  "anota_title": "Xeque Mate Draft Rum 335ml",
+  "categoria": "Drink's",
+  "gc_id": "85768197",
+  "gc_nome": "XEQUE MATE 355 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 0.0,
+  "sugestao": null,
+  "manual": true
+ },
+ "CHOPP DE VINHO PINK MOON PET 600ML": {
+  "anota_title": "Chopp De Vinho Pink Moon Pet 600ML",
+  "categoria": "Drink's",
+  "gc_id": "88676929",
+  "gc_nome": "PINK MOON CHOPP VINHO 600ML",
+  "candidatos": [
+   [
+    1.1,
+    "PINK MOON CHOPP VINHO 600ML",
+    "88676929"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL GIN BEEFEATER PINK",
+    "95407224"
+   ],
+   [
+    0.25,
+    "COPÃO DE GIN BEEFEATER PINK",
+    "95404673"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "PINK MOON CHOPP VINHO 600ML",
+  "manual": false
+ },
+ "BANG BANG CAIPI VODKA 3 LIMOES": {
+  "anota_title": "BANG BANG Caipi Vodka 3 Limões",
+  "categoria": "Drink's",
+  "gc_id": "88795016",
+  "gc_nome": "BANG BANG CAIPI VODKA 3 LIMÕES LATA",
+  "candidatos": [
+   [
+    1.0,
+    "BANG BANG CAIPI VODKA 3 LIMÕES LATA",
+    "88795016"
+   ],
+   [
+    0.5,
+    "VODKA NINNOFF 900 ML SABORES",
+    "84578047"
+   ],
+   [
+    0.25,
+    "BANG BANG MOSCOW MULE LATA",
+    "88794542"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "BANG BANG CAIPI VODKA 3 LIMÕES LATA",
+  "manual": false
+ },
+ "BANG BANG MOSCOW MULE": {
+  "anota_title": "BANG BANG Moscow Mule",
+  "categoria": "Drink's",
+  "gc_id": "88794542",
+  "gc_nome": "BANG BANG MOSCOW MULE LATA",
+  "candidatos": [
+   [
+    1.0,
+    "BANG BANG MOSCOW MULE LATA",
+    "88794542"
+   ],
+   [
+    0.33,
+    "BANG BANG CAIPI VODKA 3 LIMÕES LATA",
+    "88795016"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "BANG BANG MOSCOW MULE LATA",
+  "manual": false
+ },
+ "MASCATE MARACUJA E CAJU": {
+  "anota_title": "MASCATE MARACUJÁ E CAJU",
+  "categoria": "Drink's",
+  "gc_id": "88794391",
+  "gc_nome": "MASCATE MARACUJA CAJU LATA",
+  "candidatos": [
+   [
+    0.75,
+    "MASCATE MARACUJA CAJU LATA",
+    "88794391"
+   ],
+   [
+    0.25,
+    "MASCATE MELANCIA & FRAMBOESA LATA",
+    "88794349"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "MASCATE MARACUJA CAJU LATA",
+  "manual": true
+ },
+ "MASCATE MELANCIA E FRAMBOESA": {
+  "anota_title": "MASCATE MELANCIA E FRAMBOESA",
+  "categoria": "Drink's",
+  "gc_id": "88794349",
+  "gc_nome": "MASCATE MELANCIA & FRAMBOESA LATA",
+  "candidatos": [
+   [
+    0.75,
+    "MASCATE MELANCIA & FRAMBOESA LATA",
+    "88794349"
+   ],
+   [
+    0.25,
+    "MASCATE MARACUJA CAJU LATA",
+    "88794391"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "MASCATE MELANCIA & FRAMBOESA LATA",
+  "manual": true
+ },
+ "ENERGETICO MONSTER 473ML": {
+  "anota_title": "Energético Monster 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577973",
+  "gc_nome": "ENERGY MONSTER LT 473 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.6,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": false
+ },
+ "ENERGETICO MONSTER ZERO SUGAR 473ML": {
+  "anota_title": "Energético Monster ZERO SUGAR 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577973",
+  "gc_nome": "ENERGY MONSTER LT 473 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.35,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": false
+ },
+ "ENERGETICO MANGO LOCO 473ML": {
+  "anota_title": "Energético Mango Loco 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577973",
+  "gc_nome": "ENERGY MONSTER LT 473 ML SABORES",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.43,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO RED BULL TRADICIONAL 250ML": {
+  "anota_title": "Energético Red Bull Tradicional 250ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577970",
+  "gc_nome": "ENERGY  REDBULL LT 250 ML SABORES",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY  REDBULL LT 250 ML SABORES",
+    "84577970"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY  REDBULL LT 250 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO RED BULL SUGAR FREE 250ML": {
+  "anota_title": "Energético Red Bull Sugar Free 250ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577970",
+  "gc_nome": "ENERGY  REDBULL LT 250 ML SABORES",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY  REDBULL LT 250 ML SABORES",
+    "84577970"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY  REDBULL LT 250 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO RED BULL MELANCIA 250ML": {
+  "anota_title": "Energético Red Bull Melancia 250ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577970",
+  "gc_nome": "ENERGY  REDBULL LT 250 ML SABORES",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY  REDBULL LT 250 ML SABORES",
+    "84577970"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY  REDBULL LT 250 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO RED BULL TROPICAL 250ML": {
+  "anota_title": "Energético Red Bull Tropical 250ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577970",
+  "gc_nome": "ENERGY  REDBULL LT 250 ML SABORES",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY  REDBULL LT 250 ML SABORES",
+    "84577970"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY  REDBULL LT 250 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO BALY ENERGY DRINK TRADICIONAL 473ML": {
+  "anota_title": "Energético Baly Energy Drink Tradicional 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577969",
+  "gc_nome": "ENERGY  BALY LT 473 ML",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.6,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ],
+   [
+    0.25,
+    "BANANA ARITANA FRITA TRADICIONAL 12X50G",
+    "84734218"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO BALY ENERGY DRINK TROPICAL 473ML": {
+  "anota_title": "Energético Baly Energy Drink Tropical 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577969",
+  "gc_nome": "ENERGY  BALY LT 473 ML",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.6,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO BALY ENERGY DRINK MACA VERDE 473ML": {
+  "anota_title": "Energético Baly Energy Drink Maça Verde 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577969",
+  "gc_nome": "ENERGY  BALY LT 473 ML",
+  "candidatos": [
+   [
+    0.6,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.5,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO JACK POWER TROPICAL 2L": {
+  "anota_title": "Energético Jack Power Tropical 2lts",
+  "categoria": "Energéticos",
+  "gc_id": "84577972",
+  "gc_nome": "ENERGY JACK POWER 2L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "ENERGY JACK POWER 2L SABORES",
+    "84577972"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ENERGY JACK POWER 2L SABORES",
+  "manual": false
+ },
+ "ENERGETICO JACK POWER MELANCIA 2L": {
+  "anota_title": "Energético Jack Power Melancia 2lts",
+  "categoria": "Energético 2L",
+  "gc_id": "84577972",
+  "gc_nome": "ENERGY JACK POWER 2L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "ENERGY JACK POWER 2L SABORES",
+    "84577972"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ENERGY JACK POWER 2L SABORES",
+  "manual": false
+ },
+ "ENERGETICO JACK POWER TRADICIONAL 2L": {
+  "anota_title": "Energético Jack Power Tradicional 2lts",
+  "categoria": "Energético 2L",
+  "gc_id": "84577972",
+  "gc_nome": "ENERGY JACK POWER 2L SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "ENERGY JACK POWER 2L SABORES",
+    "84577972"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ENERGY JACK POWER 2L SABORES",
+  "manual": false
+ },
+ "MANSAO MAROMBA TRADICIONAL": {
+  "anota_title": "Mansão Maromba Tradicional",
+  "categoria": "Whiskys",
+  "gc_id": "86799678",
+  "gc_nome": "MANSAO MAROMBA 1L SABORES",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.67,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ],
+   [
+    0.33,
+    "BANANA ARITANA FRITA TRADICIONAL 12X50G",
+    "84734218"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": false
+ },
+ "COMBO MANSAO MAROMBA TRADICIONAL": {
+  "anota_title": "COMBO Mansão Maromba Tradicional",
+  "categoria": "Whiskys",
+  "gc_id": "86799779",
+  "gc_nome": "COMBO MANSAO MAROMBA",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.75,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ],
+   [
+    0.25,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": true
+ },
+ "MANSAO MAROMBA MACA VERDE": {
+  "anota_title": "Mansão Maromba Maçã Verde",
+  "categoria": "Whiskys",
+  "gc_id": "86799678",
+  "gc_nome": "MANSAO MAROMBA 1L SABORES",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.5,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": false
+ },
+ "COMBO MANSAO MAROMBA MACA VERDE": {
+  "anota_title": "COMBO Mansão Maromba Maçã Verde",
+  "categoria": "Whiskys",
+  "gc_id": "86799779",
+  "gc_nome": "COMBO MANSAO MAROMBA",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.6,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ],
+   [
+    0.2,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": true
+ },
+ "MANSAO MAROMBA ABRACADABRA TANGERINA": {
+  "anota_title": "Mansão Maromba Abracadabra Tangerina",
+  "categoria": "Whiskys",
+  "gc_id": "86799678",
+  "gc_nome": "MANSAO MAROMBA 1L SABORES",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.5,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": false
+ },
+ "MANSAO MAROMBA COCO C ABACAXI": {
+  "anota_title": "Mansão Maromba Coco c/ Abacaxi",
+  "categoria": "Whiskys",
+  "gc_id": "86799678",
+  "gc_nome": "MANSAO MAROMBA 1L SABORES",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.5,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": false
+ },
+ "MANSAO MAROMBA UVA VERDE": {
+  "anota_title": "Mansão Maromba Uva verde",
+  "categoria": "Whiskys",
+  "gc_id": "86799678",
+  "gc_nome": "MANSAO MAROMBA 1L SABORES",
+  "candidatos": [
+   [
+    1.0,
+    "Mansao 1L maromba sabores",
+    "86799678"
+   ],
+   [
+    0.5,
+    "COMBO MANSAO MAROMBA",
+    "86799779"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "Mansao 1L maromba sabores",
+  "manual": false
+ },
+ "COMBO CHANCELER 1L": {
+  "anota_title": "COMBO Chanceler 1 L",
+  "categoria": "Whiskys",
+  "gc_id": "86799747",
+  "gc_nome": "COMBO WHISKY CHANCELER",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL WHISKY CHANCELER",
+    "95407203"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY CHANCELER",
+    "86799747"
+   ],
+   [
+    0.6,
+    "WHISKY CHANCELER 1L",
+    "95397886"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY CHANCELER",
+  "manual": true
+ },
+ "CHANCELER 1L": {
+  "anota_title": "Chanceler 1L",
+  "categoria": "Whiskys",
+  "gc_id": "95397886",
+  "gc_nome": "WHISKY CHANCELER 1L",
+  "candidatos": [
+   [
+    1.1,
+    "WHISKY CHANCELER 1L",
+    "95397886"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL WHISKY CHANCELER",
+    "95407203"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY CHANCELER",
+    "86799747"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "WHISKY CHANCELER 1L",
+  "manual": false
+ },
+ "COMBO CAVALO BRANCO 1L": {
+  "anota_title": "COMBO Cavalo Branco 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799757",
+  "gc_nome": "COMBO WHISKY CAVALO BRANCO",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL WHISKY CAVALO BRANCO",
+    "95407214"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY CAVALO BRANCO",
+    "86799757"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY CAVALO BRANCO",
+  "manual": true
+ },
+ "WHITE HORSE 1L": {
+  "anota_title": "White Horse - 1L",
+  "categoria": "Whiskys",
+  "gc_id": "84578061",
+  "gc_nome": "WHISKY WHITE HORSE 1LT",
+  "candidatos": [
+   [
+    1.1,
+    "WHISKY WHITE HORSE 1LT",
+    "84578061"
+   ],
+   [
+    1.0,
+    "DOSE WHITE HORSE-",
+    "86145097"
+   ],
+   [
+    1.0,
+    "COPAO WHITE HORSE",
+    "84577963"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "WHISKY WHITE HORSE 1LT",
+  "manual": false
+ },
+ "COMBO BALLANTINE S SUNSHINE 700ML": {
+  "anota_title": "COMBO Ballantine's Sunshine 700ml",
+  "categoria": "Whiskys",
+  "gc_id": "95397939",
+  "gc_nome": "COMBO WHISKY BALLANTINES SUNSHINE",
+  "candidatos": [
+   [
+    0.5,
+    "COMBO RED BULL WHISKY BALLANTINES SUNSHINE",
+    "95407217"
+   ],
+   [
+    0.5,
+    "COMBO WHISKY BALLANTINES SUNSHINE",
+    "95397939"
+   ],
+   [
+    0.35,
+    "WHISKY BALLANTINES SUNSHINE 700ML",
+    "95397887"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "COMBO RED BULL WHISKY BALLANTINES SUNSHINE",
+  "manual": true
+ },
+ "BALLANTINE S SUNSHINE 700ML": {
+  "anota_title": "Ballantine's Sunshine 700ml",
+  "categoria": "Whiskys",
+  "gc_id": "95397887",
+  "gc_nome": "WHISKY BALLANTINES SUNSHINE 700ML",
+  "candidatos": [
+   [
+    0.43,
+    "WHISKY BALLANTINES SUNSHINE 700ML",
+    "95397887"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY BALLANTINES SUNSHINE",
+    "95407217"
+   ],
+   [
+    0.33,
+    "COPAO WHISKY BALLANTINES SUNSHINE",
+    "95404668"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "WHISKY BALLANTINES SUNSHINE 700ML",
+  "manual": true
+ },
+ "COMBO RED LABEL 1L": {
+  "anota_title": "COMBO Red Label 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799767",
+  "gc_nome": "COMBO WHISKY RED LABEL",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL WHISKY BLACK LABEL",
+    "95407243"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL WHISKY RED LABEL",
+    "95407219"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY RED LABEL",
+    "86799767"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BLACK LABEL",
+  "manual": true
+ },
+ "RED LABEL 1L": {
+  "anota_title": "Red Label - 1L",
+  "categoria": "Whiskys",
+  "gc_id": "84578060",
+  "gc_nome": "WHISKY RED LABEL 1L",
+  "candidatos": [
+   [
+    1.1,
+    "WHISKY RED LABEL 1L",
+    "84578060"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL WHISKY BLACK LABEL",
+    "95407243"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL WHISKY RED LABEL",
+    "95407219"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "WHISKY RED LABEL 1L",
+  "manual": false
+ },
+ "COMBO JACK DANIEL S TRAD 1L": {
+  "anota_title": "COMBO Jack Daniel´s Trad 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799752",
+  "gc_nome": "COMBO WHISKY JACK DANIELS",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "JACK DANIEL S TRADICIONAL 1L": {
+  "anota_title": "Jack Daniel´s Tradicional 1L",
+  "categoria": "Whiskys",
+  "gc_id": "84578059",
+  "gc_nome": "WHISKY JACK DANIELS N7 1L",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.35,
+    "WHISKY JACK DANIELS BLACKBERRY 1L",
+    "95397884"
+   ],
+   [
+    0.35,
+    "WHISKY JACK DANIELS N7 1L",
+    "84578059"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S MACA VERDE 1L": {
+  "anota_title": "COMBO Jack Daniel´s Maça Verde 1L",
+  "categoria": "Whiskys",
+  "gc_id": "95397944",
+  "gc_nome": "COMBO WHISKY JACK DANIELS APPLE",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "JACK DANIEL S MACA VERDE 1L": {
+  "anota_title": "Jack Daniel´s Maça Verde 1L",
+  "categoria": "Whiskys",
+  "gc_id": "84578056",
+  "gc_nome": "WHISKY JACK DANIELS APPLE 1L",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.3,
+    "WHISKY JACK DANIELS BLACKBERRY 1L",
+    "95397884"
+   ],
+   [
+    0.3,
+    "WHISKY JACK DANIELS N7 1L",
+    "84578059"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S MEL 1L": {
+  "anota_title": "COMBO Jack Daniel´s Mel 1L",
+  "categoria": "Whiskys",
+  "gc_id": "95397947",
+  "gc_nome": "COMBO WHISKY JACK DANIELS HONEY",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "JACK DANIEL S MEL 1L": {
+  "anota_title": "Jack Daniel´s Mel 1L",
+  "categoria": "Whiskys",
+  "gc_id": "84578058",
+  "gc_nome": "WHISKY JACK DANIELS HONEY 1L",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.35,
+    "WHISKY JACK DANIELS BLACKBERRY 1L",
+    "95397884"
+   ],
+   [
+    0.35,
+    "WHISKY JACK DANIELS N7 1L",
+    "84578059"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S BLACKBERRY 1L": {
+  "anota_title": "COMBO Jack Daniel´s Blackberry 1L",
+  "categoria": "Whiskys",
+  "gc_id": "95397952",
+  "gc_nome": "COMBO WHISKY JACK DANIELS BLACKBERRY",
+  "candidatos": [
+   [
+    0.6,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.6,
+    "COMBO WHISKY JACK DANIELS BLACKBERRY",
+    "95397952"
+   ],
+   [
+    0.5,
+    "WHISKY JACK DANIELS BLACKBERRY 1L",
+    "95397884"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+  "manual": true
+ },
+ "JACK DANIEL S BLACKBERRY 1L": {
+  "anota_title": "Jack Daniel´s Blackberry 1L",
+  "categoria": "Whiskys",
+  "gc_id": "95397884",
+  "gc_nome": "WHISKY JACK DANIELS BLACKBERRY 1L",
+  "candidatos": [
+   [
+    0.6,
+    "WHISKY JACK DANIELS BLACKBERRY 1L",
+    "95397884"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.5,
+    "COPAO WHISKY JACK DANIELS BLACKBERRY",
+    "95404684"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "WHISKY JACK DANIELS BLACKBERRY 1L",
+  "manual": true
+ },
+ "COMBO WHISKY BLACK LABEL": {
+  "anota_title": "Combo Whisky Black label",
+  "categoria": "Whiskys",
+  "gc_id": "95397930",
+  "gc_nome": "COMBO WHISKY BLACK LABEL",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL WHISKY BLACK LABEL",
+    "95407243"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY BLACK LABEL",
+    "95397930"
+   ],
+   [
+    0.75,
+    "COMBO RED BULL WHISKY RED LABEL",
+    "95407219"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BLACK LABEL",
+  "manual": true
+ },
+ "BLACK LABEL 1L": {
+  "anota_title": "Black Label - 1L",
+  "categoria": "Whiskys",
+  "gc_id": "84578052",
+  "gc_nome": "WHISKY BLACK LABEL 1L",
+  "candidatos": [
+   [
+    1.1,
+    "WHISKY BLACK LABEL 1L",
+    "84578052"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL WHISKY BLACK LABEL",
+    "95407243"
+   ],
+   [
+    1.0,
+    "COPAO WHISKY BLACK LABEL",
+    "95404683"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "WHISKY BLACK LABEL 1L",
+  "manual": false
+ },
+ "COMBO GIN INTENCION TRADICIONAL 900ML": {
+  "anota_title": "COMBO GIN Intencion Tradicional 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.75,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.75,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "GIN INTENCION TRADICIONAL 900ML": {
+  "anota_title": "GIN Intencion Tradicional 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.67,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.67,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "COMBO GIN INTENCION MELANCIA 900ML": {
+  "anota_title": "COMBO GIN Intencion Melancia 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.75,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.75,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "GIN INTENCION MELANCIA 900ML": {
+  "anota_title": "GIN Intencion Melancia 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.67,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.67,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "COMBO GIN INTENCION MACA VERDE 900ML": {
+  "anota_title": "COMBO GIN Intencion Maça Verde 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.6,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.6,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "GIN INTENCION MACA VERDE 900ML": {
+  "anota_title": "GIN Intencion Maça Verde 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.5,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "COMBO GIN INTENCION MORANGO 900ML": {
+  "anota_title": "COMBO GIN Intencion Morango 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.75,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.75,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "GIN INTENCION MORANGO 900ML": {
+  "anota_title": "GIN Intencion Morango 900ml",
+  "categoria": "Gin",
+  "gc_id": "84577982",
+  "gc_nome": "GIN INTENCION 900 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN INTENCION 900 ML SABORES",
+    "84577982"
+   ],
+   [
+    0.67,
+    "COMBO RED BULL GIN INTENCION",
+    "95407206"
+   ],
+   [
+    0.67,
+    "COMBO DE GIN INTENCION",
+    "86799820"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN INTENCION 900 ML SABORES",
+  "manual": false
+ },
+ "COMBO GIN GORDON S 750ML": {
+  "anota_title": "COMBO GIN Gordon´s 750ml",
+  "categoria": "Gin",
+  "gc_id": "84577981",
+  "gc_nome": "GIN GORDON´S 750 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN GORDON´S 750 ML SABORES",
+    "84577981"
+   ],
+   [
+    0.6,
+    "GIN TANQUERAY 750 ML SABORES",
+    "84577985"
+   ],
+   [
+    0.5,
+    "COMBO RED BULL GIN TANQUERAY",
+    "95407228"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN GORDON´S 750 ML SABORES",
+  "manual": false
+ },
+ "GIN GORDON S 750ML": {
+  "anota_title": "GIN Gordon's 750ml",
+  "categoria": "Gin",
+  "gc_id": "84577981",
+  "gc_nome": "GIN GORDON´S 750 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN GORDON´S 750 ML SABORES",
+    "84577981"
+   ],
+   [
+    0.6,
+    "GIN TANQUERAY 750 ML SABORES",
+    "84577985"
+   ],
+   [
+    0.43,
+    "GIN BEEFEATER PINK 750 ML",
+    "88750945"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN GORDON´S 750 ML SABORES",
+  "manual": false
+ },
+ "COMBO GIN TANQUERAY 750ML": {
+  "anota_title": "COMBO GIN Tanqueray 750ml",
+  "categoria": "Gin",
+  "gc_id": "84577985",
+  "gc_nome": "GIN TANQUERAY 750 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN TANQUERAY 750 ML SABORES",
+    "84577985"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL GIN TANQUERAY",
+    "95407228"
+   ],
+   [
+    1.0,
+    "COMBO DE GIN TANQUERAY",
+    "86799902"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN TANQUERAY 750 ML SABORES",
+  "manual": false
+ },
+ "GIN TANQUERAY 750ML": {
+  "anota_title": "GIN Tanqueray 750ml",
+  "categoria": "Gin",
+  "gc_id": "84577985",
+  "gc_nome": "GIN TANQUERAY 750 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "GIN TANQUERAY 750 ML SABORES",
+    "84577985"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL GIN TANQUERAY",
+    "95407228"
+   ],
+   [
+    1.0,
+    "COMBO DE GIN TANQUERAY",
+    "86799902"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "GIN TANQUERAY 750 ML SABORES",
+  "manual": false
+ },
+ "COMBO GIN BEEFEATER 700ML": {
+  "anota_title": "COMBO GIN Beefeater 700ml",
+  "categoria": "Gin",
+  "gc_id": "95397954",
+  "gc_nome": "COMBO DE GIN BEEFEATER",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL GIN BEEFEATER PINK",
+    "95407224"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL GIN BEEFEATER",
+    "95407222"
+   ],
+   [
+    1.0,
+    "COMBO DE GIN BEEFEATER PINK",
+    "95397958"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN BEEFEATER PINK",
+  "manual": true
+ },
+ "GIN BEEFEATER 700ML": {
+  "anota_title": "GIN Beefeater 700 ml",
+  "categoria": "Gin",
+  "gc_id": "84577980",
+  "gc_nome": "GIN BEEFEATER 750 ML",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL GIN BEEFEATER PINK",
+    "95407224"
+   ],
+   [
+    1.0,
+    "COMBO RED BULL GIN BEEFEATER",
+    "95407222"
+   ],
+   [
+    1.0,
+    "COPÃO DE GIN BEEFEATER PINK",
+    "95404673"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN BEEFEATER PINK",
+  "manual": true
+ },
+ "COMBO GIN BEEFEATER STRAWBERRY 700ML": {
+  "anota_title": "COMBO GIN Beefeater Strawberry 700ml",
+  "categoria": "Gin",
+  "gc_id": "95397958",
+  "gc_nome": "COMBO DE GIN BEEFEATER PINK",
+  "candidatos": [
+   [
+    0.75,
+    "COMBO RED BULL GIN BEEFEATER PINK",
+    "95407224"
+   ],
+   [
+    0.75,
+    "COMBO RED BULL GIN BEEFEATER",
+    "95407222"
+   ],
+   [
+    0.75,
+    "COMBO DE GIN BEEFEATER PINK",
+    "95397958"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "COMBO RED BULL GIN BEEFEATER PINK",
+  "manual": true
+ },
+ "GIN BEEFEATER STRAWBERRY 700ML": {
+  "anota_title": "GIN Beefeater Strawberry 700 ml",
+  "categoria": "Gin",
+  "gc_id": "88750945",
+  "gc_nome": "GIN BEEFEATER PINK 750 ML",
+  "candidatos": [
+   [
+    0.67,
+    "COMBO RED BULL GIN BEEFEATER PINK",
+    "95407224"
+   ],
+   [
+    0.67,
+    "COMBO RED BULL GIN BEEFEATER",
+    "95407222"
+   ],
+   [
+    0.67,
+    "COPÃO DE GIN BEEFEATER PINK",
+    "95404673"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "COMBO RED BULL GIN BEEFEATER PINK",
+  "manual": true
+ },
+ "LICOR BEM CASADO DOCE DE LEITE 1L": {
+  "anota_title": "Licor bem casado Doce de leite 1L",
+  "categoria": "Vinhos / Licor / Destilados",
+  "gc_id": "95406714",
+  "gc_nome": "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+  "candidatos": [
+   [
+    0.7,
+    "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+    "95406714"
+   ],
+   [
+    0.3,
+    "LICOR DA VAQUINHA 1L CHOCOLATE",
+    "95406717"
+   ],
+   [
+    0.3,
+    "LICOR  DA VAQUINHA  1L",
+    "84761431"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.7,
+  "sugestao": "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+  "manual": true
+ },
+ "LICOR BEM CASADO DOCE DE LEITE COM CHOCOLATE 1L": {
+  "anota_title": "Licor bem casado Doce de leite com chocolate 1L",
+  "categoria": "Vinhos / Licor / Destilados",
+  "gc_id": "95406717",
+  "gc_nome": "LICOR DA VAQUINHA 1L CHOCOLATE",
+  "candidatos": [
+   [
+    1.0,
+    "CHOCOLATE SABORES",
+    "84577960"
+   ],
+   [
+    0.6,
+    "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+    "95406714"
+   ],
+   [
+    0.43,
+    "LICOR DA VAQUINHA 1L CHOCOLATE",
+    "95406717"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHOCOLATE SABORES",
+  "manual": true
+ },
+ "VINHO PERGOLA SUAVE 1L": {
+  "anota_title": "Vinho Pérgola Suave 1lts",
+  "categoria": "Vinhos / Licor / Destilados",
+  "gc_id": "84578045",
+  "gc_nome": "VINHO PÉRGOLA SUAVE 1L",
+  "candidatos": [
+   [
+    1.1,
+    "VINHO PÉRGOLA SUAVE 1L",
+    "84578045"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "VINHO PÉRGOLA SUAVE 1L",
+  "manual": false
+ },
+ "CACHACA VILLA OURO AMARELA 500ML": {
+  "anota_title": "Cachaça villa ouro amarela 500ml",
+  "categoria": "Cachaças",
+  "gc_id": "84577918",
+  "gc_nome": "1/2 VILA OURO 500 ML",
+  "candidatos": [
+   [
+    0.35,
+    "1/2 VILA OURO 500 ML",
+    "84577918"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.35,
+  "sugestao": "1/2 VILA OURO 500 ML",
+  "manual": true
+ },
+ "CACHACA VILLA OURO 500ML BRANCA": {
+  "anota_title": "Cachaça villa ouro 500ml Branca",
+  "categoria": "Cachaças",
+  "gc_id": "84577918",
+  "gc_nome": "1/2 VILA OURO 500 ML",
+  "candidatos": [
+   [
+    0.35,
+    "1/2 VILA OURO 500 ML",
+    "84577918"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.35,
+  "sugestao": "1/2 VILA OURO 500 ML",
+  "manual": true
+ },
+ "GELO SABOR LIMAO": {
+  "anota_title": "Gelo - Sabor Limão",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "Refr Fys Limao 0,350lt Des 12un Pbr",
+    "88673140"
+   ],
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "Refr Fys Limao 0,350lt Des 12un Pbr",
+  "manual": true
+ },
+ "GELO SABOR COCO": {
+  "anota_title": "Gelo - Sabor Coco",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ],
+   [
+    0.33,
+    "GELO 20 KG",
+    "84577977"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "GELO SABORIZADOS DRINKS",
+  "manual": true
+ },
+ "GELO SABOR MELANCIA": {
+  "anota_title": "Gelo - Sabor Melancia",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "MASCATE MELANCIA & FRAMBOESA LATA",
+    "88794349"
+   ],
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "MASCATE MELANCIA & FRAMBOESA LATA",
+  "manual": true
+ },
+ "GELO SABOR MARACUJA": {
+  "anota_title": "Gelo - Sabor Maracujá",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "MASCATE MARACUJA CAJU LATA",
+    "88794391"
+   ],
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "MASCATE MARACUJA CAJU LATA",
+  "manual": true
+ },
+ "GELO SABOR LARANJA": {
+  "anota_title": "Gelo - Sabor Laranja",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ],
+   [
+    0.33,
+    "GELO 20 KG",
+    "84577977"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "GELO SABORIZADOS DRINKS",
+  "manual": true
+ },
+ "GELO SABOR MORANGO": {
+  "anota_title": "Gelo - Sabor Morango",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ],
+   [
+    0.33,
+    "GELO 20 KG",
+    "84577977"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "GELO SABORIZADOS DRINKS",
+  "manual": true
+ },
+ "GELO SABOR MACA VERDE": {
+  "anota_title": "Gelo - Sabor Maçã Verde",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.25,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.25,
+    "GELO 4 KG",
+    "84577978"
+   ],
+   [
+    0.25,
+    "GELO 20 KG",
+    "84577977"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.25,
+  "sugestao": "GELO SABORIZADOS DRINKS",
+  "manual": true
+ },
+ "CARVAO PREMIUM 3KG": {
+  "anota_title": "Carvão premium 3kg",
+  "categoria": "Carvão / Gelo",
+  "gc_id": "84577946",
+  "gc_nome": "CARVÃO 3 KG",
+  "candidatos": [
+   [
+    0.5,
+    "CARVÃO 3 KG",
+    "84577946"
+   ],
+   [
+    0.5,
+    "CARVÃO 10 KG",
+    "84577945"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CARVÃO 3 KG",
+  "manual": true
+ },
+ "GELO CUBO FILTRADO 4KG": {
+  "anota_title": "Gelo Cubo Filtrado 4kg",
+  "categoria": "Carvão / Gelo",
+  "gc_id": "84577978",
+  "gc_nome": "GELO 4 KG",
+  "candidatos": [
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ],
+   [
+    0.33,
+    "GELO 20 KG",
+    "84577977"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "GELO SABORIZADOS DRINKS",
+  "manual": true
+ },
+ "GELO ESCAMA FILTRADO 10KG": {
+  "anota_title": "Gelo Escama Filtrado 10kg",
+  "categoria": "Carvão / Gelo",
+  "gc_id": "84577976",
+  "gc_nome": "GELO 10 KG",
+  "candidatos": [
+   [
+    0.33,
+    "GELO SABORIZADOS DRINKS",
+    "84577979"
+   ],
+   [
+    0.33,
+    "GELO 4 KG",
+    "84577978"
+   ],
+   [
+    0.33,
+    "GELO 20 KG",
+    "84577977"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "GELO SABORIZADOS DRINKS",
+  "manual": true
+ },
+ "GULAO CHURRASCO 120G": {
+  "anota_title": "Gulão Churrasco 120g",
+  "categoria": "Petiscos",
+  "gc_id": "84916066",
+  "gc_nome": "SALGADINHO GULOZITOS GULAO",
+  "candidatos": [
+   [
+    0.5,
+    "SALGADINHO GULOZITOS GULAO",
+    "84916066"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "SALGADINHO GULOZITOS GULAO",
+  "manual": true
+ },
+ "GULAO PRESUNTO 120G": {
+  "anota_title": "Gulão Presunto 120g",
+  "categoria": "Petiscos",
+  "gc_id": "84916066",
+  "gc_nome": "SALGADINHO GULOZITOS GULAO",
+  "candidatos": [
+   [
+    0.5,
+    "SALGADINHO GULOZITOS GULAO",
+    "84916066"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "SALGADINHO GULOZITOS GULAO",
+  "manual": true
+ },
+ "GULAO PURURUCA 100G": {
+  "anota_title": "Gulão Pururuca 100g",
+  "categoria": "Petiscos",
+  "gc_id": "84916066",
+  "gc_nome": "SALGADINHO GULOZITOS GULAO",
+  "candidatos": [
+   [
+    0.5,
+    "SALGADINHO GULOZITOS GULAO",
+    "84916066"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "SALGADINHO GULOZITOS GULAO",
+  "manual": true
+ },
+ "GULAO CEBOLA E SALSA 120G": {
+  "anota_title": "Gulão Cebola e Salsa 120g",
+  "categoria": "Petiscos",
+  "gc_id": "84916066",
+  "gc_nome": "SALGADINHO GULOZITOS GULAO",
+  "candidatos": [
+   [
+    0.25,
+    "SALGADINHO GULOZITOS GULAO",
+    "84916066"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.25,
+  "sugestao": "SALGADINHO GULOZITOS GULAO",
+  "manual": true
+ },
+ "BANANA CHIPS 50G": {
+  "anota_title": "Banana Chips 50g",
+  "categoria": "Petiscos",
+  "gc_id": "84734218",
+  "gc_nome": "BANANA ARITANA FRITA TRADICIONAL 12X50G",
+  "candidatos": [
+   [
+    0.5,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ],
+   [
+    0.5,
+    "BANANA ARITANA FRITA TRADICIONAL 12X50G",
+    "84734218"
+   ],
+   [
+    0.5,
+    "CHIPS TORCIDA PEQ",
+    "84577959"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CHIPS CEBOLITOS GDE",
+  "manual": true
+ },
+ "BATATA ELMA CHIPS RUFFLES CHURRASCO 40G": {
+  "anota_title": "Batata Elma Chips Ruffles Churrasco 40g",
+  "categoria": "Petiscos",
+  "gc_id": "84577958",
+  "gc_nome": "CHIPS RUFFLES PEQ",
+  "candidatos": [
+   [
+    0.4,
+    "CHIPS RUFFLES PEQ",
+    "84577958"
+   ],
+   [
+    0.4,
+    "CHIPS RUFFLES GRA",
+    "84577957"
+   ],
+   [
+    0.2,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.4,
+  "sugestao": "CHIPS RUFFLES PEQ",
+  "manual": true
+ },
+ "BATATA ELMA CHIPS RUFFLES TRADICIONAL 40G": {
+  "anota_title": "Batata Elma Chips Ruffles Tradicional 40g",
+  "categoria": "Petiscos",
+  "gc_id": "84577958",
+  "gc_nome": "CHIPS RUFFLES PEQ",
+  "candidatos": [
+   [
+    0.4,
+    "CHIPS RUFFLES PEQ",
+    "84577958"
+   ],
+   [
+    0.4,
+    "CHIPS RUFFLES GRA",
+    "84577957"
+   ],
+   [
+    0.2,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.4,
+  "sugestao": "CHIPS RUFFLES PEQ",
+  "manual": true
+ },
+ "BATATA ELMA CHIPS RUFFLES CEBOLA SALSA 40G": {
+  "anota_title": "Batata Elma Chips Ruffles Cebola & Salsa 40g",
+  "categoria": "Petiscos",
+  "gc_id": "84577958",
+  "gc_nome": "CHIPS RUFFLES PEQ",
+  "candidatos": [
+   [
+    0.33,
+    "CHIPS RUFFLES PEQ",
+    "84577958"
+   ],
+   [
+    0.33,
+    "CHIPS RUFFLES GRA",
+    "84577957"
+   ],
+   [
+    0.17,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "CHIPS RUFFLES PEQ",
+  "manual": true
+ },
+ "CEBOLITOS ELMA CHIPS 36G": {
+  "anota_title": "Cebolitos Elma Chips 36g",
+  "categoria": "Petiscos",
+  "gc_id": "84577950",
+  "gc_nome": "CHIPS CEBOLITOS PEQ",
+  "candidatos": [
+   [
+    0.67,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ],
+   [
+    0.67,
+    "CHIPS CEBOLITOS PEQ",
+    "84577950"
+   ],
+   [
+    0.33,
+    "CHIPS TORCIDA PEQ",
+    "84577959"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "CHIPS CEBOLITOS GDE",
+  "manual": true
+ },
+ "CHIPS CHEETOS ONDA REQUEIJAO 45G": {
+  "anota_title": "Chips Cheetos Onda Requeijão 45g",
+  "categoria": "Petiscos",
+  "gc_id": "84577952",
+  "gc_nome": "CHIPS CHEETOS PEQ",
+  "candidatos": [
+   [
+    0.5,
+    "CHIPS CHEETOS PEQ",
+    "84577952"
+   ],
+   [
+    0.5,
+    "CHIPS CHEETOS GRA",
+    "84577951"
+   ],
+   [
+    0.25,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CHIPS CHEETOS PEQ",
+  "manual": true
+ },
+ "DORITOS ELMA CHIPS SABOR QUEIJO NACHO 37G": {
+  "anota_title": "Doritos Elma Chips Sabor Queijo Nacho 37g",
+  "categoria": "Petiscos",
+  "gc_id": "84577954",
+  "gc_nome": "CHIPS DORITOS PEQ",
+  "candidatos": [
+   [
+    0.33,
+    "CHIPS DORITOS PEQ",
+    "84577954"
+   ],
+   [
+    0.33,
+    "CHIPS DORITOS GRA",
+    "84577953"
+   ],
+   [
+    0.17,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "CHIPS DORITOS PEQ",
+  "manual": true
+ },
+ "SALGADINHO FANDANGOS PRESUNTO ELMA CHIPS PACOTE 37G": {
+  "anota_title": "Salgadinho Fandangos Presunto Elma Chips Pacote 37g",
+  "categoria": "Petiscos",
+  "gc_id": "84577956",
+  "gc_nome": "CHIPS FANDANGOS PEQ",
+  "candidatos": [
+   [
+    0.4,
+    "CHIPS FANDANGOS PEQ",
+    "84577956"
+   ],
+   [
+    0.4,
+    "CHIPS FANDANGOS GRA",
+    "84577955"
+   ],
+   [
+    0.2,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.4,
+  "sugestao": "CHIPS FANDANGOS PEQ",
+  "manual": true
+ },
+ "BALLA HALLS SABORES": {
+  "anota_title": "Balla Halls Sabores",
+  "categoria": "Petiscos",
+  "gc_id": "84577926",
+  "gc_nome": "BALA HALLS SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "BALA HALLS SABORES",
+    "84577926"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "BALA HALLS SABORES",
+  "manual": true
+ },
+ "TRIDENT SABORES": {
+  "anota_title": "Trident Sabores",
+  "categoria": "Petiscos",
+  "gc_id": "84577948",
+  "gc_nome": "CHICLETE TRIDENT SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "CHICLETE TRIDENT SABORES",
+    "84577948"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CHICLETE TRIDENT SABORES",
+  "manual": true
+ },
+ "CHOCOLATE TRENTO 29G": {
+  "anota_title": "Chocolate Trento 29g",
+  "categoria": "Petiscos",
+  "gc_id": "84734220",
+  "gc_nome": "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+  "candidatos": [
+   [
+    1.0,
+    "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+    "84734220"
+   ],
+   [
+    1.0,
+    "CHOCOLATE PECCIN TRENTO",
+    "84734219"
+   ],
+   [
+    1.0,
+    "CHOCOLATE SABORES",
+    "84577960"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+  "manual": false
+ },
+ "DOCE PE DE MOCA": {
+  "anota_title": "Doce Pé de Moça",
+  "categoria": "Petiscos",
+  "gc_id": "95534514",
+  "gc_nome": "DOCE PÉ DE MOÇA",
+  "candidatos": [
+   [
+    0.33,
+    "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+    "95406714"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+  "manual": true
+ },
+ "DOCE PE DE MOLEQUE": {
+  "anota_title": "Doce Pé de Moleque",
+  "categoria": "Petiscos",
+  "gc_id": "95534518",
+  "gc_nome": "DOCE PÉ DE MOLEQUE",
+  "candidatos": [
+   [
+    0.33,
+    "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+    "95406714"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+  "manual": true
+ },
+ "DOCE DE AMENDOIN": {
+  "anota_title": "Doce de Amendoin",
+  "categoria": "Petiscos",
+  "gc_id": "95534520",
+  "gc_nome": "DOCE DE AMENDOIM",
+  "candidatos": [
+   [
+    0.5,
+    "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+    "95406714"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+  "manual": true
+ },
+ "CIGARRO PICADO UNIDADE": {
+  "anota_title": "Cigarro Picado (unidade)",
+  "categoria": "Tabacaria",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.67,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ],
+   [
+    0.67,
+    "CIGARRO PICADO 2,00",
+    "95428388"
+   ],
+   [
+    0.67,
+    "CIGARRO PICADO 1,50",
+    "95428387"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "CIGARRO PICADO 3,00",
+  "manual": true
+ },
+ "CAIXA SEDA ZOMO ALFAFA": {
+  "anota_title": "caixa seda Zomo Alfafa",
+  "categoria": "Tabacaria",
+  "gc_id": "88750632",
+  "gc_nome": "CAIXA SEDA ZOMO ALFALFA",
+  "candidatos": [
+   [
+    0.75,
+    "CAIXA SEDA ZOMO ALFALFA",
+    "88750632"
+   ],
+   [
+    0.75,
+    "CAIXA SEDA ZOMO PRETA",
+    "84578009"
+   ],
+   [
+    0.5,
+    "PICADO SEDA ZOMO ALFALFA",
+    "88995258"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "CAIXA SEDA ZOMO ALFALFA",
+  "manual": true
+ },
+ "MACO DE SEDA ZOMO": {
+  "anota_title": "Maço de Seda Zomo",
+  "categoria": "Tabacaria",
+  "gc_id": "84578009",
+  "gc_nome": "CAIXA SEDA ZOMO PRETA",
+  "candidatos": [
+   [
+    0.67,
+    "PICADO SEDA ZOMO ALFALFA",
+    "88995258"
+   ],
+   [
+    0.67,
+    "CAIXA SEDA ZOMO ALFALFA",
+    "88750632"
+   ],
+   [
+    0.67,
+    "PICADO SEDA ZOMO",
+    "84578020"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "PICADO SEDA ZOMO ALFALFA",
+  "manual": true
+ },
+ "MACO SAN MARINO": {
+  "anota_title": "Maço San Marino",
+  "categoria": "Tabacaria",
+  "gc_id": "84578008",
+  "gc_nome": "MAÇO SAN MARINO",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO SAN MARINO",
+    "84578008"
+   ],
+   [
+    0.67,
+    "PICADO SAN MARINO",
+    "84578019"
+   ],
+   [
+    0.33,
+    "MAÇO PIRIQUITO",
+    "88750526"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO SAN MARINO",
+  "manual": false
+ },
+ "MACO ROTHMANS GLOBAL VERMELHO": {
+  "anota_title": "Maço Rothmans Global Vermelho",
+  "categoria": "Tabacaria",
+  "gc_id": "84734030",
+  "gc_nome": "MAÇO ROTHMANS GLOBAL VERMELHO",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO ROTHMANS GLOBAL VERMELHO",
+    "84734030"
+   ],
+   [
+    0.75,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    0.75,
+    "MAÇO ROTHMANS GLOBAL AZUL",
+    "84578007"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO ROTHMANS GLOBAL VERMELHO",
+  "manual": false
+ },
+ "MACO ROTHMANS GLOBAL AZUL": {
+  "anota_title": "Maço Rothmans Global Azul",
+  "categoria": "Tabacaria",
+  "gc_id": "84578007",
+  "gc_nome": "MAÇO ROTHMANS GLOBAL AZUL",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO ROTHMANS GLOBAL AZUL",
+    "84578007"
+   ],
+   [
+    0.75,
+    "MAÇO ROTHMANS GLOBAL VERMELHO",
+    "84734030"
+   ],
+   [
+    0.5,
+    "MAÇO DUNHILL ON AZUL (FREE)",
+    "88748684"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO ROTHMANS GLOBAL AZUL",
+  "manual": false
+ },
+ "MACO LUCKY STRIKE RED PATTERSON": {
+  "anota_title": "Maço Lucky Strike Red Patterson",
+  "categoria": "Tabacaria",
+  "gc_id": "84734033",
+  "gc_nome": "MAÇO LUCKY RED PATTERSON MACO",
+  "candidatos": [
+   [
+    0.8,
+    "MAÇO LUCKY RED PATTERSON MACO",
+    "84734033"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY BLUE PATTERSON",
+    "84734032"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.8,
+  "sugestao": "MAÇO LUCKY RED PATTERSON MACO",
+  "manual": true
+ },
+ "MACO LUCKY STRIKE AZUL PATTERSON": {
+  "anota_title": "Maço Lucky Strike Azul Patterson",
+  "categoria": "Tabacaria",
+  "gc_id": "84734032",
+  "gc_nome": "MAÇO LUCKY BLUE PATTERSON",
+  "candidatos": [
+   [
+    0.6,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY RED PATTERSON MACO",
+    "84734033"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY BLUE PATTERSON",
+    "84734032"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "MAÇO LUCKY STRIKE DOUBLE ICE",
+  "manual": true
+ },
+ "MACO LUCKY STRIKE RED ORIGINAL": {
+  "anota_title": "Maço Lucky Strike Red ORIGINAL",
+  "categoria": "Tabacaria",
+  "gc_id": "84734027",
+  "gc_nome": "MAÇO LUCKY STRIKE ORIGINAL MACO",
+  "candidatos": [
+   [
+    0.8,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY RED PATTERSON MACO",
+    "84734033"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.8,
+  "sugestao": "MAÇO LUCKY STRIKE ORIGINAL MACO",
+  "manual": true
+ },
+ "MACO LUCKY STRIKE DOUBLE ICE": {
+  "anota_title": "Maço Lucky Strike Double Ice",
+  "categoria": "Tabacaria",
+  "gc_id": "88673864",
+  "gc_nome": "MAÇO LUCKY STRIKE DOUBLE ICE",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ],
+   [
+    0.6,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ],
+   [
+    0.5,
+    "ICE SYN  300 ML SABORES",
+    "84577994"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO LUCKY STRIKE DOUBLE ICE",
+  "manual": false
+ },
+ "MARLBORO VISTA DOUBLE BURST": {
+  "anota_title": "Marlboro Vista Double Burst",
+  "categoria": "Tabacaria",
+  "gc_id": "88748336",
+  "gc_nome": "MAÇO MARLBORO VISTA DOUBLE BURST",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO MARLBORO VISTA DOUBLE BURST",
+    "88748336"
+   ],
+   [
+    0.25,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ],
+   [
+    0.25,
+    "MAÇO MARLBORO BLUE",
+    "88748177"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO MARLBORO VISTA DOUBLE BURST",
+  "manual": false
+ },
+ "MACO KENT PRIME VERMELHO": {
+  "anota_title": "Maço Kent Prime Vermelho",
+  "categoria": "Tabacaria",
+  "gc_id": "88673539",
+  "gc_nome": "KENT PRO VERMELHO",
+  "candidatos": [
+   [
+    0.5,
+    "MAÇO DUNHILL ON VERMELHO (FREE)",
+    "88748569"
+   ],
+   [
+    0.5,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    0.5,
+    "KENT PRO VERMELHO",
+    "88673539"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MAÇO DUNHILL ON VERMELHO (FREE)",
+  "manual": true
+ },
+ "MACO DUNHILL CALTON VERMELHO": {
+  "anota_title": "Maço Dunhill Calton Vermelho",
+  "categoria": "Tabacaria",
+  "gc_id": "84578004",
+  "gc_nome": "MAÇO DUNHILL CALTON VERMELHO",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO DUNHILL CALTON VERMELHO",
+    "84578004"
+   ],
+   [
+    0.75,
+    "MAÇO DUNHILL ON VERMELHO (FREE)",
+    "88748569"
+   ],
+   [
+    0.75,
+    "MAÇO DUNHILL CALTON AZUL",
+    "84734028"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO DUNHILL CALTON VERMELHO",
+  "manual": false
+ },
+ "MALBORO RED SELECTION": {
+  "anota_title": "Malboro Red Selection",
+  "categoria": "Tabacaria",
+  "gc_id": "84734275",
+  "gc_nome": "MAÇO MARLBORO VERMELHO (RED)",
+  "candidatos": [
+   [
+    0.67,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "MARLBORO CRAFTED(RED) KS RSP 20",
+  "manual": true
+ },
+ "MALBORO GOLD SELECTION": {
+  "anota_title": "Malboro Gold Selection",
+  "categoria": "Tabacaria",
+  "gc_id": "84734274",
+  "gc_nome": "MAÇO MARLBORO BRANCO (GOLD)",
+  "candidatos": [
+   [
+    0.67,
+    "MAÇO MARLBORO BRANCO (GOLD)",
+    "84734274"
+   ],
+   [
+    0.33,
+    "STELLA PURE GOLD",
+    "93348143"
+   ],
+   [
+    0.33,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "MAÇO MARLBORO BRANCO (GOLD)",
+  "manual": true
+ },
+ "CHESTERFIELD TERRAS BRASILEIRAS BLUE": {
+  "anota_title": "Chesterfield Terras Brasileiras Blue",
+  "categoria": "Tabacaria",
+  "gc_id": "85750322",
+  "gc_nome": "MAÇO CHESTERFIELD AZUL",
+  "candidatos": [
+   [
+    0.25,
+    "MAÇO MARLBORO BLUE",
+    "88748177"
+   ],
+   [
+    0.25,
+    "MAÇO CHESTERFIELD AZUL",
+    "85750322"
+   ],
+   [
+    0.25,
+    "MAÇO CHESTERFIELD AMARELO/VERMELHO",
+    "84734271"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.25,
+  "sugestao": "MAÇO MARLBORO BLUE",
+  "manual": true
+ },
+ "MACO PORTO FARIA": {
+  "anota_title": "Maço Porto Faria",
+  "categoria": "Tabacaria",
+  "gc_id": "84578006",
+  "gc_nome": "MAÇO PORTO FARIA",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO PORTO FARIA MENTA",
+    "84761083"
+   ],
+   [
+    1.0,
+    "MAÇO PORTO FARIA",
+    "84578006"
+   ],
+   [
+    0.67,
+    "PORTO FARIA MENTA",
+    "84761036"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO PORTO FARIA MENTA",
+  "manual": true
+ },
+ "MACO PORTO FARIA MENTA": {
+  "anota_title": "Maço Porto Faria Menta",
+  "categoria": "Tabacaria",
+  "gc_id": "84761083",
+  "gc_nome": "MAÇO PORTO FARIA MENTA",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO PORTO FARIA MENTA",
+    "84761083"
+   ],
+   [
+    0.75,
+    "PORTO FARIA MENTA",
+    "84761036"
+   ],
+   [
+    0.75,
+    "MAÇO PORTO FARIA",
+    "84578006"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO PORTO FARIA MENTA",
+  "manual": false
+ },
+ "MACO COYOTE": {
+  "anota_title": "Maço Coyote",
+  "categoria": "Tabacaria",
+  "gc_id": "84578003",
+  "gc_nome": "MAÇO COYOTE",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO COYOTE",
+    "84578003"
+   ],
+   [
+    0.5,
+    "MAÇO PIRIQUITO",
+    "88750526"
+   ],
+   [
+    0.5,
+    "MAÇO COELHO",
+    "88750440"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO COYOTE",
+  "manual": false
+ },
+ "MACO MANDELLE": {
+  "anota_title": "Maço Mandelle",
+  "categoria": "Tabacaria",
+  "gc_id": "84578005",
+  "gc_nome": "MAÇO MANDELLE",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO MANDELLE",
+    "84578005"
+   ],
+   [
+    0.5,
+    "MAÇO PIRIQUITO",
+    "88750526"
+   ],
+   [
+    0.5,
+    "MAÇO COELHO",
+    "88750440"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO MANDELLE",
+  "manual": false
+ },
+ "MACO CIGARRO DE PALHA DO COELHO": {
+  "anota_title": "Maço Cigarro de Palha do Coelho",
+  "categoria": "Tabacaria",
+  "gc_id": "88750440",
+  "gc_nome": "MAÇO COELHO",
+  "candidatos": [
+   [
+    0.5,
+    "MAÇO COELHO",
+    "88750440"
+   ],
+   [
+    0.5,
+    "MAÇO PALHA ARTESANAL",
+    "88672612"
+   ],
+   [
+    0.25,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MAÇO COELHO",
+  "manual": true
+ },
+ "CIGARRO DJARUM BLACK ICE": {
+  "anota_title": "CIGARRO DJARUM BLACK ICE",
+  "categoria": "Tabacaria",
+  "gc_id": "95534346",
+  "gc_nome": "MAÇO DJARUM BLACK ICE",
+  "candidatos": [
+   [
+    0.5,
+    "ICE SYN  300 ML SABORES",
+    "84577994"
+   ],
+   [
+    0.33,
+    "WHISKY BLACK JOCKER 1L SABORES",
+    "84578051"
+   ],
+   [
+    0.33,
+    "ICE CABARÉ  LNECK 275 ML SABORES",
+    "84577993"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "ICE SYN  300 ML SABORES",
+  "manual": true
+ },
+ "CIGARRO DJARUM BLACK MENTA": {
+  "anota_title": "CIGARRO DJARUM BLACK MENTA",
+  "categoria": "Tabacaria",
+  "gc_id": "95534347",
+  "gc_nome": "MAÇO DJARUM BLACK MENTA",
+  "candidatos": [
+   [
+    0.33,
+    "WHISKY BLACK JOCKER 1L SABORES",
+    "84578051"
+   ],
+   [
+    0.25,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ],
+   [
+    0.25,
+    "CIGARRO PICADO 2,00",
+    "95428388"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "WHISKY BLACK JOCKER 1L SABORES",
+  "manual": true
+ },
+ "ISQUEIRO BIC PEQUENO": {
+  "anota_title": "Isqueiro Bic (Pequeno)",
+  "categoria": "Tabacaria",
+  "gc_id": "84577997",
+  "gc_nome": "ISQUEIRO BIC PEQUENO",
+  "candidatos": [
+   [
+    1.0,
+    "ISQUEIRO BIC PEQUENO",
+    "84577997"
+   ],
+   [
+    0.67,
+    "ISQUEIRO BIC GRANDE",
+    "84577996"
+   ],
+   [
+    0.33,
+    "CLIPPER MINI ISQUEIRO",
+    "92230848"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "ISQUEIRO BIC PEQUENO",
+  "manual": false
+ },
+ "ISQUEIRO BIC GRANDE": {
+  "anota_title": "Isqueiro Bic (Grande)",
+  "categoria": "Tabacaria",
+  "gc_id": "84577996",
+  "gc_nome": "ISQUEIRO BIC GRANDE",
+  "candidatos": [
+   [
+    1.0,
+    "ISQUEIRO BIC GRANDE",
+    "84577996"
+   ],
+   [
+    0.67,
+    "ISQUEIRO BIC PEQUENO",
+    "84577997"
+   ],
+   [
+    0.33,
+    "CLIPPER MINI ISQUEIRO",
+    "92230848"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "ISQUEIRO BIC GRANDE",
+  "manual": false
+ },
+ "ISQUEIRO": {
+  "anota_title": "Isqueiro",
+  "categoria": "Tabacaria",
+  "gc_id": "92230848",
+  "gc_nome": "ISQUEIRO CLIPPER MINI",
+  "candidatos": [
+   [
+    1.0,
+    "CLIPPER MINI ISQUEIRO",
+    "92230848"
+   ],
+   [
+    1.0,
+    "ISQUEIRO BIC PEQUENO",
+    "84577997"
+   ],
+   [
+    1.0,
+    "ISQUEIRO BIC GRANDE",
+    "84577996"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CLIPPER MINI ISQUEIRO",
+  "manual": false
+ },
+ "COPAO 700ML": {
+  "anota_title": "Copão 700ml",
+  "categoria": "Descartaveis",
+  "gc_id": "95540822",
+  "gc_nome": "COPO 700 ML",
+  "candidatos": [
+   [
+    1.0,
+    "COPAO WHISKY JACK DANIELS BLACKBERRY",
+    "95404684"
+   ],
+   [
+    1.0,
+    "COPAO WHISKY BLACK LABEL",
+    "95404683"
+   ],
+   [
+    1.0,
+    "COPAO WHISKY JACK DANIELS APPLE",
+    "95404682"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS BLACKBERRY",
+  "manual": true
+ },
+ "GELINHO DE COCO": {
+  "anota_title": "Gelinho De Coco",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 0.0,
+  "sugestao": null,
+  "manual": true
+ },
+ "GELINHO DE MACA VERDE": {
+  "anota_title": "Gelinho de Maça Verde",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 0.0,
+  "sugestao": null,
+  "manual": true
+ },
+ "GELINHO DE MORANGO": {
+  "anota_title": "Gelinho de Morango",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 0.0,
+  "sugestao": null,
+  "manual": true
+ },
+ "GELINHO DE MARACUJA": {
+  "anota_title": "Gelinho de Maracujá",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.5,
+    "MASCATE MARACUJA CAJU LATA",
+    "88794391"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MASCATE MARACUJA CAJU LATA",
+  "manual": true
+ },
+ "GELINHO DE LARANJA": {
+  "anota_title": "Gelinho de Laranja",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 0.0,
+  "sugestao": null,
+  "manual": true
+ },
+ "GELINHO DE LIMAO": {
+  "anota_title": "Gelinho de Limão",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.5,
+    "Refr Fys Limao 0,350lt Des 12un Pbr",
+    "88673140"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "Refr Fys Limao 0,350lt Des 12un Pbr",
+  "manual": true
+ },
+ "GELINHO MELANCIA": {
+  "anota_title": "Gelinho Melancia",
+  "categoria": "Gelinho COMBO",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.5,
+    "MASCATE MELANCIA & FRAMBOESA LATA",
+    "88794349"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MASCATE MELANCIA & FRAMBOESA LATA",
+  "manual": true
+ },
+ "GELINHO BEATS GT": {
+  "anota_title": "Gelinho Beats GT",
+  "categoria": "Gelinho COMBO",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.67,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ],
+   [
+    0.67,
+    "SKOL BEATS GT LATA 269 ML",
+    "84578030"
+   ],
+   [
+    0.33,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "SKOL BEATS GT LONG NECK 269 ML",
+  "manual": true
+ },
+ "GELINHO BEATS VERMELHA": {
+  "anota_title": "Gelinho Beats Vermelha",
+  "categoria": "Gelinho COMBO",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.33,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ],
+   [
+    0.33,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ],
+   [
+    0.33,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "SKOL BEATS GREN MIX LATA",
+  "manual": true
+ },
+ "COPOS DESCARTAVEIS": {
+  "anota_title": "Copos Descartáveis",
+  "categoria": "Copos Descartáveis",
+  "gc_id": "95540822",
+  "gc_nome": "COPO 700 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 0.0,
+  "sugestao": null,
+  "manual": true
+ },
+ "TRENTO CHOCOLATE VERMELHO 29G": {
+  "anota_title": "Trento Chocolate Vermelho 29g",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84734219",
+  "gc_nome": "CHOCOLATE PECCIN TRENTO",
+  "candidatos": [
+   [
+    1.0,
+    "CHOCOLATE SABORES",
+    "84577960"
+   ],
+   [
+    0.67,
+    "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+    "84734220"
+   ],
+   [
+    0.67,
+    "CHOCOLATE PECCIN TRENTO",
+    "84734219"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHOCOLATE SABORES",
+  "manual": true
+ },
+ "TRENTO BRANCO DARK 29G": {
+  "anota_title": "Trento Branco Dark 29g",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84734220",
+  "gc_nome": "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+  "candidatos": [
+   [
+    1.0,
+    "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+    "84734220"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY CAVALO BRANCO",
+    "95407214"
+   ],
+   [
+    0.33,
+    "COMBO WHISKY CAVALO BRANCO",
+    "86799757"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHOCOLATE PECCIN TRENTO BRANCO DARK",
+  "manual": false
+ },
+ "TRIDENT MENTA VERDE": {
+  "anota_title": "Trident Menta verde",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84577948",
+  "gc_nome": "CHICLETE TRIDENT SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "CHICLETE TRIDENT SABORES",
+    "84577948"
+   ],
+   [
+    0.33,
+    "MAÇO PORTO FARIA MENTA",
+    "84761083"
+   ],
+   [
+    0.33,
+    "PORTO FARIA MENTA",
+    "84761036"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CHICLETE TRIDENT SABORES",
+  "manual": true
+ },
+ "TRIDENT MELANCIA": {
+  "anota_title": "Trident Melancia",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84577948",
+  "gc_nome": "CHICLETE TRIDENT SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "MASCATE MELANCIA & FRAMBOESA LATA",
+    "88794349"
+   ],
+   [
+    0.5,
+    "CHICLETE TRIDENT SABORES",
+    "84577948"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MASCATE MELANCIA & FRAMBOESA LATA",
+  "manual": true
+ },
+ "HALLS MORANGO": {
+  "anota_title": "Halls Morango",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84577926",
+  "gc_nome": "BALA HALLS SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "BALA HALLS SABORES",
+    "84577926"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "BALA HALLS SABORES",
+  "manual": true
+ },
+ "HALLS MENTA": {
+  "anota_title": "Halls Menta",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84577926",
+  "gc_nome": "BALA HALLS SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "MAÇO PORTO FARIA MENTA",
+    "84761083"
+   ],
+   [
+    0.5,
+    "PORTO FARIA MENTA",
+    "84761036"
+   ],
+   [
+    0.5,
+    "BALA HALLS SABORES",
+    "84577926"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MAÇO PORTO FARIA MENTA",
+  "manual": true
+ },
+ "HALLS PRETA": {
+  "anota_title": "Halls Preta",
+  "categoria": "Selecione os Sabores",
+  "gc_id": "84577926",
+  "gc_nome": "BALA HALLS SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "CAIXA SEDA ZOMO PRETA",
+    "84578009"
+   ],
+   [
+    0.5,
+    "BALA HALLS SABORES",
+    "84577926"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CAIXA SEDA ZOMO PRETA",
+  "manual": true
+ },
+ "GELINHO DE MELANCIA": {
+  "anota_title": "Gelinho de Melancia",
+  "categoria": "Gelinho",
+  "gc_id": "84577979",
+  "gc_nome": "GELO SABORIZADOS DRINKS",
+  "candidatos": [
+   [
+    0.5,
+    "MASCATE MELANCIA & FRAMBOESA LATA",
+    "88794349"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "MASCATE MELANCIA & FRAMBOESA LATA",
+  "manual": true
+ },
+ "PORTO FARIA PICADO": {
+  "anota_title": "Porto Faria (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    1.0,
+    "PICADO PORTO FARIA",
+    "84578018"
+   ],
+   [
+    0.67,
+    "MAÇO PORTO FARIA MENTA",
+    "84761083"
+   ],
+   [
+    0.67,
+    "PORTO FARIA MENTA",
+    "84761036"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "PICADO PORTO FARIA",
+  "manual": true
+ },
+ "MANDELLE PICADO": {
+  "anota_title": "Mandelle (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    1.0,
+    "PICADO MANDELLE",
+    "84578017"
+   ],
+   [
+    0.5,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ],
+   [
+    0.5,
+    "CIGARRO PICADO 2,00",
+    "95428388"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "PICADO MANDELLE",
+  "manual": true
+ },
+ "CARTON PICADO": {
+  "anota_title": "Carton (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.5,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ],
+   [
+    0.5,
+    "CIGARRO PICADO 2,00",
+    "95428388"
+   ],
+   [
+    0.5,
+    "CIGARRO PICADO 1,50",
+    "95428387"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CIGARRO PICADO 3,00",
+  "manual": true
+ },
+ "ROTHMANS GLOBAL AZUL PICADO": {
+  "anota_title": "Rothmans Global Azul (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.75,
+    "MAÇO ROTHMANS GLOBAL AZUL",
+    "84578007"
+   ],
+   [
+    0.5,
+    "MAÇO ROTHMANS GLOBAL VERMELHO",
+    "84734030"
+   ],
+   [
+    0.25,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "MAÇO ROTHMANS GLOBAL AZUL",
+  "manual": true
+ },
+ "ROTHMANS GLOBAL VERMELHO PICADO": {
+  "anota_title": "Rothmans Global Vermelho (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.75,
+    "MAÇO ROTHMANS GLOBAL VERMELHO",
+    "84734030"
+   ],
+   [
+    0.5,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    0.5,
+    "MAÇO ROTHMANS GLOBAL AZUL",
+    "84578007"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "MAÇO ROTHMANS GLOBAL VERMELHO",
+  "manual": true
+ },
+ "LUCKY STRIKE DOUBLE ICE PICADO": {
+  "anota_title": "Lucky Strike Double ice (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.8,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ],
+   [
+    0.5,
+    "ICE SYN  300 ML SABORES",
+    "84577994"
+   ],
+   [
+    0.4,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.8,
+  "sugestao": "MAÇO LUCKY STRIKE DOUBLE ICE",
+  "manual": true
+ },
+ "LUCKY STRIKE ORIGINAL VERMELHO PICADO": {
+  "anota_title": "Lucky Strike Original Vermelho (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.6,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ],
+   [
+    0.4,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    0.4,
+    "MAÇO LUCKY STRIKE DOUBLE ICE",
+    "88673864"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "MAÇO LUCKY STRIKE ORIGINAL MACO",
+  "manual": true
+ },
+ "SAN MARINO PICADO": {
+  "anota_title": "San Marino (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "84578019",
+  "gc_nome": "PICADO SAN MARINO",
+  "candidatos": [
+   [
+    1.0,
+    "PICADO SAN MARINO",
+    "84578019"
+   ],
+   [
+    0.67,
+    "MAÇO SAN MARINO",
+    "84578008"
+   ],
+   [
+    0.33,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "PICADO SAN MARINO",
+  "manual": true
+ },
+ "HEINEKEN ZERO 330ML": {
+  "anota_title": "Heineken Zero 330 ml",
+  "categoria": "",
+  "candidatos": [],
+  "score": 1.0,
+  "sugestao": "HEINEKEN ZERO LONG NECK 330 ML",
+  "gc_id": "84577992",
+  "gc_nome": "HEINEKEN ZERO LONG NECK 330 ML",
+  "mult": 1,
+  "manual": true
+ }
+}

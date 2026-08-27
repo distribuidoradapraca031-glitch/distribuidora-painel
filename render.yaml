@@ -14,3 +14,10 @@ services:
         sync: false
       - key: FLASK_SECRET_KEY
         generateValue: true
+      # robô do delivery (Anota AI) — valores setados direto no painel do Render
+      - key: ANOTA_CLIENT_ID
+        sync: false
+      - key: ANOTA_CLIENT_SECRET
+        sync: false
+      - key: ANOTA_PAGE_ID
+        sync: false
