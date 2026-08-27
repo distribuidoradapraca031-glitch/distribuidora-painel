@@ -354,7 +354,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Data<input type="date" id="cp-data"></label>
       <label>Pagamento
         <select id="cp-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
+          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
         </select>
       </label>
     </div>
@@ -522,7 +522,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="ex-valor" placeholder="0,00" style="width:110px"></label>
       <label>Pagamento
         <select id="ex-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option>
+          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
         </select>
       </label>
       <label>Data<input type="date" id="ex-data"></label>
@@ -1061,7 +1061,7 @@ CAT.produtos.forEach(p=>{ prodByNome[p.nome]=p; });
   if(dl) dl.innerHTML = CAT.produtos.map(p=>'<option value="'+String(p.nome).replace(/"/g,'&quot;')+'" label="est '+fmt0(p.estoque)+(p.fardo?(' · fardo '+p.fardo):'')+'">').join('');
 })();
 const unNome = u=>({UN:'un',CX:'caixa(s)',FD:'fardo(s)',DZ:'dúzia(s)'}[u]||u);
-const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',Sobra:'sai da Sobra de caixa (o outro monte) — desconta lá em cima',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)'}[f]||('pagamento '+f));
+const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',Sobra:'sai da Sobra de caixa (o outro monte) — desconta lá em cima',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)',Victor:'você pagou com o SEU dinheiro — não sai nada da loja, entra no quadro Recurso próprio'}[f]||('pagamento '+f));
 function copyBtn(boxId, txt){
   const box=document.getElementById(boxId);
   const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -1280,7 +1280,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   // dar baixa em 3 boletos seguidos sem mexer no seletor tirou R$ 1.522,96 da gaveta em
   // 17/08/2026 e jogou o esperado do fechamento pra -1.079,71.
   const FORMAS = [['PIX','PIX (conta)'],['Caixa','Caixa (gaveta)'],
-                  ['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa']];
+                  ['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],
+                  ['Victor','Recurso próprio (Victor)']];
   const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
   function toast(html){ let t=g('toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);} t.innerHTML=html; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4200); }
 
@@ -1452,7 +1453,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   (function(){
     const chk=g('cp-split'), box=g('cp-split-linhas'), rows=g('cp-split-rows');
     if(!chk||!rows) return;
-    const FORMAS=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Boleto','Boleto (a pagar)']];
+    const FORMAS=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Boleto','Boleto (a pagar)'],['Victor','Recurso próprio (Victor)']];
     const inp='font:inherit;font-size:.85rem;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)';
     rows.innerHTML=[0,1,2,3].map(i=>
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'+
@@ -1743,7 +1744,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   })();
 
   /* ---------- MAPA: tudo que falta pagar, categoria x mês (aba Contas) ---------- */
-  const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX']];
+  const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Victor','Recurso próprio (Victor)']];
   function loadMapa(f){ return fetch('/api/mapa'+qf(f)).then(r=>r.json()).then(d=>{
     // popula o select do formulário (uma vez) com as categorias do servidor
     const sel=g('prev-cat');

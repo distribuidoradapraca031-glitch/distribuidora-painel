@@ -169,11 +169,15 @@ def api_ultima_atualizacao():
 RESERVA_CONTA = os.environ.get("RESERVA_CONTA_ID", "696747")  # trocar p/ conta RESERVA quando existir
 GAVETA_CONTA = "696747"      # conta CAIXA = a gaveta da loja (é ela que o fechamento confere)
 RESERVA_CONTA_ID = "681760"  # onde fica a reserva/banco — FORA da gaveta
+RP_FORMA_ID = "6776761"      # forma "Recurso próprio Victor" no GestãoClick
 POTES = {
     "Caixa":    {"conta": GAVETA_CONTA,     "forma": "6055919"},  # gaveta + Dinheiro
     "Dinheiro": {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # RESERVA em dinheiro (fora da gaveta)
     "Sobra":    {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # SOBRA DE CAIXA (fora da gaveta)
     "PIX":      {"conta": RESERVA_CONTA_ID, "forma": "6055931"},  # conta bancária + PIX
+    # dinheiro do bolso do Victor: paga a conta (some do "a pagar") sem tirar nada da loja
+    # — nem gaveta, nem reserva, nem sobra. Vai pro quadro "Recurso próprio" pela marca [RP].
+    "Victor":   {"conta": RESERVA_CONTA_ID, "forma": RP_FORMA_ID},
 }
 
 def _saiu_da_gaveta(p):
@@ -186,7 +190,10 @@ def _saiu_da_gaveta(p):
     """
     if str(p.get("forma_pagamento_id")) != "6055919":     # não é dinheiro
         return False
-    return str(p.get("conta_bancaria_id") or "") != RESERVA_CONTA_ID
+    # só a conta CAIXA é a gaveta. Qualquer outra (banco, reserva, recurso próprio) está
+    # fora do fechamento — antes isso era testado só contra a conta da reserva, e uma
+    # conta nova entraria na gaveta por engano.
+    return str(p.get("conta_bancaria_id") or "") == GAVETA_CONTA
 CATS = {
     "Lanche": "33015662", "Almoço": "33015662", "Padaria": "33015662",
     "Papelaria": "33015658", "Combustível": "33015633", "Motoboy / entrega": "33015664",
@@ -239,6 +246,14 @@ def _sem_tag(desc, tag):
 
 def _rp_nota(desc):
     return _sem_tag(desc, RP_TAG)
+
+def _marca_rp(desc, forma):
+    """Conta paga com o dinheiro do Victor: a marca [RP] é o que joga o lançamento no
+    quadro 'Recurso próprio' e tira ele do dinheiro da loja."""
+    d = (desc or "Conta").strip()
+    if forma != "Victor" or d.startswith(RP_TAG):
+        return d
+    return f"{RP_TAG} {d}"
 
 def _eh_interno(desc):
     """Registro de controle do painel (recurso próprio / reserva) — some dos blocos normais."""
@@ -507,7 +522,7 @@ def api_baixa():
         p = p[0] if p else {}
     p = p.get("Pagamento", p) if isinstance(p, dict) else {}
     payload = {
-        "descricao": p.get("descricao") or "Conta",
+        "descricao": _marca_rp(p.get("descricao") or "Conta", forma),
         "valor": f"{valor_real:.2f}" if valor_real > 0 else (p.get("valor") or p.get("valor_total") or "0"),
         "plano_contas_id": p.get("plano_contas_id") or "",
         "data_vencimento": (p.get("data_vencimento") or _hoje())[:10],
@@ -529,7 +544,7 @@ def api_baixa():
             f2 = parte.get("forma") or "Caixa"
             v2 = round(_num(parte.get("valor")), 2)
             pot2 = POTES.get(f2, POTES["Caixa"])
-            desc2 = f"{payload['descricao']} ({f2})"
+            desc2 = _marca_rp(f"{_rp_nota(payload['descricao'])} ({f2})", f2)
             gcapi.post("/pagamentos", {
                 "descricao": desc2, "valor": f"{v2:.2f}",
                 "plano_contas_id": payload["plano_contas_id"],
@@ -556,7 +571,7 @@ def api_gasto():
     valor = _num(body.get("valor"))
     forma = body.get("forma") or "Caixa"
     data = (body.get("data") or _hoje())[:10]
-    desc = f"[cat:{cat}] " + ((body.get("descricao") or "").strip() or cat)
+    desc = _marca_rp(f"[cat:{cat}] " + ((body.get("descricao") or "").strip() or cat), forma)
     if valor <= 0:
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
     plano = CATS.get(cat, CATS["Outros"])
@@ -994,7 +1009,7 @@ def api_compra():
                     continue
                 usados.add(str(alvo.get("id")))
                 pot = POTES.get(f)
-                corpo = {"descricao": alvo.get("descricao"), "valor": f"{v:.2f}",
+                corpo = {"descricao": _marca_rp(alvo.get("descricao"), f), "valor": f"{v:.2f}",
                          "data_vencimento": (parte.get("vencimento") or data)[:10],
                          "data_competencia": data, "plano_contas_id": "33015669"}
                 if f == "Boleto":
