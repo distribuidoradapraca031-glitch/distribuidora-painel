@@ -199,6 +199,8 @@ CATS = {
     "Papelaria": "33015658", "Combustível": "33015633", "Motoboy / entrega": "33015664",
     "Limpeza / higiene": "33015655", "Descartáveis (copo/saco)": "33015669",
     "Manutenção / conserto": "33015656", "Água / luz / internet": "33015649",
+    # reparo da loja (freezer, porta, estrutura) — o dono lança tudo isso numa linha só
+    "Reparo da loja": "33015656",
     "Retirada do sócio (Victor)": "33015638",
     # cada pessoa tem UMA categoria só (o dono paga a mesma pessoa com nomes diferentes)
     "Igor (pró-labore / retirada)": "33015660",
@@ -394,6 +396,7 @@ CATEGORIAS_PREV = [
     ("Sacolas / gelo / copos", "33015662"),
     ("Biel (Gabriel)", "33015660"),
     ("PH Motoca", "33015664"),
+    ("Reparo da loja", "33015656"),
 ]
 _PREV_PLANO = dict(CATEGORIAS_PREV)
 
