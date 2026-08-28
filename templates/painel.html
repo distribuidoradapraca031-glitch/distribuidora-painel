@@ -214,6 +214,38 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
+  <div class="eyebrow">Caixa · troca de PIX (dinheiro → PIX)</div>
+  <h2>💱 Recebi dinheiro e mandei PIX</h2>
+  <p class="note">O <strong>contrário do saque</strong>: o cliente te entrega o <strong>dinheiro</strong> e você manda o <strong>PIX</strong> pra ele. Eu lanço a entrada do dinheiro na gaveta (passa a contar no fechamento do dia) e a saída do PIX da conta. Se você cobrar alguma coisa pela troca, é só mandar menos no PIX — a diferença fica registrada como seu lucro.</p>
+  <div class="fbox">
+    <div class="fform">
+      <label>Recebi em dinheiro (R$)<input type="number" step="0.01" inputmode="decimal" id="tp-recebido" placeholder="0,00"></label>
+      <label>Mandei no PIX (R$)<input type="number" step="0.01" inputmode="decimal" id="tp-enviado" placeholder="igual ao recebido"></label>
+      <label>Dia<input type="date" id="tp-data"></label>
+      <button id="tp-registrar">Registrar troca</button>
+    </div>
+    <div class="fres" id="tp-msg"></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="eyebrow">Caixa · pagamento de conta (fiado)</div>
+  <h2>🧾 Cliente pagando a conta</h2>
+  <p class="note">Pra quando o cliente do <strong>fiado</strong> vem pagar. A venda dele <strong>já está lançada</strong> no sistema, então aqui <strong>não entra venda nova</strong> (senão o faturamento contava duas vezes) — entra só o dinheiro, que passa a valer no fechamento do dia.</p>
+  <div class="fbox">
+    <div class="fform">
+      <label>Cliente<input type="text" id="pc-cliente" placeholder="nome (opcional)"></label>
+      <label>Valor recebido (R$)<input type="number" step="0.01" inputmode="decimal" id="pc-valor" placeholder="0,00"></label>
+      <label>Recebi em<select id="pc-forma"><option value="Caixa">Dinheiro (gaveta)</option><option value="PIX">PIX (conta)</option></select></label>
+      <label>Dia<input type="date" id="pc-data"></label>
+      <button id="pc-registrar">Registrar pagamento</button>
+    </div>
+    <div class="fres" id="pc-msg"></div>
+    <div id="pc-lista" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<section class="card">
   <div class="eyebrow">Caixa · últimos fechamentos</div>
   <h2>Fechamentos de caixa</h2>
   <p class="note">Esperado = troco inicial + vendas em dinheiro − saídas em dinheiro. <strong>Contado</strong> é o que você conferiu na gaveta no fim do dia. Lembrete: digitar o CONTADO no PDV, não o valor da tela.</p>
@@ -1554,6 +1586,55 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
+  /* ---------- troca de PIX: cliente dá dinheiro, loja manda PIX (o inverso do saque) ---------- */
+  (function(){
+    const btn=g('tp-registrar'), msg=g('tp-msg'); if(!btn) return;
+    if(g('tp-data')) g('tp-data').value=hoje;
+    btn.addEventListener('click',()=>{
+      const rec=parseFloat(g('tp-recebido').value), env=parseFloat(g('tp-enviado').value);
+      if(isNaN(rec)||rec<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto você recebeu em dinheiro.</span>'; return; }
+      btn.disabled=true; btn.textContent='gravando…';
+      post('/api/troca-pix',{recebido:rec, enviado:isNaN(env)?rec:env, data:g('tp-data').value||hoje}).then(res=>{
+        btn.disabled=false; btn.textContent='Registrar troca';
+        if(res.ok){
+          msg.innerHTML='<span style="color:var(--good)">✅ Troca lançada: entraram R$ '+fmt(res.recebido)+
+            ' na gaveta e saíram R$ '+fmt(res.enviado)+' no PIX'+(res.ganho>0?' · lucro R$ '+fmt(res.ganho):'')+'.</span>';
+          g('tp-recebido').value=''; g('tp-enviado').value='';
+          loadResumo(true); loadFechHoje(true); loadFechamentos(true); if(window.loadEntradas) loadEntradas(true);
+        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>';
+      }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar troca'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
+  /* ---------- pagamento de conta (fiado): entra o dinheiro, sem venda nova ---------- */
+  function loadEntradas(f){ return fetch('/api/entradas-hoje'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('pc-lista'); if(!box) return;
+    if(!(d.itens||[]).length){ box.innerHTML='<p class="note" style="margin:6px 0">Nenhuma entrada avulsa hoje.</p>'; return; }
+    box.innerHTML='<div class="note" style="margin:6px 0">Hoje já entraram <b>R$ '+fmt(d.total)+'</b> fora as vendas:</div>'+
+      '<div class="tblwrap"><table><tbody>'+(d.itens||[]).map(i=>
+        '<tr><td class="nome">'+esc(i.desc)+'</td><td class="num">R$ '+fmt(i.valor)+'</td></tr>').join('')+
+      '</tbody></table></div>';
+  }).catch(()=>{}); }
+  (function(){
+    const btn=g('pc-registrar'), msg=g('pc-msg'); if(!btn) return;
+    if(g('pc-data')) g('pc-data').value=hoje;
+    btn.addEventListener('click',()=>{
+      const v=parseFloat(g('pc-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor recebido.</span>'; return; }
+      btn.disabled=true; btn.textContent='gravando…';
+      post('/api/pagamento-conta',{valor:v, cliente:g('pc-cliente').value.trim(),
+                                   forma:g('pc-forma').value, data:g('pc-data').value||hoje}).then(res=>{
+        btn.disabled=false; btn.textContent='Registrar pagamento';
+        if(res.ok){
+          msg.innerHTML='<span style="color:var(--good)">✅ R$ '+fmt(res.valor)+' de '+(esc(res.cliente)||'cliente')+
+            ' lançado'+(res.forma==='Caixa'?' na gaveta':' no PIX')+' — sem venda nova.</span>';
+          g('pc-valor').value=''; g('pc-cliente').value='';
+          loadResumo(true); loadFechHoje(true); loadFechamentos(true); loadEntradas(true);
+        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>';
+      }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar pagamento'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
   /* ---------- gastos do mês por categoria (topo do contas a pagar) ---------- */
   function loadGastosMes(f){ return fetch('/api/gastos-mes'+qf(f)).then(r=>r.json()).then(d=>{
     const topo=g('gasto-mes-topo'); if(!topo) return;
@@ -1937,7 +2018,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       return Promise.all([loadHojeDelivery(true),loadDelivery(true),loadHoje(true)]);
     }).catch(()=>{}).finally(()=>{ bsync.disabled=false; bsync.textContent='Puxar pedidos agora'; });
   });
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadEntradas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');

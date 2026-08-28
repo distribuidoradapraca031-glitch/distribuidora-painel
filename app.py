@@ -1125,6 +1125,7 @@ def _fech_calc(data):
             p = w.get("pagamento", w)
             if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
                 din += _num(p.get("valor"))
+    din += _entradas_gaveta(data)   # troca de PIX / pagamento de conta (fiado)
     saidas = 0.0
     for p in gcapi.get_all("/pagamentos"):
         if str(p.get("liquidado")) != "1":
@@ -1261,6 +1262,9 @@ def api_fechamentos():
             d = (r.get("data_liquidacao") or r.get("data_vencimento") or "")[:10]
             if "ABERTURA DE CAIXA" in desc.upper():
                 aberturas[d] = _num(r.get("valor_total")) or _num(r.get("valor"))
+            if _eh_entrada_gaveta(r):      # troca de PIX / pagamento de conta entram na gaveta
+                din[(r.get("data_liquidacao") or "")[:10]] += (_num(r.get("valor_total"))
+                                                               or _num(r.get("valor")))
             m = re.search(r"FECHAMENTO (\d{4}-\d{2}-\d{2}).*?contado R\$ ?([\d.,]+)", desc, re.I)
             if m:
                 contados[m.group(1)] = _num(m.group(2))
@@ -1436,6 +1440,115 @@ def _saque_pid(valor):
     pid = str((r.get("data") or {}).get("id"))
     _saque_ids[nome.upper()] = pid
     return pid
+
+# ---- ENTRADAS AVULSAS NA GAVETA (troca de PIX e pagamento de conta) ----
+# Dinheiro que entra no caixa SEM ser venda nova do PDV:
+#  · TROCA PIX — o contrário do saque: o cliente entrega dinheiro e o dono manda PIX pra ele
+#  · PAGAMENTO DE CONTA — cliente do fiado vem pagar. A venda JÁ foi lançada no sistema, então
+#    lançar de novo dobraria o faturamento: aqui entra só o dinheiro na gaveta.
+# São recebimentos com a marca na descrição — o fechamento soma eles junto com as vendas.
+# (não dá pra somar recebimento em dinheiro em geral: cada venda do balcão já gera um,
+# e o fechamento contaria a mesma venda duas vezes.)
+ENTRADA_TAGS = ("PAGAMENTO DE CONTA", "TROCA PIX")
+PLANO_AJUSTE_C = "33015692"       # "Ajuste de caixa" (crédito) — troca de PIX não é receita
+PLANO_VENDA_BALCAO = "33015685"   # o fiado já foi venda; o dinheiro entra como venda no balcão
+
+def _eh_entrada_gaveta(r):
+    """Recebimento que é entrada avulsa de dinheiro na gaveta (troca de PIX / fiado)."""
+    if str(r.get("liquidado")) != "1":
+        return False
+    if str(r.get("forma_pagamento_id")) != "6055919":
+        return False
+    if str(r.get("conta_bancaria_id") or "") != GAVETA_CONTA:
+        return False
+    d = (r.get("descricao") or "").upper()
+    return any(d.startswith(t) for t in ENTRADA_TAGS)
+
+def _entradas_gaveta(data):
+    """Total das entradas avulsas em dinheiro do dia (fora as vendas)."""
+    try:
+        recs = gcapi.get_all("/recebimentos", {"data_inicio": data, "data_fim": data})
+    except Exception:
+        return 0.0
+    return round(sum((_num(r.get("valor_total")) or _num(r.get("valor")))
+                     for r in recs if _eh_entrada_gaveta(r)
+                     and (r.get("data_liquidacao") or "")[:10] == data), 2)
+
+@app.route("/api/troca-pix", methods=["POST"])
+@login_required
+def api_troca_pix():
+    """O contrário do saque: o cliente entrega dinheiro e a loja manda PIX pra ele.
+    Entra dinheiro na gaveta e sai PIX da conta."""
+    body = request.get_json(force=True, silent=True) or {}
+    recebido = round(_num(body.get("recebido")), 2)          # dinheiro que veio do cliente
+    enviado = round(_num(body.get("enviado")) or recebido, 2)  # PIX mandado pra ele
+    data = (body.get("data") or _hoje())[:10]
+    if recebido <= 0 or enviado <= 0:
+        return jsonify({"ok": False, "erro": "informe quanto recebeu em dinheiro"}), 400
+    if enviado > recebido + 0.01:
+        return jsonify({"ok": False, "erro": f"você mandaria R$ {enviado:.2f} no PIX tendo "
+                        f"recebido R$ {recebido:.2f} em dinheiro — confira os valores"}), 400
+    ganho = round(recebido - enviado, 2)
+    try:
+        gcapi.post("/recebimentos", {
+            "descricao": f"TROCA PIX R$ {enviado:.2f} — recebi R$ {recebido:.2f} em dinheiro"
+                         + (f" · lucro R$ {ganho:.2f}" if ganho > 0 else ""),
+            "valor": f"{recebido:.2f}", "data_vencimento": data, "data_competencia": data,
+            "data_liquidacao": data, "liquidado": "1", "plano_contas_id": PLANO_AJUSTE_C,
+            "conta_bancaria_id": GAVETA_CONTA, "forma_pagamento_id": "6055919"})
+        gcapi.post("/pagamentos", {
+            "descricao": f"TROCA PIX R$ {enviado:.2f} — PIX enviado ao cliente",
+            "valor": f"{enviado:.2f}", "data_vencimento": data, "data_competencia": data,
+            "data_liquidacao": data, "liquidado": "1", "plano_contas_id": AJUSTE_CAIXA_PLANO,
+            "conta_bancaria_id": RESERVA_CONTA_ID, "forma_pagamento_id": "6055931"})
+        _invalida("resumo", "hoje", "fech_hoje", "fechamentos_7", "fechamentos_12",
+                  "fechamentos_31", "saque_resumo")
+        return jsonify({"ok": True, "recebido": recebido, "enviado": enviado, "ganho": ganho})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/pagamento-conta", methods=["POST"])
+@login_required
+def api_pagamento_conta():
+    """Cliente do fiado pagando a conta: entra dinheiro na gaveta SEM lançar venda de novo
+    (a venda já está no sistema — lançar outra dobraria o faturamento)."""
+    body = request.get_json(force=True, silent=True) or {}
+    valor = round(_num(body.get("valor")), 2)
+    cliente = (body.get("cliente") or "").strip()
+    forma = (body.get("forma") or "Caixa")
+    data = (body.get("data") or _hoje())[:10]
+    if valor <= 0:
+        return jsonify({"ok": False, "erro": "informe o valor recebido"}), 400
+    pot = POTES.get(forma, POTES["Caixa"])
+    desc = "PAGAMENTO DE CONTA" + (f" — {cliente}" if cliente else "") + " (abatimento de fiado)"
+    try:
+        r = gcapi.post("/recebimentos", {
+            "descricao": desc[:180], "valor": f"{valor:.2f}",
+            "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+            "liquidado": "1", "plano_contas_id": PLANO_VENDA_BALCAO,
+            "conta_bancaria_id": pot["conta"], "forma_pagamento_id": pot["forma"]})
+        _invalida("resumo", "hoje", "fech_hoje", "fechamentos_7", "fechamentos_12", "fechamentos_31")
+        d = r.get("data") or {}
+        return jsonify({"ok": True, "valor": valor, "cliente": cliente, "forma": forma,
+                        "id": d.get("id") if isinstance(d, dict) else None})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/entradas-hoje")
+@login_required
+def api_entradas_hoje():
+    """Entradas avulsas (troca de PIX / pagamento de conta) do dia escolhido."""
+    data = (request.args.get("data") or _hoje())[:10]
+    def build():
+        itens = []
+        for r in gcapi.get_all("/recebimentos", {"data_inicio": data, "data_fim": data}):
+            if not _eh_entrada_gaveta(r) or (r.get("data_liquidacao") or "")[:10] != data:
+                continue
+            itens.append({"id": r.get("id"), "desc": r.get("descricao"),
+                          "valor": _num(r.get("valor_total")) or _num(r.get("valor"))})
+        return {"data": data, "itens": itens, "total": round(sum(i["valor"] for i in itens), 2),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("entradas_" + data, 45, build))
 
 @app.route("/api/saque", methods=["POST"])
 @login_required
