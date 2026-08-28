@@ -170,10 +170,15 @@ RESERVA_CONTA = os.environ.get("RESERVA_CONTA_ID", "696747")  # trocar p/ conta 
 GAVETA_CONTA = "696747"      # conta CAIXA = a gaveta da loja (é ela que o fechamento confere)
 RESERVA_CONTA_ID = "681760"  # onde fica a reserva/banco — FORA da gaveta
 RP_FORMA_ID = "6776761"      # forma "Recurso próprio Victor" no GestãoClick
+# "Dinheiro guardado (reserva/sobra)": forma amarrada à CONTA BANCÁRIA. Antes a reserva e a
+# sobra saíam como "Dinheiro à Vista", que no cadastro do GestãoClick aponta pro CAIXA — o
+# painel ficava certo (a conta do lançamento era a bancária), mas o GC mostrava o valor
+# abatendo do caixa da loja. Com forma própria, os dois ficam iguais.
+GUARDADO_FORMA_ID = "6780142"
 POTES = {
     "Caixa":    {"conta": GAVETA_CONTA,     "forma": "6055919"},  # gaveta + Dinheiro
-    "Dinheiro": {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # RESERVA em dinheiro (fora da gaveta)
-    "Sobra":    {"conta": RESERVA_CONTA_ID, "forma": "6055919"},  # SOBRA DE CAIXA (fora da gaveta)
+    "Dinheiro": {"conta": RESERVA_CONTA_ID, "forma": GUARDADO_FORMA_ID},  # RESERVA (fora da gaveta)
+    "Sobra":    {"conta": RESERVA_CONTA_ID, "forma": GUARDADO_FORMA_ID},  # SOBRA DE CAIXA (fora da gaveta)
     "PIX":      {"conta": RESERVA_CONTA_ID, "forma": "6055931"},  # conta bancária + PIX
     # dinheiro do bolso do Victor: paga a conta (some do "a pagar") sem tirar nada da loja
     # — nem gaveta, nem reserva, nem sobra. Vai pro quadro "Recurso próprio" pela marca [RP].
