@@ -268,6 +268,19 @@ def _eh_interno(desc):
     return (d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
             or d.startswith(SOB_DEP_TAG) or d.startswith(SOB_OUT_TAG))
 
+def _sangria_caixa(valor, motivo, data):
+    """Tira da GAVETA o dinheiro que o dono guardou no cofre/sobra no mesmo dia.
+
+    Sem isso o fechamento continuava esperando esse dinheiro na gaveta e dava falta:
+    o depósito da reserva é só um registro do painel (liquidado=0) e não mexe em conta.
+    Descrição começa com SANGRIA — é assim que o resumo do mês sabe que não é gasto.
+    """
+    gcapi.post("/pagamentos", {
+        "descricao": f"SANGRIA {motivo}"[:180], "valor": f"{_num(valor):.2f}",
+        "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+        "liquidado": "1", "plano_contas_id": SAQUE_SANGRIA_PLANO,
+        "conta_bancaria_id": GAVETA_CONTA, "forma_pagamento_id": "6055919"})
+
 def _reserva_saldo():
     """Quanto tem hoje no Dinheiro Reserva = [RES+] guardado − [RES-] gasto."""
     dep = out = 0.0
@@ -1127,7 +1140,13 @@ def _fech_calc(data):
                 din += _num(p.get("valor"))
     din += _entradas_gaveta(data)   # troca de PIX / pagamento de conta (fiado)
     saidas = 0.0
-    for p in gcapi.get_all("/pagamentos"):
+    # janela larga em vez de "todos os pagamentos": o filtro da API é pelo VENCIMENTO e o
+    # que importa aqui é a data de liquidação (conta antiga paga hoje tem que entrar),
+    # mas puxar a base inteira é pesado e já derrubou a consulta com erro 500 do GC.
+    _d = datetime.date.fromisoformat(data)
+    _jan = {"data_inicio": (_d - datetime.timedelta(days=120)).isoformat(),
+            "data_fim": (_d + datetime.timedelta(days=60)).isoformat()}
+    for p in gcapi.get_all("/pagamentos", _jan):
         if str(p.get("liquidado")) != "1":
             continue
         if (p.get("data_liquidacao") or "")[:10] != data:
@@ -1401,8 +1420,8 @@ def api_gastos_mes():
             if (p.get("data_liquidacao") or "")[:7] != mes:
                 continue  # pago dentro deste mês
             desc = (p.get("descricao") or "").strip()
-            if desc.upper().startswith("SANGRIA SAQUE"):
-                continue  # saque não é gasto, é troca de dinheiro
+            if desc.upper().startswith("SANGRIA"):
+                continue  # saque e dinheiro guardado: troca de lugar, não é gasto
             if (p.get("nome_plano_conta") or "") == "Ajuste de caixa":
                 continue  # acerto de gaveta (quebra) não é gasto
             val = _num(p.get("valor_total")) or _num(p.get("valor"))
@@ -1861,12 +1880,17 @@ def api_reserva():
         if valor <= 0:
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{RES_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
+        do_caixa = bool(body.get("do_caixa"))
         try:
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "liquidado": "0",
                 "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+            if do_caixa:      # o dinheiro saiu da gaveta: sangria pra o fechamento bater
+                _sangria_caixa(valor, f"RESERVA — guardei no cofre{(' (' + nota + ')') if nota else ''}", data)
+                _invalida("hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
+                          "fechamentos_12", "fechamentos_31", "gastos_mes")
             _invalida("reserva", "pagar", "previsoes", "mapa")
-            return jsonify({"ok": True})
+            return jsonify({"ok": True, "sangria": do_caixa})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
@@ -1927,12 +1951,17 @@ def api_sobra():
         if valor <= 0:
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{SOB_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
+        do_caixa = bool(body.get("do_caixa"))
         try:
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "liquidado": "0",
                 "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+            if do_caixa:      # saiu da gaveta hoje: sangria pra o fechamento bater
+                _sangria_caixa(valor, f"SOBRA — guardei fora da gaveta{(' (' + nota + ')') if nota else ''}", data)
+                _invalida("hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
+                          "fechamentos_12", "fechamentos_31", "gastos_mes")
             _invalida("sobra", "pagar", "previsoes", "mapa")
-            return jsonify({"ok": True})
+            return jsonify({"ok": True, "sangria": do_caixa})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 

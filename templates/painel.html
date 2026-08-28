@@ -164,6 +164,10 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Guardei (R$)<input type="number" step="0.01" inputmode="decimal" id="res-valor" placeholder="0,00" style="width:120px"></label>
       <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="res-desc" placeholder="ex.: sobra do dia" style="width:100%"></label>
       <label>Data<input type="date" id="res-data"></label>
+      <label style="flex:1 1 100%;display:flex;align-items:center;gap:6px;font-size:.82rem">
+        <input type="checkbox" id="res-docaixa" checked style="width:auto;margin:0">
+        Esse dinheiro saiu do <strong>caixa</strong> desse dia (faço a sangria pra o fechamento bater)
+      </label>
       <button id="res-add">Guardar</button>
     </div>
     <div class="fres" id="res-msg"></div>
@@ -182,6 +186,10 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Guardei (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-valor" placeholder="0,00" style="width:120px"></label>
       <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="sob-desc" placeholder="ex.: sobra da semana" style="width:100%"></label>
       <label>Data<input type="date" id="sob-data"></label>
+      <label style="flex:1 1 100%;display:flex;align-items:center;gap:6px;font-size:.82rem">
+        <input type="checkbox" id="sob-docaixa" checked style="width:auto;margin:0">
+        Esse dinheiro saiu do <strong>caixa</strong> desse dia (faço a sangria pra o fechamento bater)
+      </label>
       <button id="sob-add">Guardar</button>
       <button id="sob-set" class="ghost" title="use depois de contar o dinheiro: deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
     </div>
@@ -1743,9 +1751,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const msg=g('res-msg'), v=parseFloat(g('res-valor').value);
       if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
       nb.disabled=true;
-      post('/api/reserva',{valor:v, descricao:g('res-desc').value, data:g('res-data').value||hoje}).then(res=>{
+      const dc=g('res-docaixa')?g('res-docaixa').checked:false;
+      post('/api/reserva',{valor:v, descricao:g('res-desc').value, data:g('res-data').value||hoje, do_caixa:dc}).then(res=>{
         nb.disabled=false;
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na reserva.</span>'; g('res-valor').value=''; g('res-desc').value=''; loadReserva(true); }
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na reserva.'+
+            (res.sangria?' Tirei do caixa do dia (sangria) — o fechamento já conta com isso.':'')+'</span>';
+          g('res-valor').value=''; g('res-desc').value=''; loadReserva(true);
+          if(res.sangria){ loadFechHoje(true); loadFechamentos(true); loadResumo(true); } }
         else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
       }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
@@ -1816,9 +1828,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const msg=g('sob-msg'), v=parseFloat(g('sob-valor').value);
       if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
       nb.disabled=true;
-      post('/api/sobra',{valor:v, descricao:g('sob-desc').value, data:g('sob-data').value||hoje}).then(res=>{
+      const dc=g('sob-docaixa')?g('sob-docaixa').checked:false;
+      post('/api/sobra',{valor:v, descricao:g('sob-desc').value, data:g('sob-data').value||hoje, do_caixa:dc}).then(res=>{
         nb.disabled=false;
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na sobra de caixa.</span>'; g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true); }
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na sobra de caixa.'+
+            (res.sangria?' Tirei do caixa do dia (sangria) — o fechamento já conta com isso.':'')+'</span>';
+          g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true);
+          if(res.sangria){ loadFechHoje(true); loadFechamentos(true); loadResumo(true); } }
         else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
       }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
