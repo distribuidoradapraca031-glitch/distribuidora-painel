@@ -281,6 +281,24 @@ def _sangria_caixa(valor, motivo, data):
         "liquidado": "1", "plano_contas_id": SAQUE_SANGRIA_PLANO,
         "conta_bancaria_id": GAVETA_CONTA, "forma_pagamento_id": "6055919"})
 
+def _saque_banco(valor, motivo, data):
+    """Dinheiro que o dono SACOU do banco pra guardar (cofre/sobra): sai da conta
+    bancária e vira dinheiro em espécie. Não passa pela gaveta, então não mexe no
+    fechamento; e começa com SANGRIA pra não contar como gasto do mês."""
+    gcapi.post("/pagamentos", {
+        "descricao": f"SANGRIA {motivo}"[:180], "valor": f"{_num(valor):.2f}",
+        "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+        "liquidado": "1", "plano_contas_id": SAQUE_SANGRIA_PLANO,
+        "conta_bancaria_id": RESERVA_CONTA_ID, "forma_pagamento_id": GUARDADO_FORMA_ID})
+
+def _origem_dinheiro(body):
+    """De onde veio o dinheiro que o dono está guardando: 'caixa' (gaveta), 'banco'
+    (saque) ou 'nenhum' (já estava fora). do_caixa é o formato antigo da tela."""
+    o = (body.get("origem") or "").strip().lower()
+    if o in ("caixa", "banco", "nenhum"):
+        return o
+    return "caixa" if body.get("do_caixa") else "nenhum"
+
 def _reserva_saldo():
     """Quanto tem hoje no Dinheiro Reserva = [RES+] guardado − [RES-] gasto."""
     dep = out = 0.0
@@ -1880,17 +1898,22 @@ def api_reserva():
         if valor <= 0:
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{RES_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
-        do_caixa = bool(body.get("do_caixa"))
+        origem = _origem_dinheiro(body)
+        rot = f"RESERVA — guardei no cofre{(' (' + nota + ')') if nota else ''}"
         try:
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "liquidado": "0",
                 "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
-            if do_caixa:      # o dinheiro saiu da gaveta: sangria pra o fechamento bater
-                _sangria_caixa(valor, f"RESERVA — guardei no cofre{(' (' + nota + ')') if nota else ''}", data)
+            if origem == "caixa":     # saiu da gaveta: sangria pra o fechamento bater
+                _sangria_caixa(valor, rot, data)
                 _invalida("hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
                           "fechamentos_12", "fechamentos_31", "gastos_mes")
+            elif origem == "banco":   # saque no banco: sai da conta, vira dinheiro guardado
+                _saque_banco(valor, f"BANCO — saquei pra {rot.split('—')[0].strip().lower()}"
+                                    f"{(' (' + nota + ')') if nota else ''}", data)
+                _invalida("gastos_mes")
             _invalida("reserva", "pagar", "previsoes", "mapa")
-            return jsonify({"ok": True, "sangria": do_caixa})
+            return jsonify({"ok": True, "origem": origem, "sangria": origem == "caixa"})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
@@ -1951,17 +1974,22 @@ def api_sobra():
         if valor <= 0:
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{SOB_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
-        do_caixa = bool(body.get("do_caixa"))
+        origem = _origem_dinheiro(body)
+        rot = f"SOBRA — guardei fora da gaveta{(' (' + nota + ')') if nota else ''}"
         try:
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "liquidado": "0",
                 "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
-            if do_caixa:      # saiu da gaveta hoje: sangria pra o fechamento bater
-                _sangria_caixa(valor, f"SOBRA — guardei fora da gaveta{(' (' + nota + ')') if nota else ''}", data)
+            if origem == "caixa":     # saiu da gaveta hoje: sangria pra o fechamento bater
+                _sangria_caixa(valor, rot, data)
                 _invalida("hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
                           "fechamentos_12", "fechamentos_31", "gastos_mes")
+            elif origem == "banco":   # saque no banco: sai da conta e vira dinheiro guardado
+                _saque_banco(valor, f"BANCO — saquei pra sobra de caixa"
+                                    f"{(' (' + nota + ')') if nota else ''}", data)
+                _invalida("gastos_mes")
             _invalida("sobra", "pagar", "previsoes", "mapa")
-            return jsonify({"ok": True, "sangria": do_caixa})
+            return jsonify({"ok": True, "origem": origem, "sangria": origem == "caixa"})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
