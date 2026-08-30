@@ -1127,13 +1127,21 @@ def api_inventario():
 
 AJUSTE_CAIXA_PLANO = "33015682"  # plano "Ajuste de caixa" no GestãoClick
 
-def _abertura_caixa(data):
+def _abertura_caixa(data, tolerante=True):
     """Valor da 'Abertura de caixa' (troco) lançada no GestãoClick nesse dia, ou None
-    se o dono ainda não abriu o caixa."""
+    se o dono ainda não abriu o caixa.
+
+    `tolerante=False` faz a falha de leitura estourar em vez de virar None: na hora de
+    GRAVAR um fechamento, None cai no chute de R$ 200 e grava a quebra errada — foi o
+    que aconteceu em 30/08/2026 (a consulta falhou, o troco virou 200 no lugar de 250 e
+    a sobra saiu R$ 50 maior). Pra só mostrar na tela, tolerante=True está de bom tamanho.
+    """
     try:
         recs = gcapi.get_all("/recebimentos", {"data_inicio": data, "data_fim": data})
     except Exception:
-        return None
+        if tolerante:
+            return None
+        raise
     for r in recs:
         if "ABERTURA DE CAIXA" in (r.get("descricao") or "").upper():
             return round(_num(r.get("valor_total")) or _num(r.get("valor")), 2)
@@ -1334,7 +1342,12 @@ def api_fechamento():
     if data > _hoje():
         return jsonify({"ok": False, "erro": f"a data {data[8:10]}/{data[5:7]} ainda não "
                         "aconteceu — não dá pra fechar um dia no futuro. Confira o campo Dia."}), 400
-    ab = _abertura_caixa(data)                       # usa a abertura real do GC
+    try:
+        ab = _abertura_caixa(data, tolerante=False)  # usa a abertura real do GC
+    except Exception:
+        return jsonify({"ok": False, "erro": "não consegui ler a abertura do caixa desse dia "
+                        "no sistema agora. Tente de novo em alguns segundos — assim eu não "
+                        "fecho o dia com o troco errado."}), 502
     troco = ab if ab is not None else (_num(body.get("troco")) or 200.0)
     contado = _num(body.get("contado"))
     if body.get("contado") in (None, ""):
