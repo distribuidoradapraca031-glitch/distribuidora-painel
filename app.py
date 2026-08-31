@@ -604,51 +604,66 @@ def api_baixa():
 @app.route("/api/gasto", methods=["POST"])
 @login_required
 def api_gasto():
-    """Lança um gasto (despesa) já paga, na categoria e pote certos."""
+    """Lança um gasto (despesa) já paga, na categoria e no(s) pote(s) certo(s).
+
+    O dono às vezes paga um gasto só com DUAS fontes (ex.: R$ 100 = R$ 60 no PIX +
+    R$ 40 da gaveta). Nesse caso vem `partes` e cada pedaço vira um lançamento, pra
+    cada pote ser descontado do jeito certo (e o fechamento não errar a gaveta).
+    """
     body = request.get_json(force=True, silent=True) or {}
     cat = body.get("categoria") or "Outros"
     valor = _num(body.get("valor"))
     forma = body.get("forma") or "Caixa"
     data = (body.get("data") or _hoje())[:10]
-    desc = _marca_rp(f"[cat:{cat}] " + ((body.get("descricao") or "").strip() or cat), forma)
+    nota = (body.get("descricao") or "").strip() or cat
     if valor <= 0:
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
     plano = CATS.get(cat, CATS["Outros"])
-    if forma == "Boleto":
-        # não pago: vira conta a pagar (boleto em aberto)
-        payload = {
-            "descricao": desc,
-            "valor": f"{valor:.2f}",
-            "data_vencimento": data,
-            "data_competencia": data,
-            "liquidado": "0",
-            "plano_contas_id": plano,
-            "forma_pagamento_id": BOLETO_FORMA_ID,
-        }
+
+    partes = [x for x in (body.get("partes") or []) if _num(x.get("valor")) > 0]
+    if len(partes) > 3:
+        return jsonify({"ok": False, "erro": "no máximo 3 formas"}), 400
+    if partes:
+        soma = round(sum(_num(x.get("valor")) for x in partes), 2)
+        if abs(soma - round(valor, 2)) > 0.02:
+            return jsonify({"ok": False, "erro": f"as formas somam R$ {soma:.2f} e o gasto é "
+                                                 f"R$ {valor:.2f} — ajuste os valores"}), 400
     else:
-        pot = POTES.get(forma, POTES["Caixa"])
-        payload = {
-            "descricao": desc,
-            "valor": f"{valor:.2f}",
-            "data_vencimento": data,
-            "data_competencia": data,
-            "data_liquidacao": data,
-            "liquidado": "1",
-            "plano_contas_id": plano,
-            "conta_bancaria_id": pot["conta"],
-            "forma_pagamento_id": pot["forma"],
-        }
+        partes = [{"forma": forma, "valor": valor}]
+
+    def _corpo(f, v, texto):
+        d = _marca_rp(f"[cat:{cat}] {texto}", f)
+        if f == "Boleto":      # não pago: vira conta a pagar (boleto em aberto)
+            return {"descricao": d[:180], "valor": f"{v:.2f}", "data_vencimento": data,
+                    "data_competencia": data, "liquidado": "0", "plano_contas_id": plano,
+                    "forma_pagamento_id": BOLETO_FORMA_ID}
+        pot = POTES.get(f, POTES["Caixa"])
+        return {"descricao": d[:180], "valor": f"{v:.2f}", "data_vencimento": data,
+                "data_competencia": data, "data_liquidacao": data, "liquidado": "1",
+                "plano_contas_id": plano, "conta_bancaria_id": pot["conta"],
+                "forma_pagamento_id": pot["forma"]}
+
+    ids, lancados = [], []
     try:
-        r = gcapi.post("/pagamentos", payload)
-        d = r.get("data") or {}
-        if forma == "Dinheiro":
-            _reserva_saida(valor, desc, data)
-        elif forma == "Sobra":
-            _sobra_saida(valor, desc, data)
-        _invalida("pagar", "resumo", "reserva", "sobra", "gastos_mes", "mapa")
-        return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None})
+        for parte in partes:
+            f = parte.get("forma") or "Caixa"
+            v = round(_num(parte.get("valor")), 2)
+            texto = nota if len(partes) == 1 else f"{nota} ({f})"
+            r = gcapi.post("/pagamentos", _corpo(f, v, texto))
+            d = r.get("data") or {}
+            ids.append(d.get("id") if isinstance(d, dict) else None)
+            lancados.append({"forma": f, "valor": v})
+            if f == "Dinheiro":
+                _reserva_saida(v, texto, data)
+            elif f == "Sobra":
+                _sobra_saida(v, texto, data)
+        _invalida("pagar", "resumo", "reserva", "sobra", "gastos_mes", "mapa",
+                  "hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
+                  "fechamentos_12", "fechamentos_31")
+        return jsonify({"ok": True, "id": ids[0] if ids else None, "ids": ids,
+                        "partes": lancados})
     except Exception as e:
-        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+        return jsonify({"ok": False, "erro": str(e)[:200], "lancados": lancados}), 502
 
 @app.route("/api/catalogo")
 @login_required

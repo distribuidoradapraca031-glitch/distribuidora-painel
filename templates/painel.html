@@ -574,6 +574,27 @@ th.g,td.g{background:var(--accent-soft)}
       <label>Data<input type="date" id="ex-data"></label>
       <button id="ex-add">Adicionar gasto</button>
     </div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;margin-top:8px">
+      <input type="checkbox" id="ex-split" style="width:auto;margin:0">
+      Paguei esse gasto com <strong>duas formas</strong> (ex.: parte no PIX, parte do caixa)
+    </label>
+    <div id="ex-split-box" hidden style="margin-top:8px">
+      <div class="fform">
+        <label>1ª forma
+          <select id="ex-forma1" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:150px">
+            <option value="PIX">PIX</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
+          </select>
+        </label>
+        <label>R$<input type="number" step="0.01" inputmode="decimal" id="ex-valor1" placeholder="0,00" style="width:110px"></label>
+        <label>2ª forma
+          <select id="ex-forma2" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:150px">
+            <option value="Caixa">Caixa (gaveta)</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
+          </select>
+        </label>
+        <label>R$<input type="number" step="0.01" inputmode="decimal" id="ex-valor2" placeholder="0,00" style="width:110px"></label>
+      </div>
+      <div class="note" id="ex-split-msg" style="margin-top:4px">As duas partes têm que somar o valor do gasto.</div>
+    </div>
     <div class="fres" id="ex-msg"></div>
     <div class="tblwrap" id="tbl-ex"></div>
     <div id="ex-out-box"></div>
@@ -1538,6 +1559,17 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
   /* ---------- Lancar gasto: AO VIVO ---------- */
   (function(){
+    const chk=g('ex-split'), box=g('ex-split-box'), vTot=g('ex-valor');
+    if(chk&&box){
+      chk.addEventListener('change',()=>{
+        box.hidden=!chk.checked;
+        if(g('ex-forma')) g('ex-forma').disabled=chk.checked;
+        // adianta a 1ª parte com o valor cheio pra o dono só ajustar
+        if(chk.checked&&g('ex-valor1')&&!g('ex-valor1').value&&vTot.value) g('ex-valor1').value=vTot.value;
+      });
+    }
+  })();
+  (function(){
     const btn=g('ex-add'); if(!btn) return;
     const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
     nb.addEventListener('click',()=>{
@@ -1545,11 +1577,28 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor do gasto.</span>'; return; }
       const payload={ categoria:g('ex-cat').value, descricao:g('ex-desc').value.trim(),
         valor:v, forma:g('ex-forma').value, data:g('ex-data').value };
+      if(g('ex-split') && g('ex-split').checked){
+        const v1=parseFloat(g('ex-valor1').value), v2=parseFloat(g('ex-valor2').value);
+        const partes=[];
+        if(!isNaN(v1)&&v1>0) partes.push({forma:g('ex-forma1').value, valor:+v1.toFixed(2)});
+        if(!isNaN(v2)&&v2>0) partes.push({forma:g('ex-forma2').value, valor:+v2.toFixed(2)});
+        const soma=partes.reduce((a,x)=>a+x.valor,0);
+        if(partes.length<2){ msg.innerHTML='<span style="color:var(--crit)">Preencha as duas formas (ou desmarque a divisão).</span>'; return; }
+        if(Math.abs(soma-v)>0.02){ msg.innerHTML='<span style="color:var(--crit)">As duas partes somam R$ '+fmt(soma)+' e o gasto é R$ '+fmt(v)+'.</span>'; return; }
+        payload.partes=partes;
+      }
       nb.disabled=true; nb.textContent='gravando…';
       post('/api/gasto',payload).then(res=>{
         nb.disabled=false; nb.textContent='Adicionar gasto';
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Gasto lançado no sistema'+(payload.forma==='Boleto'?' (contas a pagar)':'')+'.</span>';
-          g('ex-valor').value=''; g('ex-desc').value=''; loadResumo(true); loadMapa(true); loadGastosMes(true); }
+        if(res.ok){
+          const det=(res.partes&&res.partes.length>1)
+            ? ' — '+res.partes.map(x=>'R$ '+fmt(x.valor)+' em '+x.forma).join(' + ')
+            : (payload.forma==='Boleto'?' (contas a pagar)':'');
+          msg.innerHTML='<span style="color:var(--good)">✅ Gasto lançado no sistema'+det+'.</span>';
+          g('ex-valor').value=''; g('ex-desc').value='';
+          if(g('ex-valor1')) g('ex-valor1').value=''; if(g('ex-valor2')) g('ex-valor2').value='';
+          loadResumo(true); loadMapa(true); loadGastosMes(true);
+          loadFechHoje(true); loadFechamentos(true); }
         else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui lançar')+'</span>'; }
       }).catch(()=>{ nb.disabled=false; nb.textContent='Adicionar gasto'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
