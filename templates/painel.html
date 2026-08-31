@@ -1560,33 +1560,48 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   /* ---------- Lancar gasto: AO VIVO ---------- */
   (function(){
     const chk=g('ex-split'), box=g('ex-split-box'), vTot=g('ex-valor');
-    if(chk&&box){
-      chk.addEventListener('change',()=>{
-        box.hidden=!chk.checked;
-        if(g('ex-forma')) g('ex-forma').disabled=chk.checked;
-        // adianta a 1ª parte com o valor cheio pra o dono só ajustar
-        if(chk.checked&&g('ex-valor1')&&!g('ex-valor1').value&&vTot.value) g('ex-valor1').value=vTot.value;
-      });
+    if(!chk||!box) return;
+    const v1=g('ex-valor1'), v2=g('ex-valor2'), aviso=g('ex-split-msg');
+    // com a divisão ligada, o TOTAL é a soma das duas partes: o dono não digita duas vezes
+    function soma(){
+      if(!chk.checked) return;
+      const a=parseFloat(v1.value)||0, b=parseFloat(v2.value)||0;
+      vTot.value=(a+b)?(a+b).toFixed(2):'';
+      if(aviso) aviso.innerHTML=(a>0&&b>0)
+        ? 'Total do gasto: <b>R$ '+fmt(a+b)+'</b> (somei as duas formas).'
+        : 'Preencha as duas partes — eu somo e jogo no total sozinho.';
     }
+    chk.addEventListener('change',()=>{
+      box.hidden=!chk.checked;
+      if(g('ex-forma')) g('ex-forma').disabled=chk.checked;
+      vTot.readOnly=chk.checked;
+      if(chk.checked){
+        // se já tinha um valor digitado, joga na 1ª parte pra ele só ajustar
+        if(!v1.value&&vTot.value) v1.value=vTot.value;
+        soma();
+      } else { vTot.readOnly=false; if(aviso) aviso.textContent='As duas partes têm que somar o valor do gasto.'; }
+    });
+    [v1,v2].forEach(el=>el&&el.addEventListener('input',soma));
   })();
   (function(){
     const btn=g('ex-add'); if(!btn) return;
     const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
     nb.addEventListener('click',()=>{
-      const msg=g('ex-msg'), v=parseFloat(g('ex-valor').value);
+      const msg=g('ex-msg'), dividido=g('ex-split')&&g('ex-split').checked;
+      let v=parseFloat(g('ex-valor').value), partes=null;
+      if(dividido){
+        const a=parseFloat(g('ex-valor1').value), b=parseFloat(g('ex-valor2').value);
+        if(isNaN(a)||a<=0||isNaN(b)||b<=0){
+          msg.innerHTML='<span style="color:var(--crit)">Preencha o valor das duas formas (ou desmarque a divisão).</span>'; return; }
+        partes=[{forma:g('ex-forma1').value, valor:+a.toFixed(2)},
+                {forma:g('ex-forma2').value, valor:+b.toFixed(2)}];
+        v=+(a+b).toFixed(2);                       // o total é a soma das partes
+        g('ex-valor').value=v.toFixed(2);
+      }
       if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor do gasto.</span>'; return; }
       const payload={ categoria:g('ex-cat').value, descricao:g('ex-desc').value.trim(),
         valor:v, forma:g('ex-forma').value, data:g('ex-data').value };
-      if(g('ex-split') && g('ex-split').checked){
-        const v1=parseFloat(g('ex-valor1').value), v2=parseFloat(g('ex-valor2').value);
-        const partes=[];
-        if(!isNaN(v1)&&v1>0) partes.push({forma:g('ex-forma1').value, valor:+v1.toFixed(2)});
-        if(!isNaN(v2)&&v2>0) partes.push({forma:g('ex-forma2').value, valor:+v2.toFixed(2)});
-        const soma=partes.reduce((a,x)=>a+x.valor,0);
-        if(partes.length<2){ msg.innerHTML='<span style="color:var(--crit)">Preencha as duas formas (ou desmarque a divisão).</span>'; return; }
-        if(Math.abs(soma-v)>0.02){ msg.innerHTML='<span style="color:var(--crit)">As duas partes somam R$ '+fmt(soma)+' e o gasto é R$ '+fmt(v)+'.</span>'; return; }
-        payload.partes=partes;
-      }
+      if(partes) payload.partes=partes;
       nb.disabled=true; nb.textContent='gravando…';
       post('/api/gasto',payload).then(res=>{
         nb.disabled=false; nb.textContent='Adicionar gasto';
