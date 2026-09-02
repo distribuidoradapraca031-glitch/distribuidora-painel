@@ -2091,8 +2091,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(res.ok){ const q=res.quebra; const t=Math.abs(q)<0.01?'bateu ✓':q>0?'sobra R$ '+fmt(q)+' (lancei uma entrada de ajuste)':'falta R$ '+fmt(-q)+' (lancei uma saída de ajuste)';
         if(msg) msg.innerHTML='<span style="color:var(--good)">✅ Fechamento GRAVADO no sistema: esperado R$ '+fmt(res.esperado)+' · contado R$ '+fmt(res.contado)+' — '+t+'. O caixa agora bate.</span>';
         loadResumo(true); loadGastosMes(true); loadFechHoje(true); loadFechamentos(true); }
-      else { if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui gravar')+'</span>'; }
-    }).catch(()=>{ if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; } if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+      else { if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui gravar')+
+             '</span><br><span class="note">Sua contagem de R$ '+fmt(cc)+' ficou guardada aqui no navegador (aparece com ✍️ na tabela abaixo) — é só clicar de novo daqui a pouco.</span>'; }
+    }).catch(()=>{ if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; }
+      if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ não consegui falar com o sistema agora.</span>'+
+        '<br><span class="note">Nada foi gravado e sua contagem de R$ '+fmt(cc)+' ficou guardada aqui no navegador (✍️ na tabela abaixo) — tente de novo em alguns segundos.</span>'; });
   };
   function loadFechHoje(f){
     const dv=(g('f-data')&&g('f-data').value)||'';
@@ -2108,10 +2111,25 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       renderFechLive();
     }).catch(()=>{});
   }
-  (function(){ const c=g('f-contado'); if(c) c.addEventListener('input',renderFechLive);
+  (function(){
+    // guarda a contagem no navegador ENQUANTO o dono digita. Antes ela só era salva no
+    // clique de registrar: quando o GestãoClick caiu (01/09/2026) e o registro falhou,
+    // a contagem sumia junto com a página e ele tinha que contar a gaveta de novo.
+    function guardaContagem(){
+      try{
+        const dEl=g('f-data'), c=parseFloat((g('f-contado')||{}).value);
+        if(!dEl||!dEl.value||isNaN(c)||c<=0) return;
+        const anot=loadAnot(); anot[dEl.value]=+c.toFixed(2); saveAnot(anot);
+        if(window.renderFech) renderFech();
+      }catch(e){}
+    }
+    const c=g('f-contado');
+    if(c) c.addEventListener('input',()=>{ renderFechLive(); guardaContagem(); });
     const fd=g('f-data'); if(fd) fd.addEventListener('change',()=>setTimeout(()=>loadFechHoje(true),0));
     const fab=g('f-abertura'); if(fab) fab.addEventListener('input',()=>loadFechHoje(true));
-    document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>inp.addEventListener('input',()=>setTimeout(renderFechLive,0))); })();
+    document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>
+      inp.addEventListener('input',()=>setTimeout(()=>{ renderFechLive(); guardaContagem(); },0)));
+  })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */
   const bsync=g('btn-sync');
