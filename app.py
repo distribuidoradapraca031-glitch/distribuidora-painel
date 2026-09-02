@@ -1371,8 +1371,10 @@ def api_fechamento():
                         "pouquinho e clique de novo."}), 502
     troco = ab if ab is not None else (_num(body.get("troco")) or 200.0)
     contado = _num(body.get("contado"))
-    if body.get("contado") in (None, ""):
-        return jsonify({"ok": False, "erro": "conte a gaveta primeiro"}), 400
+    if body.get("contado") in (None, "") or contado <= 0:
+        # contado 0 passava direto e gravava uma "falta" do valor inteiro do dia
+        return jsonify({"ok": False, "erro": "conte a gaveta primeiro — o valor contado não "
+                        "pode ficar em branco nem zerado."}), 400
     # Dia SEM abertura e SEM nenhum movimento = quase sempre o dono errou o campo Dia. Se
     # deixar passar, o esperado cai no chute de R$ 200 e a quebra sai gigante e falsa —
     # foi o que criou uma "sobra" de R$ 319 em 20/08/2026 (fechamento feito na noite do 19).
