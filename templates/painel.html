@@ -172,6 +172,7 @@ th.g,td.g{background:var(--accent-soft)}
         </select>
       </label>
       <button id="res-add">Guardar</button>
+      <button id="res-set" class="ghost" title="use depois de contar o cofre: deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
     </div>
     <div class="fres" id="res-msg"></div>
   </div>
@@ -1813,6 +1814,22 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
     }));
   }).catch(()=>{}); }
+  (function(){
+    const b=g('res-set'); if(!b) return;
+    const nb=b.cloneNode(true); b.parentNode.replaceChild(nb,b);
+    nb.addEventListener('click',()=>{
+      const msg=g('res-msg'), v=parseFloat(g('res-valor').value);
+      if(isNaN(v)||v<0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto você contou no cofre.</span>'; return; }
+      nb.disabled=true;
+      post('/api/reserva',{ajustar_para:v, descricao:g('res-desc').value, data:g('res-data').value||hoje}).then(res=>{
+        nb.disabled=false;
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Reserva ajustada para R$ '+fmt(res.saldo)+
+            (res.delta?' (acerto de R$ '+fmt(Math.abs(res.delta))+(res.delta>0?' a mais':' a menos')+').':'.')+'</span>';
+          g('res-valor').value=''; g('res-desc').value=''; loadReserva(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
   (function(){
     const btn=g('res-add'); if(!btn) return;
     const rd=g('res-data'); if(rd&&!rd.value) rd.value=hoje;
