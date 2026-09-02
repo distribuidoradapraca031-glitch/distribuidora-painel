@@ -1363,11 +1363,16 @@ def api_fechamento():
         return jsonify({"ok": False, "erro": "não consegui ler a abertura do caixa desse dia "
                         "no sistema agora. Tente de novo em alguns segundos — assim eu não "
                         "fecho o dia com o troco errado."}), 502
+    try:
+        din, saidas = _fech_calc(data)               # vendas e saídas do dia
+    except Exception:
+        return jsonify({"ok": False, "erro": "o GestãoClick não respondeu agora (ele cai por "
+                        "alguns segundos de vez em quando). NÃO gravei nada — espere um "
+                        "pouquinho e clique de novo."}), 502
     troco = ab if ab is not None else (_num(body.get("troco")) or 200.0)
     contado = _num(body.get("contado"))
     if body.get("contado") in (None, ""):
         return jsonify({"ok": False, "erro": "conte a gaveta primeiro"}), 400
-    din, saidas = _fech_calc(data)
     # Dia SEM abertura e SEM nenhum movimento = quase sempre o dono errou o campo Dia. Se
     # deixar passar, o esperado cai no chute de R$ 200 e a quebra sai gigante e falsa —
     # foi o que criou uma "sobra" de R$ 319 em 20/08/2026 (fechamento feito na noite do 19).

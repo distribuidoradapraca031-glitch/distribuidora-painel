@@ -55,7 +55,16 @@ def _req(path, method="GET", params=None, body=None, max_retries=5):
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 time.sleep(1.5 * (attempt + 1)); continue
-            last_err = f"HTTP {e.code}: {e.read()[:300].decode('utf-8','ignore')}"
+            corpo = e.read()[:300].decode("utf-8", "ignore")
+            last_err = f"HTTP {e.code}: {corpo}"
+            # A API do GestãoClick cai sozinha de vez em quando e devolve 404
+            # "Controller class VendasController could not be found" ou 5xx — some e volta
+            # em segundos. Em LEITURA vale insistir (foi o que derrubou o fechamento de
+            # caixa em 01/09/2026, aparecendo como "erro de conexão" pro dono). Em POST/PUT
+            # não: o lançamento pode ter sido gravado e repetir duplicaria.
+            transitorio = e.code >= 500 or (e.code == 404 and "could not be found" in corpo)
+            if transitorio and method == "GET" and attempt < max_retries - 1:
+                time.sleep(1.0 * (attempt + 1)); continue
             raise RuntimeError(last_err)
         except Exception as e:
             last_err = str(e); time.sleep(1.0)
