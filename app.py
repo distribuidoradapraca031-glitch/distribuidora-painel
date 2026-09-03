@@ -1521,7 +1521,7 @@ def _saque_pid(valor):
 # São recebimentos com a marca na descrição — o fechamento soma eles junto com as vendas.
 # (não dá pra somar recebimento em dinheiro em geral: cada venda do balcão já gera um,
 # e o fechamento contaria a mesma venda duas vezes.)
-ENTRADA_TAGS = ("PAGAMENTO DE CONTA", "TROCA PIX")
+ENTRADA_TAGS = ("PAGAMENTO DE CONTA", "TROCA PIX", "REFORÇO DE CAIXA")
 PLANO_AJUSTE_C = "33015692"       # "Ajuste de caixa" (crédito) — troca de PIX não é receita
 PLANO_VENDA_BALCAO = "33015685"   # o fiado já foi venda; o dinheiro entra como venda no balcão
 
@@ -1603,6 +1603,48 @@ def api_pagamento_conta():
         d = r.get("data") or {}
         return jsonify({"ok": True, "valor": valor, "cliente": cliente, "forma": forma,
                         "id": d.get("id") if isinstance(d, dict) else None})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/reforco-caixa", methods=["POST"])
+@login_required
+def api_reforco_caixa():
+    """Tira dinheiro do guardado (reserva ou sobra de caixa) e põe na GAVETA.
+
+    É o contrário da sangria: acontece quando sobra um troco quebrado da compra
+    (R$ 6, R$ 7) e esse dinheiro volta pro caixa. Entra como entrada avulsa —
+    o fechamento do dia passa a contar com ele.
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    valor = round(_num(body.get("valor")), 2)
+    fonte = (body.get("fonte") or "reserva").strip().lower()
+    data = (body.get("data") or _hoje())[:10]
+    nota = (body.get("descricao") or "").strip()
+    if valor <= 0:
+        return jsonify({"ok": False, "erro": "informe o valor que saiu do guardado"}), 400
+    if fonte not in ("reserva", "sobra"):
+        fonte = "reserva"
+    saldo = _reserva_saldo() if fonte == "reserva" else _sobra_saldo()
+    rotulo = "reserva" if fonte == "reserva" else "sobra de caixa"
+    if valor > saldo + 0.01 and not body.get("forcar"):
+        return jsonify({"ok": False, "saldo_insuficiente": True, "saldo": saldo,
+                        "erro": f"a {rotulo} tem R$ {saldo:.2f} e você quer tirar "
+                                f"R$ {valor:.2f} — confira o valor ou o saldo guardado."}), 400
+    desc = f"REFORÇO DE CAIXA — veio da {rotulo}" + (f" ({nota})" if nota else "")
+    try:
+        gcapi.post("/recebimentos", {
+            "descricao": desc[:180], "valor": f"{valor:.2f}",
+            "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+            "liquidado": "1", "plano_contas_id": PLANO_AJUSTE_C,
+            "conta_bancaria_id": GAVETA_CONTA, "forma_pagamento_id": "6055919"})
+        if fonte == "reserva":
+            _reserva_saida(valor, f"foi pro caixa{(' — ' + nota) if nota else ''}", data)
+        else:
+            _sobra_saida(valor, f"foi pro caixa{(' — ' + nota) if nota else ''}", data)
+        _invalida("reserva", "sobra", "resumo", "hoje", "fech_hoje", "fech_" + data,
+                  "fechamentos_7", "fechamentos_12", "fechamentos_31", "entradas_" + data)
+        return jsonify({"ok": True, "valor": valor, "fonte": fonte,
+                        "saldo": round(saldo - valor, 2)})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 

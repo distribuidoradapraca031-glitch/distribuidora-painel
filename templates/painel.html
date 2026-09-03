@@ -176,6 +176,17 @@ th.g,td.g{background:var(--accent-soft)}
     </div>
     <div class="fres" id="res-msg"></div>
   </div>
+  <div class="fbox" style="margin-top:8px">
+    <strong style="font-size:.9rem">➖ Tirar da reserva e pôr no caixa</strong>
+    <p class="note" style="margin-top:2px">Pro <strong>troco quebrado</strong> que sobra da compra e volta pra gaveta (R$ 6, R$ 7...). Eu desconto da reserva e lanço a entrada no <strong>caixa do dia</strong> — o fechamento já conta com esse dinheiro.</p>
+    <div class="fform" style="margin-top:6px">
+      <label>Voltou pro caixa (R$)<input type="number" step="0.01" inputmode="decimal" id="res-tirar-valor" placeholder="0,00" style="width:140px"></label>
+      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="res-tirar-desc" placeholder="ex.: troco da compra" style="width:100%"></label>
+      <label>Data<input type="date" id="res-tirar-data"></label>
+      <button id="res-tirar">Pôr no caixa</button>
+    </div>
+    <div class="fres" id="res-tirar-msg"></div>
+  </div>
   <div class="tblwrap" id="tbl-reserva" style="margin-top:10px"></div>
 </section>
 
@@ -209,6 +220,17 @@ th.g,td.g{background:var(--accent-soft)}
       </div>
     </details>
     <div class="fres" id="sob-msg"></div>
+  </div>
+  <div class="fbox" style="margin-top:8px">
+    <strong style="font-size:.9rem">➖ Tirar da sobra e pôr no caixa</strong>
+    <p class="note" style="margin-top:2px">Mesma coisa da reserva: o dinheiro sai daqui e entra na <strong>gaveta do dia</strong>, contando no fechamento.</p>
+    <div class="fform" style="margin-top:6px">
+      <label>Voltou pro caixa (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-tirar-valor" placeholder="0,00" style="width:140px"></label>
+      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="sob-tirar-desc" placeholder="ex.: troco da compra" style="width:100%"></label>
+      <label>Data<input type="date" id="sob-tirar-data"></label>
+      <button id="sob-tirar">Pôr no caixa</button>
+    </div>
+    <div class="fres" id="sob-tirar-msg"></div>
   </div>
   <div class="tblwrap" id="tbl-sobra" style="margin-top:10px"></div>
 </section>
@@ -1664,6 +1686,32 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar saque'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
   })();
+
+  /* ---------- tirar do guardado e pôr na gaveta (o contrário da sangria) ---------- */
+  function ligaReforco(pref, fonte, recarrega){
+    const btn=g(pref+'-tirar'), msg=g(pref+'-tirar-msg'), dt=g(pref+'-tirar-data');
+    if(!btn) return;
+    if(dt && !dt.value) dt.value=hoje;
+    btn.addEventListener('click',()=>{
+      const v=parseFloat(g(pref+'-tirar-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto voltou pro caixa.</span>'; return; }
+      btn.disabled=true; btn.textContent='gravando…';
+      post('/api/reforco-caixa',{valor:v, fonte:fonte, descricao:g(pref+'-tirar-desc').value,
+                                 data:(dt&&dt.value)||hoje}).then(res=>{
+        btn.disabled=false; btn.textContent='Pôr no caixa';
+        if(res.ok){
+          msg.innerHTML='<span style="color:var(--good)">✅ R$ '+fmt(res.valor)+' saíram do guardado e entraram no caixa do dia'+
+            ' — sobrou R$ '+fmt(res.saldo)+' guardado.</span>';
+          g(pref+'-tirar-valor').value=''; g(pref+'-tirar-desc').value='';
+          recarrega(true); loadFechHoje(true); loadFechamentos(true); loadResumo(true);
+          if(window.loadEntradas) loadEntradas(true);
+        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ btn.disabled=false; btn.textContent='Pôr no caixa';
+                     msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  }
+  ligaReforco('res','reserva',(f)=>loadReserva(f));
+  ligaReforco('sob','sobra',(f)=>loadSobra(f));
 
   /* ---------- troca de PIX: cliente dá dinheiro, loja manda PIX (o inverso do saque) ---------- */
   (function(){
