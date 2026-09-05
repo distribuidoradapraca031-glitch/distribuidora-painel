@@ -1162,6 +1162,76 @@ def _abertura_caixa(data, tolerante=True):
             return round(_num(r.get("valor_total")) or _num(r.get("valor")), 2)
     return None
 
+MOEDAS_TAG = "FUNDO DE MOEDAS"   # marcador com o valor das moedas que ficam na gaveta
+
+def _fundos_lista():
+    """Todas as contagens de moeda já registradas, como [(data, valor)] ordenadas.
+
+    Guardo em /pagamentos (não em /recebimentos): recebimento tem uma linha por venda,
+    são milhares, e a busca estourava o limite de páginas sem nunca achar o marcador.
+    """
+    def build():
+        out = []
+        try:
+            pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                                "data_fim": "2027-12-31"})
+        except Exception:
+            return out
+        for p in pgs:
+            desc = (p.get("descricao") or "")
+            if not desc.upper().startswith(MOEDAS_TAG):
+                continue
+            d = (p.get("data_competencia") or p.get("data_vencimento") or "")[:10]
+            m = re.search(r"R\$ ?([\d.,]+)", desc)
+            if d and m:
+                out.append((d, _num(m.group(1))))
+        out.sort()
+        return out
+    return cached("fundos_moedas", 120, build)
+
+def _fundo_moedas(data=None):
+    """Quanto tem de MOEDA na gaveta na data pedida (o fundo de troco miúdo).
+
+    O dono conta as moedas uma vez por semana e elas NÃO entram na abertura que ele
+    lança no PDV — ficam na gaveta o tempo todo. Então o esperado do fechamento tem
+    que somar esse fundo, senão toda contagem fecha com sobra do tamanho das moedas.
+    Uso a contagem mais recente ATÉ aquele dia: assim os fechamentos antigos, feitos
+    antes de existir o fundo, continuam com o mesmo esperado de quando foram conferidos.
+    """
+    data = (data or _hoje())[:10]
+    valor, quando = 0.0, None
+    for d, v in _fundos_lista():
+        if d <= data:
+            valor, quando = v, d
+    return round(valor, 2), quando
+
+@app.route("/api/fundo-moedas", methods=["GET", "POST"])
+@login_required
+def api_fundo_moedas():
+    """GET: quanto tem de moeda na gaveta hoje. POST: o dono contou e atualiza."""
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        valor = round(_num(body.get("valor")), 2)
+        data = (body.get("data") or _hoje())[:10]
+        if valor < 0:
+            return jsonify({"ok": False, "erro": "valor inválido"}), 400
+        try:
+            gcapi.post("/pagamentos", {
+                "descricao": f"{MOEDAS_TAG} R$ {valor:.2f} (contadas em {data[8:10]}/{data[5:7]}/{data[:4]})",
+                "valor": "0.00", "data_vencimento": data, "data_competencia": data,
+                "data_liquidacao": data, "liquidado": "1",
+                "plano_contas_id": AJUSTE_CAIXA_PLANO, "conta_bancaria_id": GAVETA_CONTA,
+                "forma_pagamento_id": "6055919"})
+            _invalida("fech_hoje", "fech_" + data, "fechamentos_7", "fechamentos_12",
+                      "fechamentos_31", "moedas", "fundos_moedas")
+            return jsonify({"ok": True, "valor": valor, "desde": data})
+        except Exception as e:
+            return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+    def build():
+        v, d = _fundo_moedas()
+        return {"valor": v, "desde": d, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("moedas", 60, build))
+
 def _fech_calc(data):
     """Dinheiro que ENTROU (vendas em dinheiro, balcão + delivery) e SAÍDAS em
     dinheiro do caixa no dia. O delivery em dinheiro entra na MESMA gaveta (o
@@ -1208,9 +1278,11 @@ def api_fechamento_hoje():
         ab = _abertura_caixa(data)                  # abertura real lançada no GC no dia
         troco = ab if ab is not None else (_num(request.args.get("troco")) or 200.0)
         din, saidas = _fech_calc(data)              # vendas em dinheiro + saídas DO DIA
+        moedas, moedas_desde = _fundo_moedas(data)  # troco miúdo que mora na gaveta
         return {"data": data, "troco": round(troco, 2), "abertura_gc": ab is not None,
-                "dinheiro": din, "saidas": saidas,
-                "esperado": round(troco + din - saidas, 2),
+                "dinheiro": din, "saidas": saidas, "moedas": moedas,
+                "moedas_desde": moedas_desde,
+                "esperado": round(troco + moedas + din - saidas, 2),
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("fech_" + data, 45, build))
 
@@ -1335,9 +1407,11 @@ def api_fechamentos():
         for i in range(dias):
             d = (hoje - datetime.timedelta(days=dias - 1 - i)).isoformat()
             ab = aberturas.get(d, 200.0)
-            esp = round(ab + din.get(d, 0) - saidas.get(d, 0), 2)
+            fundo, _fd = _fundo_moedas(d)
+            esp = round(ab + fundo + din.get(d, 0) - saidas.get(d, 0), 2)
             c = contados.get(d)
             itens.append({"data": d, "abertura": round(ab, 2), "abertura_real": d in aberturas,
+                          "fundo_moedas": fundo,
                           "dinheiro": round(din.get(d, 0), 2),
                           "saidas": round(saidas.get(d, 0), 2), "esperado": esp,
                           "contado": c, "quebra": None if c is None else round(c - esp, 2),
@@ -1383,7 +1457,8 @@ def api_fechamento():
                         "erro": f"o dia {data[8:10]}/{data[5:7]} não tem abertura de caixa nem "
                                 "nenhuma venda em dinheiro no sistema. Confira se a data está "
                                 "certa antes de fechar."}), 400
-    esperado = round(troco + din - saidas, 2)
+    fundo, _ = _fundo_moedas(data)          # as moedas moram na gaveta e não entram na abertura
+    esperado = round(troco + fundo + din - saidas, 2)
     quebra = round(contado - esperado, 2)
     ajuste_id = None
     try:

@@ -282,6 +282,21 @@ th.g,td.g{background:var(--accent-soft)}
   </div>
 </section>
 
+<section class="card" id="card-moedas">
+  <div class="eyebrow">Caixa · moedas</div>
+  <h2>🪙 Moedas na gaveta</h2>
+  <div id="moedas-box" style="margin:8px 0"></div>
+  <p class="note">O <strong>troco miúdo</strong> que fica na gaveta o tempo todo. Ele <strong>não entra na abertura</strong> que você lança no PDV, então eu somo esse valor no <strong>esperado do caixa</strong> todo dia — e você conta as moedas junto com as notas no fechamento. Conte uma vez por semana e atualize aqui; eu repito o valor nos outros dias.</p>
+  <div class="fbox">
+    <div class="fform">
+      <label>Tenho de moedas (R$)<input type="number" step="0.01" inputmode="decimal" id="mo-valor" placeholder="0,00" style="width:140px"></label>
+      <label>Contei em<input type="date" id="mo-data"></label>
+      <button id="mo-salvar">Salvar contagem de moedas</button>
+    </div>
+    <div class="fres" id="mo-msg"></div>
+  </div>
+</section>
+
 <section class="card">
   <div class="eyebrow">Caixa · últimos fechamentos</div>
   <h2>Fechamentos de caixa</h2>
@@ -1687,6 +1702,34 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
+  /* ---------- fundo de moedas da gaveta ---------- */
+  function loadMoedas(f){ return fetch('/api/fundo-moedas'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('moedas-box'); if(!box) return;
+    window.FUNDO_MOEDAS=d.valor||0;
+    box.innerHTML='<div style="font-size:1.9rem;font-weight:800;line-height:1.05">R$ '+fmt(d.valor||0)+'</div>'+
+      '<div class="note" style="margin:3px 0 0">'+(d.desde
+        ? 'contadas em <b>'+dbr(d.desde)+'</b> · entram no esperado do caixa desde esse dia'
+        : 'ainda não contou as moedas — enquanto isso o esperado do caixa não considera nenhuma')+'</div>';
+    if(g('mo-valor') && !g('mo-valor').value && d.valor) g('mo-valor').value=(+d.valor).toFixed(2);
+  }).catch(()=>{}); }
+  (function(){
+    const btn=g('mo-salvar'); if(!btn) return;
+    if(g('mo-data') && !g('mo-data').value) g('mo-data').value=hoje;
+    btn.addEventListener('click',()=>{
+      const msg=g('mo-msg'), v=parseFloat(g('mo-valor').value);
+      if(isNaN(v)||v<0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto tem de moedas na gaveta.</span>'; return; }
+      btn.disabled=true; btn.textContent='gravando…';
+      post('/api/fundo-moedas',{valor:v, data:g('mo-data').value||hoje}).then(res=>{
+        btn.disabled=false; btn.textContent='Salvar contagem de moedas';
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Moedas atualizadas: R$ '+fmt(res.valor)+
+            ' — já entram no esperado do caixa a partir de '+dbr(res.desde)+'.</span>';
+          loadMoedas(true); loadFechHoje(true); loadFechamentos(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ btn.disabled=false; btn.textContent='Salvar contagem de moedas';
+                     msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
   /* ---------- tirar do guardado e pôr na gaveta (o contrário da sangria) ---------- */
   function ligaReforco(pref, fonte, recarrega){
     const btn=g(pref+'-tirar'), msg=g(pref+'-tirar-msg'), dt=g(pref+'-tirar-data');
@@ -2123,7 +2166,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const txt=Math.abs(q)<0.01?'bateu certinho ✓':q>0?'sobrou R$ '+fmt(q):'faltou R$ '+fmt(-q);
       linha='<div style="margin-top:4px">Você contou <b>R$ '+fmt(c)+'</b> → <b style="color:'+cor+'">'+txt+'</b></div>';
     }
-    box.innerHTML='<div class="note" style="margin:0">💵 Entrou em dinheiro hoje: <b>R$ '+fmt(FECH_ESP.dinheiro)+'</b> · saídas em dinheiro: <b>R$ '+fmt(FECH_ESP.saidas)+'</b> · abertura (do sistema): <b>R$ '+fmt(FECH_ESP.troco)+'</b> → esperado na gaveta: <b>R$ '+fmt(FECH_ESP.esperado)+'</b></div>'+linha;
+    const mo=(FECH_ESP.moedas||0)>0 ? ' · moedas na gaveta: <b>R$ '+fmt(FECH_ESP.moedas)+'</b>' : '';
+    box.innerHTML='<div class="note" style="margin:0">💵 Entrou em dinheiro hoje: <b>R$ '+fmt(FECH_ESP.dinheiro)+'</b> · saídas em dinheiro: <b>R$ '+fmt(FECH_ESP.saidas)+'</b> · abertura (do sistema): <b>R$ '+fmt(FECH_ESP.troco)+'</b>'+mo+' → esperado na gaveta: <b>R$ '+fmt(FECH_ESP.esperado)+'</b></div>'+linha;
   }
   // grava o fechamento DIRETO no sistema (usado pelo botão "Registrar fechamento")
   window.registrarFechamento=function(){
@@ -2189,7 +2233,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       return Promise.all([loadHojeDelivery(true),loadDelivery(true),loadHoje(true)]);
     }).catch(()=>{}).finally(()=>{ bsync.disabled=false; bsync.textContent='Puxar pedidos agora'; });
   });
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadEntradas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
