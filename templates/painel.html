@@ -1360,11 +1360,26 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   for(const k in TABS){ const t=document.getElementById(TABS[k]); if(t) t.addEventListener('click',()=>sel(k)); }
   const _h=(location.hash||'').replace('#',''); if(VIEWS[_h]) sel(_h);
 
+  // O botão agora manda o PRÓPRIO SERVIDOR refazer as contas dos gráficos direto do
+  // sistema (antes só recarregava a página e dependia de eu gerar no Mac).
   const btn=document.getElementById('btn-refresh');
   btn.addEventListener('click',()=>{
     btn.classList.add('spin');
-    toast('Recarregando a versão mais recente do painel. Se os números não mudarem, é porque ainda não gerei uma atualização — é só me pedir no chat: <b>"atualiza o painel"</b>.');
-    setTimeout(()=>location.reload(),900);
+    toast('Refazendo as contas dos gráficos direto do sistema — leva cerca de 2 minutos. Pode continuar usando o painel; eu recarrego sozinho quando terminar.');
+    fetch('/api/regerar-graficos',{method:'POST'}).then(r=>r.json()).then(()=>{
+      let tentativas=0;
+      const olhar=setInterval(()=>{
+        tentativas++;
+        fetch('/api/graficos-status').then(r=>r.json()).then(s=>{
+          if(!s.gerando){
+            clearInterval(olhar); btn.classList.remove('spin');
+            if(s.erro){ toast('Não consegui refazer agora: '+s.erro+' — tente de novo em alguns minutos.'); }
+            else { toast('Gráficos atualizados ✓ recarregando...'); setTimeout(()=>location.reload(),1200); }
+          } else if(tentativas>60){ clearInterval(olhar); btn.classList.remove('spin');
+            toast('Está demorando mais que o normal. Recarregue a página daqui a pouco.'); }
+        }).catch(()=>{});
+      },5000);
+    }).catch(()=>{ btn.classList.remove('spin'); setTimeout(()=>location.reload(),900); });
   });
   function toast(html){
     let t=document.getElementById('toast');
