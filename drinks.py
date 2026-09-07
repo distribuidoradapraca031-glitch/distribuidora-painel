@@ -27,6 +27,7 @@ import json, os
 
 DOSE_ML = 90
 GELO = "84577979"        # GELO SABORIZADOS DRINKS — 1 por copão, sai inteiro
+COPO = "95540822"        # COPO 700 ML — 1 por copão, sai inteiro (custo 0,28)
 RED_BULL = "84577970"    # RED BULL LT 250 ML SABORES
 RB_POR_COMBO = 5
 # ENERGY JACK POWER 2L: cada copão leva 400 ml, então a garrafa de 2 L dá 5 copões.
@@ -157,6 +158,7 @@ def calcula(vendas, mapa, saldo):
                 copos[garrafa] += n * (dose / DOSE_ML)
                 if nome.startswith("COPAO") or nome.startswith("COPÃO"):
                     extras[GELO] += n           # 1 gelinho por copão, inteiro
+                    extras[COPO] += n           # 1 copo de 700 ml por copão, inteiro
                     copos[JACK_POWER] += n      # 400 ml: fecha 1 garrafa a cada 5 copões
 
     volume_de = {i["garrafa"]: (i.get("volume") or 1000) for i in mapa.values()}
