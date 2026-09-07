@@ -26,11 +26,16 @@ da venda (traz hora), então venda lançada com data retroativa também entra.
 import json, os
 
 DOSE_ML = 90
-GELO = "84577979"        # GELO SABORIZADOS DRINKS
+GELO = "84577979"        # GELO SABORIZADOS DRINKS — 1 por copão, sai inteiro
 RED_BULL = "84577970"    # RED BULL LT 250 ML SABORES
 RB_POR_COMBO = 5
-JACK_POWER = "84577972"  # ENERGY JACK POWER 2L SABORES
-JP_POR_COPAO = 0.21      # ~420 ml do 2L por copão (custo 1,05, bate com a receita)
+# ENERGY JACK POWER 2L: cada copão leva 400 ml, então a garrafa de 2 L dá 5 copões.
+# Antes descontava 0,21 de garrafa por copão e o estoque ficava quebrado (58,1); agora
+# fecha garrafa inteira igual às de destilado, com o resto guardando pra próxima.
+JACK_POWER = "84577972"
+JP_ML_POR_COPAO = 400
+JP_VOLUME_ML = 2000
+JP_POR_GARRAFA = JP_VOLUME_ML // JP_ML_POR_COPAO      # 5 copões por garrafa
 
 CONTROLE_NOME = "CONTROLE BAIXA DRINKS"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -53,6 +58,13 @@ def copos_por_garrafa(volume_ml):
     if v >= 600:
         return 6
     return max(1, v // DOSE_ML)
+
+
+def limite_de(produto_id, volume_ml):
+    """Quantos copões fecham uma unidade deste produto."""
+    if str(produto_id) == JACK_POWER:
+        return JP_POR_GARRAFA          # 2 L ÷ 400 ml = 5 copões
+    return copos_por_garrafa(volume_ml)
 
 
 # ---------- estado (mora no GestãoClick, não em disco) ----------
@@ -144,8 +156,8 @@ def calcula(vendas, mapa, saldo):
                 dose = float(info.get("dose_ml") or DOSE_ML)
                 copos[garrafa] += n * (dose / DOSE_ML)
                 if nome.startswith("COPAO") or nome.startswith("COPÃO"):
-                    extras[GELO] += n
-                    extras[JACK_POWER] += n * JP_POR_COPAO
+                    extras[GELO] += n           # 1 gelinho por copão, inteiro
+                    copos[JACK_POWER] += n      # 400 ml: fecha 1 garrafa a cada 5 copões
 
     volume_de = {i["garrafa"]: (i.get("volume") or 1000) for i in mapa.values()}
     novo_saldo = {k: float(v) for k, v in (saldo or {}).items()}
@@ -153,7 +165,7 @@ def calcula(vendas, mapa, saldo):
     detalhe = {}
     for garrafa, n in copos.items():
         total = novo_saldo.get(garrafa, 0.0) + n
-        por = copos_por_garrafa(volume_de.get(garrafa, 1000))
+        por = limite_de(garrafa, volume_de.get(garrafa, 1000))
         cheias = int(total // por)
         novo_saldo[garrafa] = total - cheias * por
         detalhe[garrafa] = {"copos": n, "sobra": novo_saldo[garrafa], "por_garrafa": por}
@@ -198,12 +210,17 @@ def rodar(gc, aplicar=False, dias=10, hoje=None):
     if aplicar:
         salva_estado(gc, {"ate": maior or estado.get("ate"), "saldo": novo_saldo}, controle_id)
 
-    nomes = {i["garrafa"]: i.get("garrafa_nome") or i["garrafa"] for i in mapa.values()}
     return {"vendas_novas": len(vendas), "itens": n_itens, "aplicado": aplicar,
             "linhas": linhas, "baixas": baixas,
-            "saldo": [{"garrafa": nomes.get(k, k), "copos": round(v, 1),
-                       "por_garrafa": copos_por_garrafa(
-                           next((i.get("volume") or 1000 for i in mapa.values()
-                                 if i["garrafa"] == k), 1000))}
-                      for k, v in sorted(novo_saldo.items(), key=lambda kv: -kv[1])],
+            "saldo": saldo_legivel(mapa, novo_saldo),
             "ate": maior or estado.get("ate"), "detalhe": detalhe}
+
+
+def saldo_legivel(mapa, saldo):
+    """O saldo em formato de tela: nome, copos parados e quanto fecha a unidade."""
+    nomes = {i["garrafa"]: i.get("garrafa_nome") or i["garrafa"] for i in mapa.values()}
+    nomes.setdefault(JACK_POWER, "ENERGY JACK POWER 2L (400 ml por copão)")
+    vols = {i["garrafa"]: (i.get("volume") or 1000) for i in mapa.values()}
+    return [{"garrafa": nomes.get(k, k), "copos": round(float(v), 1),
+             "por_garrafa": limite_de(k, vols.get(k, 1000))}
+            for k, v in sorted(saldo.items(), key=lambda kv: -float(kv[1]))]

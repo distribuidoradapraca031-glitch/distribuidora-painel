@@ -203,13 +203,7 @@ def api_drinks_status():
     def build():
         import drinks
         estado, pid = drinks.carrega_estado(gcapi)
-        mapa = drinks.carrega_mapa()
-        nomes = {i["garrafa"]: i.get("garrafa_nome") or i["garrafa"] for i in mapa.values()}
-        vols = {i["garrafa"]: (i.get("volume") or 1000) for i in mapa.values()}
-        saldo = [{"garrafa": nomes.get(k, k), "copos": round(float(v), 1),
-                  "por_garrafa": drinks.copos_por_garrafa(vols.get(k, 1000))}
-                 for k, v in sorted((estado.get("saldo") or {}).items(),
-                                    key=lambda kv: -float(kv[1]))]
+        saldo = drinks.saldo_legivel(drinks.carrega_mapa(), estado.get("saldo") or {})
         return {"ate": estado.get("ate"), "saldo": saldo, "controle_id": pid,
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     d = cached("drinks_status", 120, build)
