@@ -335,9 +335,9 @@ th.g,td.g{background:var(--accent-soft)}
 <!-- ============ ACOMPANHAMENTO DE LOJA ============ -->
 <div id="view-acomp" hidden>
 <section class="card">
-  <div class="eyebrow">Vendas · mês atual (balcão)</div>
+  <div class="eyebrow">Vendas · mês atual (balcão + delivery)</div>
   <h2>Faturamento por dia — <span id="fatdia-mes"></span></h2>
-  <p class="note">Dia a dia do mês. Linha tracejada = ponto de equilíbrio (R$ 1.306/dia sem retirada de sócio). Toque nas barras para ver o valor. Quando eu atualizar o painel, entra o dia de hoje.</p>
+  <p class="note">Dia a dia do mês, <strong>balcão + delivery somados</strong>. Linha tracejada = ponto de equilíbrio (R$ 1.306/dia sem retirada de sócio). Toque nas barras para ver o valor. O dia de hoje aparece parcial até o painel atualizar de novo.</p>
   <div id="chart"><div id="tip"></div></div>
 </section>
 
@@ -349,7 +349,7 @@ th.g,td.g{background:var(--accent-soft)}
   </div>
   <div id="pane-fatgastos">
     <h2>Faturamento × Gastos, mês a mês</h2>
-    <p class="note">Barras douradas = faturamento; barras azuis = gastos (mercadoria + DAS + cartão ≈ 74,9% da venda, mais custos fixos do mês). O número em cima é o <strong>resultado</strong>. O mês atual usa a projeção (barras listradas). Este modelo bateu com a conferência real: maio +2,5 mil ✓, junho empate ✓.</p>
+    <p class="note">Barras douradas = faturamento (balcão + delivery); barras azuis = gastos (mercadoria + DAS + cartão ≈ 74,9% da venda, mais custos fixos do mês). O número em cima é o <strong>resultado</strong>. O mês atual usa a projeção (barras listradas). Este modelo bateu com a conferência real: maio +2,5 mil ✓, junho empate ✓.</p>
     <div id="chart-anual" style="margin-top:12px;position:relative"><div id="tip2" style="position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 8px;font-size:.72rem;display:none;white-space:nowrap;z-index:5"></div></div>
     <div style="display:flex;gap:14px;margin-top:8px;font-size:.75rem;color:var(--muted)">
       <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px"></span>Faturamento</span>
