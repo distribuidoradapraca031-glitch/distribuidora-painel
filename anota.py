@@ -130,7 +130,8 @@ def ja_importados():
 
 
 def _apaga_rascunho(nid):
-    """Nota criada mas não transmitida vira lixo que ocupa número de NF. Apaga."""
+    """Rascunho que não virou nota some daqui: quem monta a nota definitiva (a que
+    espera o clique do dono) é a rotina das 9h, que registra o vínculo com a venda."""
     try:
         gcapi.delete(f"/notas_fiscais_consumidores/{nid}")
     except Exception:
@@ -178,20 +179,28 @@ def emit_nfce(venda_id, data_brt, forma_pagamento_id):
             nid = (r.get("data") or {}).get("dados")
             if not nid:
                 return None
-        # 07/09/2026: a API do GestãoClick devolve 404 aqui ("Controller class
-        # NotasFiscaisConsumidoresController could not be found") — transmitir pra SEFAZ
-        # só pelo painel do GC. Criar a nota funciona; emitir, não. Sem apagar o rascunho
-        # que sobra, cada pedido queima um número de NF: eram 87 parados "Em aberto".
+        # 02/09/2026 o GestãoClick TIROU a rota de emissão da API: qualquer URL de 3
+        # níveis passou a responder 404 "Controller class ... could not be found"
+        # (até 01/09 esta mesma chamada emitia — a última foi a NF 11594).
+        #
+        # Se a emissão funcionar, ótimo: a nota sai na hora, como sempre foi.
+        # Se não, o rascunho é APAGADO de propósito. Quem monta a nota que fica
+        # esperando o clique é a rotina das 9h (scripts/notas_delivery_dia.py), que
+        # guarda o vínculo venda->rascunho num registro local — o GC não grava o
+        # pedido_id no rascunho, então sem esse registro os dois robôs criariam nota
+        # em dobro pra mesma venda (aconteceu: 153 rascunhos para 66 vendas em 07/09).
         try:
             e = gcapi.post(f"/notas_fiscais_consumidores/emitir/{nid}", {})
         except Exception as err:
-            print(f"   NFC-e do pedido {venda_id}: emissão indisponível na API — {str(err)[:90]}")
+            print(f"   NFC-e do pedido {venda_id}: API não emite ({str(err)[:60]}) — "
+                  f"a rotina das 9h monta a nota pro dono emitir no painel")
             _apaga_rascunho(nid)
             return None
         if (e.get("data") or {}).get("ok"):
             n = gcapi.get(f"/notas_fiscais_consumidores/{nid}").get("data") or {}
             return n.get("numero_nf") or nid
-        print(f"   NFC-e do pedido {venda_id}: não emitiu — {json.dumps(e, ensure_ascii=False)[:120]}")
+        print(f"   NFC-e do pedido {venda_id}: não transmitiu — "
+              f"{json.dumps(e, ensure_ascii=False)[:100]}")
         _apaga_rascunho(nid)
         return None
     except Exception as err:
