@@ -51,7 +51,18 @@ def _req(path, method="GET", params=None, body=None, max_retries=5):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 raw = r.read()
-                return json.loads(raw) if raw else {}
+                if not raw:
+                    return {}
+                try:
+                    return json.loads(raw)
+                except ValueError:
+                    # 200 com corpo que não é JSON: o GestãoClick faz isso em alguns PUT.
+                    # A gravação JÁ ACONTECEU — repetir duplicaria o lançamento e ainda
+                    # mostrava "não consegui salvar" pro dono depois de gravar 5 vezes.
+                    if method != "GET":
+                        return {"status": "success", "data": {},
+                                "aviso": "resposta sem JSON — gravação aceita"}
+                    raise
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 time.sleep(1.5 * (attempt + 1)); continue
@@ -67,7 +78,13 @@ def _req(path, method="GET", params=None, body=None, max_retries=5):
                 time.sleep(1.0 * (attempt + 1)); continue
             raise RuntimeError(last_err)
         except Exception as e:
-            last_err = str(e); time.sleep(1.0)
+            last_err = str(e)
+            # mesma regra do ramo acima: numa gravação a requisição pode ter chegado ao
+            # GC antes de a conexão cair. Repetir cria lançamento em dobro no caixa —
+            # melhor falhar e o dono clicar de novo vendo o que aconteceu.
+            if method != "GET":
+                raise RuntimeError(last_err)
+            time.sleep(1.0)
     raise RuntimeError(last_err or f"falhou: {url}")
 
 def get(path, params=None):

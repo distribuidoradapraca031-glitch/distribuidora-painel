@@ -1985,6 +1985,24 @@ def api_excluir_conta():
     if not pid:
         return jsonify({"ok": False, "erro": "sem id"}), 400
     try:
+        # O GC recusa apagar lançamento liquidado ("Este registro não pode ser excluído
+        # pois já está confirmado!") — era o caso de TODO gasto lançado aqui, que nasce
+        # pago. O botão Excluir só funcionava em conta em aberto. Desmarca o pago
+        # primeiro (PUT exige o corpo inteiro, não só o campo) e aí apaga.
+        cur = gcapi.get(f"/pagamentos/{pid}").get("data") or {}
+        if isinstance(cur, list):
+            cur = cur[0] if cur else {}
+        cur = cur.get("Pagamento", cur) if isinstance(cur, dict) else {}
+        if str(cur.get("liquidado")) == "1":
+            gcapi.put(f"/pagamentos/{pid}", {
+                "descricao": cur.get("descricao") or "",
+                "valor": cur.get("valor") or cur.get("valor_total") or "0",
+                "plano_contas_id": cur.get("plano_contas_id") or "",
+                "data_vencimento": (cur.get("data_vencimento") or _hoje())[:10],
+                "data_competencia": (cur.get("data_competencia") or _hoje())[:10],
+                "fornecedor_id": cur.get("fornecedor_id") or "",
+                "liquidado": "0",
+            })
         gcapi.delete(f"/pagamentos/{pid}")
         _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva", "sobra", "mapa")
         return jsonify({"ok": True})
