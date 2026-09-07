@@ -17,16 +17,88 @@ except AttributeError:      # Windows não tem tzset
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+PAINEL_JSON = os.path.join(BASE_DIR, "painel_data.json")
+
 def _carrega_painel_data():
     """JSON dos gráficos (snapshot) que vai embutido no painel. `<` vira \\u003c
     pra não quebrar o <script> onde ele é injetado."""
     try:
-        with open(os.path.join(BASE_DIR, "painel_data.json"), encoding="utf-8") as f:
+        with open(PAINEL_JSON, encoding="utf-8") as f:
             return f.read().replace("<", "\\u003c")
     except FileNotFoundError:
         return "{}"
 
 PAINEL_DATA = _carrega_painel_data()
+
+# ---- os gráficos se atualizam sozinhos, aqui na nuvem ----
+# Antes o painel só recebia número novo se o Mac do dono estivesse ligado às 8h30.
+# No fim de semana, com o laptop fechado, ele passava o dia mostrando o dado da véspera
+# (foi assim que o domingo 06/09 apareceu com R$ 77,50 em vez de R$ 2.916,69).
+# Agora, ao abrir o painel, se o snapshot não é de hoje o próprio servidor regenera
+# em segundo plano — o Mac virou reforço, não mais a única fonte.
+_graf = {"gerando": False, "quando": None, "erro": None}
+_graf_lock = threading.Lock()
+
+def _fetch_pages(path, params):
+    """Paginação para o módulo de gráficos, com dedupe por id: a lista do GC cresce
+    enquanto se pagina e página repetida entrava somando duas vezes."""
+    out, vistos, page = [], set(), 1
+    while True:
+        p = dict(params); p["pagina"] = page; p["limite"] = 100
+        d = gcapi.get(path, p)
+        for r in d.get("data") or []:
+            if isinstance(r, dict) and len(r) == 1:
+                r = next(iter(r.values()))
+            rid = str(r.get("id")) if isinstance(r, dict) else None
+            if rid:
+                if rid in vistos:
+                    continue
+                vistos.add(rid)
+            out.append(r)
+        if not (d.get("meta") or {}).get("proxima_pagina"):
+            return out
+        page += 1
+
+def _regera_graficos():
+    """Recalcula o pacote dos gráficos do CRM e grava no disco do servidor."""
+    global PAINEL_DATA
+    try:
+        import graficos, json as _json
+        try:
+            with open(PAINEL_JSON, encoding="utf-8") as f:
+                old = _json.load(f)
+        except (OSError, ValueError):
+            old = {}
+        hoje = datetime.date.fromisoformat(_hoje())
+        vendas, produtos, pagamentos = graficos.baixar(_fetch_pages, hoje)
+        fardo = {(p.get("nome") or "").upper(): int(p["fardo"])
+                 for p in (old.get("catalogo") or {}).get("produtos", []) if p.get("fardo")}
+        novo = graficos.construir(vendas, produtos, pagamentos, old, fardo, hoje)
+        with open(PAINEL_JSON, "w", encoding="utf-8") as f:
+            _json.dump(novo, f, ensure_ascii=False)
+        PAINEL_DATA = _carrega_painel_data()
+        _graf["quando"] = time.strftime("%d/%m/%Y %H:%M")
+        _graf["erro"] = None
+    except Exception as e:
+        _graf["erro"] = str(e)[:200]
+    finally:
+        _graf["gerando"] = False
+
+def _graficos_do_dia():
+    """Dispara a regeração se o snapshot não for de hoje. Não bloqueia a página:
+    quem abriu agora vê o número da véspera e o próximo refresh já vem certo."""
+    try:
+        import json as _json
+        with open(PAINEL_JSON, encoding="utf-8") as f:
+            if _json.load(f).get("gerado_em") == _hoje():
+                return
+    except (OSError, ValueError):
+        pass
+    with _graf_lock:
+        if _graf["gerando"]:
+            return
+        _graf["gerando"] = True
+    threading.Thread(target=_regera_graficos, daemon=True).start()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or gcapi._tok("FLASK_SECRET_KEY") or "troca-esta-chave"
@@ -78,9 +150,35 @@ def logout():
 @app.route("/")
 @login_required
 def home():
+    _graficos_do_dia()      # snapshot velho? o servidor regenera sozinho, em segundo plano
     with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
         tpl = f.read()
     return tpl.replace("__DATA__", PAINEL_DATA)
+
+@app.route("/api/graficos-status")
+@login_required
+def api_graficos_status():
+    """Diz se os gráficos já são de hoje e se a regeração na nuvem está rodando."""
+    try:
+        import json as _json
+        with open(PAINEL_JSON, encoding="utf-8") as f:
+            gerado = _json.load(f).get("gerado_em")
+    except (OSError, ValueError):
+        gerado = None
+    return jsonify({"gerado_em": gerado, "de_hoje": gerado == _hoje(),
+                    "gerando": _graf["gerando"], "ultima_regeracao": _graf["quando"],
+                    "erro": _graf["erro"], "hoje": _hoje()})
+
+@app.route("/api/regerar-graficos", methods=["POST"])
+@login_required
+def api_regerar_graficos():
+    """Força o recálculo dos gráficos agora (botão Atualizar / pedido meu)."""
+    with _graf_lock:
+        if _graf["gerando"]:
+            return jsonify({"ok": True, "ja_rodando": True})
+        _graf["gerando"] = True
+    threading.Thread(target=_regera_graficos, daemon=True).start()
+    return jsonify({"ok": True, "ja_rodando": False})
 
 def _num(x):
     try: return float(str(x).replace(",", "."))
@@ -1236,8 +1334,16 @@ def _fech_calc(data):
     """Dinheiro que ENTROU (vendas em dinheiro, balcão + delivery) e SAÍDAS em
     dinheiro do caixa no dia. O delivery em dinheiro entra na MESMA gaveta (o
     entregador traz), então conta pro fechamento."""
+    def _cancelada(v):
+        # venda cancelada não pôs dinheiro na gaveta. Hoje o GC costuma tirá-la da
+        # listagem, mas quando ela vem o esperado do dia sai inflado e o dono leva
+        # a culpa por uma "falta" que não existe.
+        return "cancel" in (v.get("nome_situacao") or "").lower()
+
     din = 0.0
     for v in gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": data, "data_fim": data}):
+        if _cancelada(v):
+            continue
         for w in v.get("pagamentos") or []:
             p = w.get("pagamento", w)
             if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
@@ -1245,6 +1351,8 @@ def _fech_calc(data):
     for v in gcapi.get_all("/vendas", {"tipo": "produto", "data_inicio": data, "data_fim": data}):
         if "ANOTA AI" not in (v.get("observacoes") or "").upper():
             continue  # só delivery (não saque, que já é sangria)
+        if _cancelada(v):
+            continue
         for w in v.get("pagamentos") or []:
             p = w.get("pagamento", w)
             if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
