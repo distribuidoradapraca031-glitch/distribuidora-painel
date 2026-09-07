@@ -138,7 +138,11 @@ def calcula(vendas, mapa, saldo):
                 if "RED BULL" in nome:
                     extras[RED_BULL] += n * RB_POR_COMBO
             else:
-                copos[garrafa] += n                    # dose e copão contam COPOS
+                # DOSE e COPÃO contam igual: os dois tiram 90 ml da garrafa. Quem tem
+                # dose diferente (a Vila Ouro é de 80 ml) entra proporcional, senão a
+                # garrafa fechava cedo demais — 1 L rende 12 doses de 80, não 10.
+                dose = float(info.get("dose_ml") or DOSE_ML)
+                copos[garrafa] += n * (dose / DOSE_ML)
                 if nome.startswith("COPAO") or nome.startswith("COPÃO"):
                     extras[GELO] += n
                     extras[JACK_POWER] += n * JP_POR_COPAO

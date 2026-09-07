@@ -147,7 +147,8 @@
   "nome": "DOSE VILA OURO 80 ML",
   "garrafa": "84577942",
   "garrafa_nome": "CACHAÇA VILA OURO TRADICIONAL 1L",
-  "volume": 1000
+  "volume": 1000,
+  "dose_ml": 80
  },
  "95540809": {
   "nome": "DOSE PARA TUDO",
