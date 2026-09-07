@@ -129,6 +129,14 @@ def ja_importados():
     return refs, oids
 
 
+def _apaga_rascunho(nid):
+    """Nota criada mas não transmitida vira lixo que ocupa número de NF. Apaga."""
+    try:
+        gcapi.delete(f"/notas_fiscais_consumidores/{nid}")
+    except Exception:
+        pass
+
+
 def emit_nfce(venda_id, data_brt, forma_pagamento_id):
     """Emite a NFC-e da venda espelhando o PDV: presencial, sem CPF, CFOP 5102.
     A taxa de entrega fica fora da nota (a API do GC ignora o campo de frete)."""
@@ -170,12 +178,24 @@ def emit_nfce(venda_id, data_brt, forma_pagamento_id):
             nid = (r.get("data") or {}).get("dados")
             if not nid:
                 return None
-        e = gcapi.post(f"/notas_fiscais_consumidores/emitir/{nid}", {})
+        # 07/09/2026: a API do GestãoClick devolve 404 aqui ("Controller class
+        # NotasFiscaisConsumidoresController could not be found") — transmitir pra SEFAZ
+        # só pelo painel do GC. Criar a nota funciona; emitir, não. Sem apagar o rascunho
+        # que sobra, cada pedido queima um número de NF: eram 87 parados "Em aberto".
+        try:
+            e = gcapi.post(f"/notas_fiscais_consumidores/emitir/{nid}", {})
+        except Exception as err:
+            print(f"   NFC-e do pedido {venda_id}: emissão indisponível na API — {str(err)[:90]}")
+            _apaga_rascunho(nid)
+            return None
         if (e.get("data") or {}).get("ok"):
             n = gcapi.get(f"/notas_fiscais_consumidores/{nid}").get("data") or {}
             return n.get("numero_nf") or nid
+        print(f"   NFC-e do pedido {venda_id}: não emitiu — {json.dumps(e, ensure_ascii=False)[:120]}")
+        _apaga_rascunho(nid)
         return None
-    except Exception:
+    except Exception as err:
+        print(f"   NFC-e do pedido {venda_id}: falhou — {str(err)[:120]}")
         return None
 
 
