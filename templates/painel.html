@@ -399,6 +399,18 @@ th.g,td.g{background:var(--accent-soft)}
   <div id="inv-resumo-box"></div>
 </section>
 
+<section class="card" id="card-drinks">
+  <div class="eyebrow">Estoque · copão, dose e combo</div>
+  <h2>🥃 Baixa das garrafas</h2>
+  <p class="note">Copão e dose não saem do estoque sozinhos — quem sai é a <strong>garrafa</strong>, e só <strong>inteira</strong>: garrafa de <strong>1 litro a cada 10 copos</strong>, de <strong>700/750 ml a cada 8</strong>. O que ainda não fechou garrafa fica guardado aqui embaixo e entra na próxima. <strong>Combo</strong> leva a garrafa fechada na hora. Roda sozinho quando você abre o painel, e de novo às 9h no Mac.</p>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    <button id="dk-rodar">Descontar agora</button>
+    <span class="note" id="dk-stamp" style="margin:0"></span>
+  </div>
+  <div id="dk-msg"></div>
+  <div class="tblwrap" id="dk-saldo"></div>
+</section>
+
 <section class="card">
   <div class="eyebrow">Estoque · acertar no sistema</div>
   <h2>📦 Inventário (salvar contagem)</h2>
@@ -1426,6 +1438,51 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         kpiCard('Vendas hoje (delivery)','k-hoje-d','k-hoje-d-sub')+
       '</section>';
   }
+  /* ---------- baixa das garrafas dos copões ---------- */
+  function pintaDrinks(d){
+    const st=g('dk-stamp'), msg=g('dk-msg'), tbl=g('dk-saldo');
+    if(!st) return;
+    st.textContent = d.rodando ? 'descontando agora...'
+      : (d.ultima_rodada ? 'última vez: '+d.ultima_rodada
+                         : (d.ate ? 'processado até '+d.ate : 'ainda não rodou'));
+    let h='';
+    if(d.erro) h+='<div class="banner">Não consegui descontar: '+esc(d.erro)+'</div>';
+    const u=d.ultimo;
+    if(u){
+      if(u.garrafas && u.garrafas.length){
+        h+='<div class="banner" style="border-color:var(--good)">Saíram do estoque: '+
+           u.garrafas.map(x=>esc(x.nome)+' <b>−'+x.baixado+'</b>').join(' · ')+'</div>';
+      } else if(u.vendas===0){
+        h+='<p class="note">Nenhuma venda nova desde a última vez — nada a descontar.</p>';
+      } else {
+        h+='<p class="note">'+u.itens+' copão/dose/combo entraram na conta, mas nenhuma garrafa fechou ainda.</p>';
+      }
+    }
+    msg.innerHTML=h;
+    const s=d.saldo||[];
+    tbl.innerHTML = s.length
+      ? '<table><thead><tr><th>Garrafa aberta</th><th class="num">Copos vendidos</th><th class="num">Fecha em</th><th class="num">Falta</th></tr></thead><tbody>'+
+        s.map(x=>'<tr><td class="nome">'+esc(x.garrafa)+'</td><td class="num">'+x.copos+
+          '</td><td class="num">'+x.por_garrafa+'</td><td class="num">'+
+          Math.max(0,x.por_garrafa-x.copos)+'</td></tr>').join('')+'</tbody></table>'
+      : '<p class="note">Nenhuma garrafa aberta no momento.</p>';
+  }
+  function loadDrinks(){ return fetch('/api/drinks-status').then(r=>r.json())
+      .then(pintaDrinks).catch(()=>{}); }
+  if(g('dk-rodar')) g('dk-rodar').addEventListener('click',()=>{
+    const b=g('dk-rodar'); b.disabled=true; b.textContent='descontando...';
+    post('/api/baixa-drinks',{}).then(()=>{
+      let n=0;
+      const olhar=setInterval(()=>{ n++;
+        fetch('/api/drinks-status').then(r=>r.json()).then(d=>{
+          pintaDrinks(d);
+          if(!d.rodando || n>40){ clearInterval(olhar); b.disabled=false; b.textContent='Descontar agora'; }
+        }).catch(()=>{});
+      },3000);
+    }).catch(()=>{ b.disabled=false; b.textContent='Descontar agora'; });
+  });
+  loadDrinks();
+
   function loadResumo(f){ return fetch('/api/resumo'+qf(f)).then(r=>r.json()).then(d=>{
       if(g('k-prod')) g('k-prod').textContent = fmt0(d.produtos_ativos);
       if(g('k-val'))  g('k-val').textContent  = 'R$ '+fmt(d.valor_estoque);

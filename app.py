@@ -84,6 +84,46 @@ def _regera_graficos():
     finally:
         _graf["gerando"] = False
 
+# ---- baixa das garrafas dos copões, aqui na nuvem ----
+# Copão/dose/combo não movimentam estoque; quem sai é a GARRAFA, e só inteira (1 L a
+# cada 10 copos, 700/750 ml a cada 8 — regra do dono). O controle do que já foi baixado
+# NÃO pode ficar em disco: aqui o disco some a cada reinício e, sem ele, a rotina
+# reprocessaria venda já baixada e descontaria o estoque EM DOBRO. Por isso mora num
+# produto técnico do próprio GestãoClick, que o Mac e a nuvem leem juntos.
+_drinks = {"rodando": False, "quando": None, "erro": None, "ultimo": None}
+_drinks_lock = threading.Lock()
+
+def _roda_baixa_drinks():
+    global _drinks
+    try:
+        import drinks
+        r = drinks.rodar(gcapi, aplicar=True, dias=10)
+        _drinks["ultimo"] = {"vendas": r["vendas_novas"], "itens": r["itens"],
+                             "garrafas": [{"nome": l["nome"], "baixado": l["baixado"],
+                                           "antes": l["antes"], "depois": l["depois"]}
+                                          for l in r["linhas"]],
+                             "saldo": r["saldo"][:15], "ate": r["ate"]}
+        _drinks["quando"] = time.strftime("%d/%m/%Y %H:%M")
+        _drinks["erro"] = None
+        if r["linhas"]:
+            _invalida("resumo", "catalogo", "abc")
+    except Exception as e:
+        _drinks["erro"] = str(e)[:200]
+    finally:
+        _drinks["rodando"] = False
+
+def _baixa_drinks_do_dia():
+    """Dispara a baixa em segundo plano, no máximo de hora em hora."""
+    agora = time.time()
+    with _drinks_lock:
+        if _drinks["rodando"]:
+            return
+        if _drinks.get("_t") and agora - _drinks["_t"] < 3600:
+            return
+        _drinks["_t"] = agora
+        _drinks["rodando"] = True
+    threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
+
 def _graficos_do_dia():
     """Dispara a regeração se o snapshot não for de hoje. Não bloqueia a página:
     quem abriu agora vê o número da véspera e o próximo refresh já vem certo."""
@@ -151,9 +191,43 @@ def logout():
 @login_required
 def home():
     _graficos_do_dia()      # snapshot velho? o servidor regenera sozinho, em segundo plano
+    _baixa_drinks_do_dia()  # garrafas dos copões vendidos: desconta o que ainda não passou
     with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
         tpl = f.read()
     return tpl.replace("__DATA__", PAINEL_DATA)
+
+@app.route("/api/drinks-status")
+@login_required
+def api_drinks_status():
+    """Como está a baixa das garrafas: saldo de copos, última rodada e o que baixou."""
+    def build():
+        import drinks
+        estado, pid = drinks.carrega_estado(gcapi)
+        mapa = drinks.carrega_mapa()
+        nomes = {i["garrafa"]: i.get("garrafa_nome") or i["garrafa"] for i in mapa.values()}
+        vols = {i["garrafa"]: (i.get("volume") or 1000) for i in mapa.values()}
+        saldo = [{"garrafa": nomes.get(k, k), "copos": round(float(v), 1),
+                  "por_garrafa": drinks.copos_por_garrafa(vols.get(k, 1000))}
+                 for k, v in sorted((estado.get("saldo") or {}).items(),
+                                    key=lambda kv: -float(kv[1]))]
+        return {"ate": estado.get("ate"), "saldo": saldo, "controle_id": pid,
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    d = cached("drinks_status", 120, build)
+    return jsonify(dict(d, rodando=_drinks["rodando"], erro=_drinks["erro"],
+                        ultima_rodada=_drinks["quando"], ultimo=_drinks["ultimo"]))
+
+@app.route("/api/baixa-drinks", methods=["POST"])
+@login_required
+def api_baixa_drinks():
+    """Roda a baixa das garrafas agora (botão do painel)."""
+    with _drinks_lock:
+        if _drinks["rodando"]:
+            return jsonify({"ok": True, "ja_rodando": True})
+        _drinks["_t"] = time.time()
+        _drinks["rodando"] = True
+    threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
+    _invalida("drinks_status")
+    return jsonify({"ok": True, "ja_rodando": False})
 
 @app.route("/api/graficos-status")
 @login_required
