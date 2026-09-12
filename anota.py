@@ -157,6 +157,10 @@ def emit_nfce(venda_id, data_brt, forma_pagamento_id):
             "loja_id": GC_LOJA, "pedido_id": str(venda_id), "tipo_atendimento": 1,
             "tipo_nf": "1", "consumidor_final": 1, "natureza_operacao": "Venda balcão",
             "cfop_id": GC_CFOP_VENDA_BALCAO, "produtos": prods,
+            # marca o número da venda DENTRO da nota: o GC apaga o pedido_id na emissão
+            # e sem isso a varredura das NFC-e não sabe que esta venda já tem nota — foi
+            # assim que saíram 41 notas repetidas entre 01/08 e 12/09/2026.
+            "informacoes_complementares": "Pedido " + str(venda_id),
             "pagamento": [{"forma_pagamento_id": forma_pagamento_id,
                            "valor_pagamento": round(sum(p["quantidade"] * p["valor_venda"]
                                                         for p in prods), 2),
@@ -183,17 +187,17 @@ def emit_nfce(venda_id, data_brt, forma_pagamento_id):
         # níveis passou a responder 404 "Controller class ... could not be found"
         # (até 01/09 esta mesma chamada emitia — a última foi a NF 11594).
         #
-        # Se a emissão funcionar, ótimo: a nota sai na hora, como sempre foi.
-        # Se não, o rascunho é APAGADO de propósito. Quem monta a nota que fica
-        # esperando o clique é a rotina das 9h (scripts/notas_delivery_dia.py), que
-        # guarda o vínculo venda->rascunho num registro local — o GC não grava o
-        # pedido_id no rascunho, então sem esse registro os dois robôs criariam nota
-        # em dobro pra mesma venda (aconteceu: 153 rascunhos para 66 vendas em 07/09).
+        # Voltou a emitir em 12/09/2026.
+        #
+        # Se a emissão funcionar, ótimo: a nota sai na hora, como sempre foi. Se não, o
+        # rascunho é APAGADO de propósito e quem resolve é a varredura diária
+        # (notas_delivery.py), que monta a nota e guarda o vínculo venda->rascunho no
+        # produto de controle do GestãoClick.
         try:
             e = gcapi.post(f"/notas_fiscais_consumidores/emitir/{nid}", {})
         except Exception as err:
             print(f"   NFC-e do pedido {venda_id}: API não emite ({str(err)[:60]}) — "
-                  f"a rotina das 9h monta a nota pro dono emitir no painel")
+                  f"a varredura diária cuida disso")
             _apaga_rascunho(nid)
             return None
         if (e.get("data") or {}).get("ok"):

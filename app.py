@@ -124,6 +124,40 @@ def _baixa_drinks_do_dia():
         _drinks["rodando"] = True
     threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
 
+# ---- notas fiscais do delivery (era a rotina das 9h no Mac) ----
+# O robô do delivery já emite a NFC-e na hora que importa o pedido. Quando essa emissão
+# falha (API fora do ar, SEFAZ recusando, serviço reiniciando no meio), a venda fica sem
+# nota e ninguém percebe. Esta varredura roda uma vez por dia e pega o que sobrou.
+_notas = {"rodando": False, "quando": None, "erro": None, "ultimo": None, "dia": None}
+_notas_lock = threading.Lock()
+
+def _roda_notas_delivery(dias=7):
+    global _notas
+    try:
+        import notas_delivery
+        r = notas_delivery.rodar(gcapi, dias=dias)
+        _notas["ultimo"] = {"vendas": r["vendas"], "de": r["de"], "ate": r["ate"],
+                            "emitidas": r["emitidas"], "esperando": r["esperando"],
+                            "erros": r["erros"]}
+        _notas["quando"] = r["quando"]
+        _notas["erro"] = None
+    except Exception as e:
+        _notas["erro"] = str(e)[:200]
+    finally:
+        _notas["rodando"] = False
+
+def _notas_do_dia(forcar=False):
+    """Dispara a varredura em segundo plano, uma vez por dia."""
+    hoje = _hoje()
+    with _notas_lock:
+        if _notas["rodando"]:
+            return
+        if not forcar and _notas["dia"] == hoje:
+            return
+        _notas["dia"] = hoje
+        _notas["rodando"] = True
+    threading.Thread(target=_roda_notas_delivery, daemon=True).start()
+
 def _graficos_do_dia():
     """Dispara a regeração se o snapshot não for de hoje. Não bloqueia a página:
     quem abriu agora vê o número da véspera e o próximo refresh já vem certo."""
@@ -2427,12 +2461,17 @@ def _sync_anota(forcar=False):
 
 
 def _sync_loop():
+    """Motor de fundo do painel. Puxa os pedidos a cada 10 min e, de quebra, toca as
+    tarefas do dia — gráficos, baixa das garrafas e varredura das NFC-e do delivery.
+    Antes elas só aconteciam quando alguém ABRIA o painel; aqui o servidor faz sozinho.
+    Tudo é idempotente: repetir não duplica nada."""
     time.sleep(20)                     # deixa o serviço subir antes da primeira busca
     while True:
-        try:
-            _sync_anota()
-        except Exception:
-            pass
+        for tarefa in (_sync_anota, _graficos_do_dia, _baixa_drinks_do_dia, _notas_do_dia):
+            try:
+                tarefa()
+            except Exception:
+                pass                   # uma tarefa quebrada não pode parar as outras
         time.sleep(SYNC_INTERVALO)
 
 
@@ -2441,6 +2480,25 @@ def _sync_loop():
 def api_sync_anota():
     """Botão 'puxar pedidos agora' do painel."""
     return jsonify(_sync_anota(forcar=True) or {"ok": True, "novos": []})
+
+
+@app.route("/api/notas-delivery", methods=["POST"])
+@login_required
+def api_notas_delivery():
+    """Botão 'conferir as notas agora' do painel."""
+    _notas_do_dia(forcar=True)
+    return jsonify({"ok": True, "rodando": True})
+
+
+@app.route("/api/notas-status")
+@login_required
+def api_notas_status():
+    u = _notas["ultimo"] or {}
+    return jsonify({"quando": _notas["quando"], "rodando": _notas["rodando"],
+                    "erro": _notas["erro"], "vendas": u.get("vendas"),
+                    "emitidas": u.get("emitidas") or [],
+                    "esperando": u.get("esperando") or [],
+                    "erros": u.get("erros") or []})
 
 
 @app.route("/api/sync-status")
