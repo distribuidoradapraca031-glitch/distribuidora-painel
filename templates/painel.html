@@ -680,10 +680,19 @@ th.g,td.g{background:var(--accent-soft)}
   <div id="d-pagamento" style="margin-top:8px"></div>
   <span class="stamp" id="d-stamp"></span>
 </section>
+
+<section class="card">
+  <div class="eyebrow">Delivery · nota fiscal</div>
+  <h2>NFC-e dos pedidos do app</h2>
+  <p class="note">Toda venda de delivery precisa de nota. O robô emite na hora do pedido e, uma vez por dia, uma varredura confere os últimos 7 dias e pega o que escapou. Se aparecer coisa em vermelho aqui, me avise.</p>
+  <div id="d-notas" style="margin:10px 0"></div>
+  <button id="btn-notas">Conferir as notas agora</button>
+  <span class="stamp" id="d-notas-stamp"></span>
+</section>
 </div><!-- /view-delivery -->
 
 <footer>
-Use os botões no topo (<strong>Loja · Acompanhamento · Estoque · Financeiro · Delivery</strong>) pra trocar de visão. <strong>Loja</strong> = balcão (GestãoClick); <strong>Delivery</strong> = relatório do Anota AI. Para atualizar os números: me peça "atualiza o painel" — ou mande o fechamento do dia / relatório do Anota / print novo do DDA, que eu regenero. Rotinas ativas: sync do delivery (a cada 30 min, neste Mac) · entrada de notas (2ª: custos atualizados na nuvem às 10h + painel preparado neste Mac às 11h; eu publico) · cofre (2ª).
+Use os botões no topo (<strong>Loja · Acompanhamento · Estoque · Financeiro · Delivery</strong>) pra trocar de visão. <strong>Loja</strong> = balcão (GestãoClick); <strong>Delivery</strong> = relatório do Anota AI. Para atualizar os números: me peça "atualiza o painel" — ou mande o fechamento do dia / relatório do Anota / print novo do DDA, que eu regenero. Rotinas ativas, todas <strong>na nuvem</strong> (não dependem de computador ligado): pedidos do app de 10 em 10 min · NFC-e do delivery · baixa das garrafas dos copões · gráficos do dia. A <strong>entrada das notas de fornecedor continua manual</strong> — me mande os XMLs.
 </footer>
 </div>
 
@@ -1516,6 +1525,29 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     box.innerHTML=linhas.join('');
   }
   function loadRobo(){ return fetch('/api/sync-status').then(r=>r.json()).then(pintaRobo).catch(()=>{}); }
+
+  function pintaNotas(d){
+    const box=g('d-notas'); if(!box) return;
+    const L=[];
+    if(d.rodando) L.push('<div class="note">🔄 <strong>Conferindo as notas agora…</strong></div>');
+    L.push('<div class="note">Última conferência: <strong>'+(d.quando||'ainda não rodou hoje')+'</strong>'
+      +(d.vendas!=null?' · '+d.vendas+' venda(s) de delivery nos últimos 7 dias':'')+'</div>');
+    const em=(d.emitidas||[]).length;
+    if(em) L.push('<div class="note" style="color:var(--ok,#15803d)">✅ <strong>'+em+'</strong> nota(s) que estavam faltando foram emitidas: NF '
+      +(d.emitidas||[]).map(x=>x.nf).join(', ')+'</div>');
+    else if(d.quando) L.push('<div class="note" style="color:var(--ok,#15803d)">✅ Nenhuma venda sem nota — está tudo em dia.</div>');
+    (d.esperando||[]).forEach(x=>L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ venda '+x.venda+' ('+(x.data||'')+', R$ '+(x.valor||'')+'): nota montada mas <strong>não transmitida</strong> — precisa emitir no GestãoClick</div>'));
+    (d.erros||[]).forEach(x=>L.push('<div class="note" style="color:var(--bad,#b91c1c)">⛔ venda '+x.venda+': '+x.erro+'</div>'));
+    if(d.erro) L.push('<div class="note" style="color:var(--bad,#b91c1c)">⛔ a conferência falhou: '+d.erro+'</div>');
+    box.innerHTML=L.join('');
+  }
+  function loadNotas(){ return fetch('/api/notas-status').then(r=>r.json()).then(pintaNotas).catch(()=>{}); }
+  if(g('btn-notas')) g('btn-notas').addEventListener('click',function(){
+    const b=this; b.disabled=true; b.textContent='Conferindo…';
+    fetch('/api/notas-delivery',{method:'POST'}).then(()=>{
+      let n=0; const t=setInterval(()=>{ loadNotas(); if(++n>20){ clearInterval(t); b.disabled=false; b.textContent='Conferir as notas agora'; } },3000);
+    }).catch(()=>{ b.disabled=false; b.textContent='Conferir as notas agora'; });
+  });
   function loadDelivery(f){ return fetch('/api/delivery'+qf(f)).then(r=>r.json()).then(d=>{
     const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     const mesNome=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'mês';
@@ -2305,7 +2337,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       return Promise.all([loadHojeDelivery(true),loadDelivery(true),loadHoje(true)]);
     }).catch(()=>{}).finally(()=>{ bsync.disabled=false; bsync.textContent='Puxar pedidos agora'; });
   });
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
