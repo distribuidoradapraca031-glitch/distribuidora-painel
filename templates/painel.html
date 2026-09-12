@@ -752,6 +752,9 @@ const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
     if(pior.length) L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ Em <strong>'+pior.map(x=>x.m).join(', ')
       +'</strong> a mercadoria comprada passou de 85% da venda. Isso normalmente é <strong>estoque comprado adiantado</strong>, não prejuízo — a mercadoria está na prateleira e vira venda no mês seguinte.</div>');
   }
+  (d.duplicadas||[]).forEach(x=>L.push('<div class="note">🔁 <strong>'+esc(x.categoria)+'</strong> em '+esc(x.mes)
+    +': a previsão de R$ '+fmt(x.valor)+' ficou aberta do lado da conta de verdade, de R$ '+fmt(x.real)
+    +'. Não contei duas vezes — mas vale apagar a previsão na aba Financeiro.</div>'));
   (d.pendentes||[]).forEach(p=>L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ <strong>'+esc(p.categoria)
     +'</strong> — R$ '+fmt(p.valor)+' em '+p.n+' lançamento(s) — eu não sei em que linha isso entra, joguei em "Outros". Ex.: '+esc(p.exemplo)+'</div>'));
   av.innerHTML = L.join('');

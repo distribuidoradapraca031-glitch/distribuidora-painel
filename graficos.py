@@ -405,6 +405,30 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
             if _classifica_pgto(p.get("nome_forma_pagamento")) == "cartao":
                 r["cartao"] += num(p.get("valor"))
 
+    # ---- previsão que virou conta de verdade e ninguém apagou ----
+    # O dono lança "[PREV] Aluguel" no começo do mês e depois a conta real entra pelo
+    # DDA/PIX. Quando a previsão fica aberta do lado da paga, o mês conta DUAS VEZES
+    # (R$ 3.781 em set/2026). Se existe uma paga do mesmo valor, a previsão é ela.
+    # conta "de verdade" = a que NÃO é previsão, paga ou não: a de agosto da CEMIG
+    # ainda estava em aberto do lado da previsão e as duas somavam na linha da Luz.
+    pagas = defaultdict(list)
+    for p in pagamentos:
+        if not (p.get("descricao") or "").startswith("[PREV]"):
+            mk = ((p.get("data_competencia") or p.get("data_vencimento") or "")[:7])
+            pagas[((categoria_fn(p) if categoria_fn else None) or "", mk)].append(
+                num(p.get("valor_total")) or num(p.get("valor")))
+    duplicadas = []
+
+    def _prev_ja_paga(p, chave, mk, v):
+        if not (p.get("descricao") or "").startswith("[PREV]"):
+            return False
+        for vp in pagas.get((chave, mk), []):
+            if abs(vp - v) <= max(60.0, v * 0.10):
+                duplicadas.append({"categoria": chave, "mes": mk, "valor": round(v, 2),
+                                   "real": round(vp, 2)})
+                return True
+        return False
+
     custo = defaultdict(lambda: defaultdict(float))   # linha -> mês -> valor
     desconhecidos = defaultdict(lambda: {"valor": 0.0, "n": 0, "exemplo": "", "plano": ""})
     for p in pagamentos:
@@ -421,6 +445,8 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
         if v <= 0:
             continue
         chave = (categoria_fn(p) if categoria_fn else None) or plano
+        if _prev_ja_paga(p, (categoria_fn(p) if categoria_fn else None) or "", mk, v):
+            continue
         linha = DRE_DE_PARA.get(chave)
         if linha is None:
             d = desconhecidos[chave or "(sem plano de contas)"]
@@ -495,4 +521,5 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
                        "parcial": (f"{dia_hoje} de {dim} dias" if m == curm else None)}
                       for m in meses],
             "linhas": linhas, "pendentes": pend, "mes_atual": curm,
+            "duplicadas": duplicadas,
             "inicio": DRE_INICIO, "gerado_em": YMD(TODAY)}
