@@ -97,7 +97,7 @@ def baixar(fetch_pages, hoje, log=lambda *a: None):
 
 
 def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
-              categoria_fn=None):
+              categoria_fn=None, interno_fn=None):
     """Monta o dicionário dos gráficos. `old` é o pacote anterior (mantém o histórico
     de meses antes de PRIM_MES_VIVO e os blocos que não recalculamos)."""
     TODAY = hoje or date.today()
@@ -297,15 +297,20 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
                  "meses": meses, "dia_mes": dia_mes, "serie_fat": dia_mes,
                  "entradas": entradas, "conta": conta, "fechamentos": fechamentos,
                  "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar,
-                 "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY)})
+                 "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY, interno_fn)})
     return novo
 
 # ======================================================================
 # DRE MENSAL — "Demonstração de lucros e perdas", igual à planilha do dono
 # ----------------------------------------------------------------------
-# Regime de COMPETÊNCIA: cada gasto pesa no mês a que pertence, pago ou não. Tentei
-# por caixa primeiro e não serve: o dono dá baixa das contas em lote, então a data de
-# liquidação jogava o custo de julho e agosto inteiro dentro de setembro.
+# A FONTE DOS CUSTOS É A ABA CONTAS do painel, e só entra aqui o que JÁ FOI PAGO
+# (liquidado). Conta em aberto continua lá pra ele gerenciar e só cai no DRE no dia em
+# que ele marcar como paga — o aluguel vence dia 15, então até lá não pesa no mês.
+#
+# O MÊS do gasto é a competência/vencimento, não a data em que ele clicou "paguei": na
+# prática dá no mesmo (retirada, lanche e funcionário saem na hora, do caixa ou do PIX;
+# boleto, água e luz ele paga no dia que vence) e assim uma baixa feita em lote, dias
+# depois, não joga o custo de três meses todo dentro do mês corrente.
 #
 # Decisões que ELE tomou em 12/09/2026 (não mudar sem falar com ele):
 #  · custo da mercadoria = a nota de fornecedor daquele mês;
@@ -337,7 +342,8 @@ DRE_DE_PARA = {
     "Motoboy / entrega":                 "Motoboy / entregas",
     "PH Motoca":                         "Motoboy / entregas",
     "Sacolas / gelo / copos":            "Sacolas / gelo / copos",
-    "Anota AI":                          "Publicidade",
+    # Anota AI NÃO é publicidade: é o sistema do delivery (o dono corrigiu em 12/09).
+    "Anota AI":                          "Sistema (app do delivery)",
     # --- impostos (linha própria, embaixo do lucro das operações) ---
     "DAS (Simples)":                     "@impostos",
     "Parcelamento Simples (PARCSN)":     "@impostos",
@@ -346,12 +352,12 @@ DRE_DE_PARA = {
     "Despesas bancárias":                "@financeiro",
     # --- mercadoria (vira o CMV, não é custo operacional) ---
     "Compras":                           "@mercadoria",
-    # --- sobras conhecidas ---
-    "Lanche":                            "Outros",
-    "Almoço":                            "Outros",
-    "Padaria":                           "Outros",
-    "Seguro do carro":                   "Outros",
-    "Material de escritório":            "Outros",
+    # --- cada um na sua linha, a pedido do dono (antes iam todos pra "Outros") ---
+    "Lanche":                            "Lanches",
+    "Almoço":                            "Almoço",
+    "Padaria":                           "Padaria",
+    "Seguro do carro":                   "Seguro do carro",
+    "Material de escritório":            "Material de escritório",
     "Supermercado":                      "Outros",
     "Água / luz / internet":             "Outros",
 }
@@ -364,8 +370,9 @@ DRE_IGNORAR = {"Ajuste de caixa", "Saque", "Transferência entre contas"}
 DRE_OPERACIONAIS = [
     "Salários e remunerações", "Perdas de mercadoria", "Aluguel", "Material de limpeza",
     "Luz", "Telefone / internet", "Água", "Gasolina", "Manutenção de equipamentos",
-    "Publicidade", "Contabilidade", "Motoboy / entregas", "Sacolas / gelo / copos",
-    "Outros",
+    "Publicidade", "Sistema (app do delivery)", "Contabilidade", "Motoboy / entregas",
+    "Sacolas / gelo / copos", "Seguro do carro", "Lanches", "Almoço", "Padaria",
+    "Material de escritório", "Outros",
 ]
 MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun",
              "jul", "ago", "set", "out", "nov", "dez"]
@@ -377,13 +384,14 @@ def _dre_venda_eh_saque(v):
                .startswith("SAQUE") for w in (v.get("produtos") or []))
 
 
-def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
+def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None):
     """Demonstração de lucros e perdas, mês a mês. Devolve também o que não soube
     classificar, pra perguntar ao dono em vez de enfiar em 'Outros' calado."""
     TODAY = hoje or date.today()
     curm = YMD(TODAY)[:7]
 
-    receita = defaultdict(lambda: {"bruto": 0.0, "desconto": 0.0, "devolucao": 0.0,
+    receita = defaultdict(lambda: {"bruto": 0.0, "balcao": 0.0, "delivery": 0.0,
+                                   "desconto": 0.0, "devolucao": 0.0,
                                    "cartao": 0.0, "n": 0})
     for v in vendas:
         mk = (v.get("data") or "")[:7]
@@ -397,7 +405,11 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
             continue
         # valor_total = produtos + frete − desconto. O bruto da planilha é antes do
         # desconto, senão a linha "Descontos (redução)" desconta duas vezes.
-        r["bruto"] += num(v.get("valor_produtos")) + num(v.get("valor_frete"))
+        bruto = num(v.get("valor_produtos")) + num(v.get("valor_frete"))
+        r["bruto"] += bruto
+        # o pedido do app carrega "Anota AI" na observação; o resto é balcão
+        eh_deliv = "ANOTA AI" in (v.get("observacoes") or "").upper()
+        r["delivery" if eh_deliv else "balcao"] += bruto
         r["desconto"] += num(v.get("desconto_valor"))
         r["n"] += 1
         for wrap in v.get("pagamentos") or []:
@@ -411,9 +423,21 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
     # (R$ 3.781 em set/2026). Se existe uma paga do mesmo valor, a previsão é ela.
     # conta "de verdade" = a que NÃO é previsão, paga ou não: a de agosto da CEMIG
     # ainda estava em aberto do lado da previsão e as duas somavam na linha da Luz.
+    def _conta_vale(p):
+        """Mesmo filtro da aba Contas: pago, não é registro interno do painel
+        (recurso próprio / reserva) nem provisão velha minha, e não é ajuste de caixa."""
+        if str(p.get("liquidado")) != "1":
+            return False
+        d = p.get("descricao") or ""
+        if "[PROVISAO]" in d.upper():
+            return False
+        if interno_fn and interno_fn(d):
+            return False
+        return (p.get("nome_plano_conta") or "") not in DRE_IGNORAR
+
     pagas = defaultdict(list)
     for p in pagamentos:
-        if not (p.get("descricao") or "").startswith("[PREV]"):
+        if _conta_vale(p) and not (p.get("descricao") or "").startswith("[PREV]"):
             mk = ((p.get("data_competencia") or p.get("data_vencimento") or "")[:7])
             pagas[((categoria_fn(p) if categoria_fn else None) or "", mk)].append(
                 num(p.get("valor_total")) or num(p.get("valor")))
@@ -432,15 +456,12 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
     custo = defaultdict(lambda: defaultdict(float))   # linha -> mês -> valor
     desconhecidos = defaultdict(lambda: {"valor": 0.0, "n": 0, "exemplo": "", "plano": ""})
     for p in pagamentos:
-        # Mês do gasto = COMPETÊNCIA (ou vencimento). NÃO dá pra usar a data em que a
-        # conta foi baixada: o dono dá baixa em lote, e aí julho e agosto apareciam sem
-        # custo nenhum e setembro com tudo. Conta atrasada continua pesando no mês dela.
+        if not _conta_vale(p):
+            continue                                   # em aberto fica na aba Contas
         mk = ((p.get("data_competencia") or p.get("data_vencimento") or "")[:7])
         if not mk or mk < DRE_INICIO:
             continue
         plano = p.get("nome_plano_conta") or ""
-        if plano in DRE_IGNORAR:
-            continue
         v = num(p.get("valor_total")) or num(p.get("valor"))
         if v <= 0:
             continue
@@ -460,6 +481,22 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
 
     # Só até o mês corrente: contas de aluguel já lançadas pra outubro/novembro faziam
     # o quadro mostrar "prejuízo" em mês que ainda nem começou.
+    # Conta de mês passado que continua marcada como ABERTA na aba Contas não entra no
+    # DRE (regra do dono: só o pago). Mas aí o lucro daquele mês fica otimista — então o
+    # painel avisa quanto falta marcar, mês a mês.
+    abertas = defaultdict(float)
+    for p in pagamentos:
+        if str(p.get("liquidado")) == "1":
+            continue
+        d = p.get("descricao") or ""
+        if "[PROVISAO]" in d.upper() or (interno_fn and interno_fn(d)):
+            continue
+        if (p.get("nome_plano_conta") or "") in DRE_IGNORAR:
+            continue
+        mk = ((p.get("data_competencia") or p.get("data_vencimento") or "")[:7])
+        if mk and DRE_INICIO <= mk:
+            abertas[mk] += num(p.get("valor_total")) or num(p.get("valor"))
+
     meses = sorted(set(receita) | {m for l in custo.values() for m in l})
     meses = [m for m in meses if DRE_INICIO <= m <= curm]
     if not meses:
@@ -487,8 +524,12 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
                 "estilo": estilo, "dica": dica}
 
     linhas = [
-        L("Vendas", mesdict(lambda m: receita[m]["bruto"]), "normal",
-          "balcão + delivery, antes do desconto; saque não entra"),
+        L("Vendas no balcão", mesdict(lambda m: receita[m]["balcao"]), "normal",
+          "loja; saque de cartão não entra"),
+        L("Vendas no delivery", mesdict(lambda m: receita[m]["delivery"]), "normal",
+          "pedidos do app, já com a taxa de entrega"),
+        L("Vendas totais", mesdict(lambda m: receita[m]["bruto"]), "subtotal",
+          "antes do desconto"),
         L("Devoluções (redução)", mesdict(lambda m: -receita[m]["devolucao"])),
         L("Descontos (redução)", mesdict(lambda m: -receita[m]["desconto"])),
         L("Vendas líquidas", vendas_liq, "subtotal"),
@@ -522,4 +563,6 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
                       for m in meses],
             "linhas": linhas, "pendentes": pend, "mes_atual": curm,
             "duplicadas": duplicadas,
+            "em_aberto": {m: round(abertas.get(m, 0.0), 2) for m in meses
+                          if abertas.get(m, 0.0) > 0},
             "inicio": DRE_INICIO, "gerado_em": YMD(TODAY)}

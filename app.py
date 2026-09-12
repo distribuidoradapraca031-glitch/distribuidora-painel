@@ -89,7 +89,7 @@ def _regera_graficos():
         fardo = {(p.get("nome") or "").upper(): int(p["fardo"])
                  for p in (old.get("catalogo") or {}).get("produtos", []) if p.get("fardo")}
         novo = graficos.construir(vendas, produtos, pagamentos, old, fardo, hoje,
-                                  categoria_fn=_categoria_conta)
+                                  categoria_fn=_categoria_conta, interno_fn=_eh_interno)
         with open(PAINEL_JSON, "w", encoding="utf-8") as f:
             _json.dump(novo, f, ensure_ascii=False)
         PAINEL_DATA = _carrega_painel_data()

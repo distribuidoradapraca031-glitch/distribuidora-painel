@@ -337,7 +337,7 @@ th.g,td.g{background:var(--accent-soft)}
 <section class="card">
   <div class="eyebrow">Resultado · mês a mês</div>
   <h2>Demonstração de lucros e perdas</h2>
-  <p class="note">Quanto entrou, quanto saiu e <strong>o que sobrou</strong> em cada mês, na mesma ordem da sua planilha. Cada gasto pesa no mês a que pertence (não no dia em que a conta foi baixada). A retirada de sócio entra como custo: o lucro que aparece embaixo já é o que sobrou <strong>depois</strong> de vocês se pagarem. O mês em curso está pela metade — está marcado.</p>
+  <p class="note">Quanto entrou, quanto saiu e <strong>o que sobrou</strong> em cada mês, na mesma ordem da sua planilha. Os custos vêm da aba <strong>Contas</strong> e só entram aqui <strong>depois de marcados como pagos</strong> — conta em aberto continua lá pra você gerenciar. A retirada de sócio conta como custo: o lucro embaixo já é o que sobrou <strong>depois</strong> de vocês se pagarem. O mês em curso está pela metade — está marcado.</p>
   <div class="tblwrap" id="tbl-dre"></div>
   <div id="dre-avisos" style="margin-top:10px"></div>
 </section>
@@ -752,6 +752,17 @@ const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
     if(pior.length) L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ Em <strong>'+pior.map(x=>x.m).join(', ')
       +'</strong> a mercadoria comprada passou de 85% da venda. Isso normalmente é <strong>estoque comprado adiantado</strong>, não prejuízo — a mercadoria está na prateleira e vira venda no mês seguinte.</div>');
   }
+  const ab = d.em_aberto||{}, mesAtual = d.mes_atual;
+  Object.keys(ab).sort().forEach(m=>{
+    const rot = (ms.find(x=>x.key===m)||{}).label || m;
+    if(m===mesAtual){
+      L.push('<div class="note">🕐 <strong>'+esc(rot)+'</strong>: ainda tem R$ '+fmt(ab[m])
+        +' de conta a vencer/pagar. Elas entram aqui conforme você for marcando como pagas na aba <strong>Contas</strong>.</div>');
+    } else {
+      L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ <strong>'+esc(rot)
+        +'</strong>: R$ '+fmt(ab[m])+' de contas desse mês continuam marcadas como <strong>em aberto</strong> na aba Contas. Enquanto não forem marcadas como pagas, elas não entram aqui — ou seja, <strong>o lucro de '+esc(rot)+' acima está otimista nesse valor</strong>.</div>');
+    }
+  });
   (d.duplicadas||[]).forEach(x=>L.push('<div class="note">🔁 <strong>'+esc(x.categoria)+'</strong> em '+esc(x.mes)
     +': a previsão de R$ '+fmt(x.valor)+' ficou aberta do lado da conta de verdade, de R$ '+fmt(x.real)
     +'. Não contei duas vezes — mas vale apagar a previsão na aba Financeiro.</div>'));
