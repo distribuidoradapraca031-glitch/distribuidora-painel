@@ -297,7 +297,8 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
                  "meses": meses, "dia_mes": dia_mes, "serie_fat": dia_mes,
                  "entradas": entradas, "conta": conta, "fechamentos": fechamentos,
                  "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar,
-                 "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY, interno_fn)})
+                 "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY, interno_fn,
+                                  {k: v["custo"] for k, v in prod_by_id.items()})})
     return novo
 
 # ======================================================================
@@ -384,7 +385,8 @@ def _dre_venda_eh_saque(v):
                .startswith("SAQUE") for w in (v.get("produtos") or []))
 
 
-def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None):
+def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
+              custo_by_id=None):
     """Demonstração de lucros e perdas, mês a mês. Devolve também o que não soube
     classificar, pra perguntar ao dono em vez de enfiar em 'Outros' calado."""
     TODAY = hoje or date.today()
@@ -392,7 +394,7 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None)
 
     receita = defaultdict(lambda: {"bruto": 0.0, "balcao": 0.0, "delivery": 0.0,
                                    "desconto": 0.0, "devolucao": 0.0,
-                                   "cartao": 0.0, "n": 0})
+                                   "cartao": 0.0, "cmv_real": 0.0, "n": 0})
     for v in vendas:
         mk = (v.get("data") or "")[:7]
         if not mk or mk < DRE_INICIO:
@@ -407,6 +409,14 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None)
         # desconto, senão a linha "Descontos (redução)" desconta duas vezes.
         bruto = num(v.get("valor_produtos")) + num(v.get("valor_frete"))
         r["bruto"] += bruto
+        # custo do que SAIU da prateleira, pelo custo cadastrado de cada produto. Não
+        # entra no quadro (o dono quer a nota do mês), serve pra conferir se sobrou
+        # compra sem lançar: a margem real é ~27%, então mercadoria tem que dar ~73%.
+        if custo_by_id:
+            for w in v.get("produtos") or []:
+                q = w.get("produto", w)
+                r["cmv_real"] += num(q.get("quantidade")) * custo_by_id.get(
+                    str(q.get("produto_id")), 0.0)
         # o pedido do app carrega "Anota AI" na observação; o resto é balcão
         eh_deliv = "ANOTA AI" in (v.get("observacoes") or "").upper()
         r["delivery" if eh_deliv else "balcao"] += bruto
@@ -565,4 +575,8 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None)
             "duplicadas": duplicadas,
             "em_aberto": {m: round(abertas.get(m, 0.0), 2) for m in meses
                           if abertas.get(m, 0.0) > 0},
+            "conferencia_mercadoria": {
+                "pago": round(sum(merc.values()), 2),
+                "custo_do_vendido": round(sum(receita[m]["cmv_real"] for m in meses), 2),
+                "vendas": round(sum(vendas_liq.values()), 2)},
             "inicio": DRE_INICIO, "gerado_em": YMD(TODAY)}

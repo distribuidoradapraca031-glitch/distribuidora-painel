@@ -752,6 +752,17 @@ const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
     if(pior.length) L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ Em <strong>'+pior.map(x=>x.m).join(', ')
       +'</strong> a mercadoria comprada passou de 85% da venda. Isso normalmente é <strong>estoque comprado adiantado</strong>, não prejuízo — a mercadoria está na prateleira e vira venda no mês seguinte.</div>');
   }
+  const cm = d.conferencia_mercadoria;
+  if(cm && cm.vendas>0 && cm.custo_do_vendido>0){
+    const falta = cm.custo_do_vendido - cm.pago;
+    const pctPago = cm.pago/cm.vendas*100, pctReal = cm.custo_do_vendido/cm.vendas*100;
+    if(falta > cm.vendas*0.05) L.push('<div class="note" style="color:var(--bad,#b91c1c)">⛔ <strong>Falta compra lançada.</strong> No período o quadro contou R$ '
+      +fmt(cm.pago)+' de mercadoria ('+pctPago.toFixed(0)+'% da venda), mas o custo do que de fato saiu da prateleira foi R$ '
+      +fmt(cm.custo_do_vendido)+' ('+pctReal.toFixed(0)+'%). <strong>Sobram R$ '+fmt(falta)
+      +' de compra que não está lançada</strong> — normalmente compra paga em dinheiro que não virou lançamento. Enquanto isso, o lucro acima está otimista nesse valor.</div>');
+    else if(falta < -cm.vendas*0.05) L.push('<div class="note">📦 No período você pagou R$ '+fmt(-falta)
+      +' a mais de mercadoria do que o que saiu da prateleira. Isso é <strong>estoque</strong> comprado adiantado — vira venda nos próximos meses.</div>');
+  }
   const ab = d.em_aberto||{}, mesAtual = d.mes_atual;
   Object.keys(ab).sort().forEach(m=>{
     const rot = (ms.find(x=>x.key===m)||{}).label || m;
