@@ -2465,7 +2465,7 @@ def _sync_loop():
     tarefas do dia — gráficos, baixa das garrafas e varredura das NFC-e do delivery.
     Antes elas só aconteciam quando alguém ABRIA o painel; aqui o servidor faz sozinho.
     Tudo é idempotente: repetir não duplica nada."""
-    print("[motor] ligado, primeira volta em 20s", flush=True)
+    print(f"[motor] ligado no processo {os.getpid()}, primeira volta em 20s", flush=True)
     time.sleep(20)                     # deixa o serviço subir antes da primeira busca
     volta = 0
     while True:
@@ -2475,7 +2475,7 @@ def _sync_loop():
                 tarefa()
             except Exception as e:     # uma tarefa quebrada não pode parar as outras
                 print(f"[motor] {tarefa.__name__} falhou: {str(e)[:200]}", flush=True)
-        print(f"[motor] volta {volta} ok — dorme {SYNC_INTERVALO}s", flush=True)
+        print(f"[motor] volta {volta} ok no processo {os.getpid()} — dorme {SYNC_INTERVALO}s", flush=True)
         time.sleep(SYNC_INTERVALO)
 
 
@@ -2497,8 +2497,19 @@ def api_notas_delivery():
 @app.route("/api/notas-status")
 @login_required
 def api_notas_status():
+    """O "quando" vem do GestãoClick, não da memória: o gunicorn troca de processo e o
+    painel passava a mostrar "ainda não rodou" mesmo com a varredura em dia."""
     u = _notas["ultimo"] or {}
-    return jsonify({"quando": _notas["quando"], "rodando": _notas["rodando"],
+    quando = _notas["quando"]
+    if not quando:
+        try:
+            e = cached("nfce_quando", 120, lambda: __import__("notas_delivery")
+                       .carrega_estado(gcapi).get("quando") or "")
+            if e:
+                quando = f"{e[8:10]}/{e[5:7]}/{e[:4]} {e[11:16]}"
+        except Exception:
+            pass
+    return jsonify({"quando": quando, "rodando": _notas["rodando"],
                     "erro": _notas["erro"], "vendas": u.get("vendas"),
                     "emitidas": u.get("emitidas") or [],
                     "esperando": u.get("esperando") or [],
