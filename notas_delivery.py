@@ -68,6 +68,7 @@ def carrega_estado(gc, controle_id=None):
         e = {}
     e.setdefault("rascunhos", {})
     e.setdefault("quando", "")
+    e.setdefault("resumo", {})
     e["_id"] = pid
     e["_nome"] = d.get("nome") or CONTROLE_NOME
     return e
@@ -242,6 +243,12 @@ def rodar(gc, dias=7, ini=None, fim=None):
     rasc = {k: v2 for k, v2 in rasc.items() if k in da_janela}
     estado["rascunhos"] = rasc
     estado["quando"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # o resumo também vai pro GestãoClick: o motor de fundo roda no processo PRINCIPAL do
+    # gunicorn e o navegador é atendido por outro processo, que não vê aquela memória.
+    # Sem guardar aqui, o quadro do painel ficava sempre vazio.
+    estado["resumo"] = {"vendas": len(vendas), "de": ini, "ate": fim,
+                        "emitidas": emitidas[:20], "esperando": esperando[:40],
+                        "erros": erros[:20]}
     salva_estado(gc, estado)
 
     return {"ok": True, "de": ini, "ate": fim, "vendas": len(vendas),

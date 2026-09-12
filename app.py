@@ -2503,10 +2503,12 @@ def api_notas_status():
     quando = _notas["quando"]
     if not quando:
         try:
-            e = cached("nfce_quando", 120, lambda: __import__("notas_delivery")
-                       .carrega_estado(gcapi).get("quando") or "")
+            est = cached("nfce_estado", 120,
+                         lambda: __import__("notas_delivery").carrega_estado(gcapi))
+            e = est.get("quando") or ""
             if e:
                 quando = f"{e[8:10]}/{e[5:7]}/{e[:4]} {e[11:16]}"
+            u = est.get("resumo") or {}
         except Exception:
             pass
     return jsonify({"quando": quando, "rodando": _notas["rodando"],
