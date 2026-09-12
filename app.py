@@ -2465,13 +2465,17 @@ def _sync_loop():
     tarefas do dia — gráficos, baixa das garrafas e varredura das NFC-e do delivery.
     Antes elas só aconteciam quando alguém ABRIA o painel; aqui o servidor faz sozinho.
     Tudo é idempotente: repetir não duplica nada."""
+    print("[motor] ligado, primeira volta em 20s", flush=True)
     time.sleep(20)                     # deixa o serviço subir antes da primeira busca
+    volta = 0
     while True:
+        volta += 1
         for tarefa in (_sync_anota, _graficos_do_dia, _baixa_drinks_do_dia, _notas_do_dia):
             try:
                 tarefa()
-            except Exception:
-                pass                   # uma tarefa quebrada não pode parar as outras
+            except Exception as e:     # uma tarefa quebrada não pode parar as outras
+                print(f"[motor] {tarefa.__name__} falhou: {str(e)[:200]}", flush=True)
+        print(f"[motor] volta {volta} ok — dorme {SYNC_INTERVALO}s", flush=True)
         time.sleep(SYNC_INTERVALO)
 
 
@@ -2514,6 +2518,9 @@ def api_sync_status():
 
 if anota is not None and os.environ.get("SYNC_ANOTA", "1") == "1":
     threading.Thread(target=_sync_loop, daemon=True).start()
+else:
+    print(f"[motor] NÃO ligou — robô do delivery carregou: {anota is not None}, "
+          f"SYNC_ANOTA={os.environ.get('SYNC_ANOTA', '1')}", flush=True)
 
 
 if __name__ == "__main__":
