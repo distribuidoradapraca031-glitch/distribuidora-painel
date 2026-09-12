@@ -19,14 +19,29 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 PAINEL_JSON = os.path.join(BASE_DIR, "painel_data.json")
 
+_painel_mtime = [0.0]
+
 def _carrega_painel_data():
     """JSON dos gráficos (snapshot) que vai embutido no painel. `<` vira \\u003c
     pra não quebrar o <script> onde ele é injetado."""
     try:
+        _painel_mtime[0] = os.path.getmtime(PAINEL_JSON)
         with open(PAINEL_JSON, encoding="utf-8") as f:
             return f.read().replace("<", "\\u003c")
-    except FileNotFoundError:
+    except (OSError, FileNotFoundError):
         return "{}"
+
+def _painel_data_atual():
+    """Relê o snapshot se o arquivo mudou. PRECISA existir: quem regenera os gráficos é a
+    thread de fundo, que vive no processo PRINCIPAL do gunicorn — o processo que atende o
+    navegador é outro e ficaria mostrando o número da véspera pra sempre."""
+    global PAINEL_DATA
+    try:
+        if os.path.getmtime(PAINEL_JSON) != _painel_mtime[0]:
+            PAINEL_DATA = _carrega_painel_data()
+    except OSError:
+        pass
+    return PAINEL_DATA
 
 PAINEL_DATA = _carrega_painel_data()
 
@@ -229,7 +244,7 @@ def home():
     _baixa_drinks_do_dia()  # garrafas dos copões vendidos: desconta o que ainda não passou
     with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
         tpl = f.read()
-    return tpl.replace("__DATA__", PAINEL_DATA)
+    return tpl.replace("__DATA__", _painel_data_atual())
 
 @app.route("/api/drinks-status")
 @login_required
