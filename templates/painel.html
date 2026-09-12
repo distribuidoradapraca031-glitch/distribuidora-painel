@@ -335,6 +335,14 @@ th.g,td.g{background:var(--accent-soft)}
 <!-- ============ ACOMPANHAMENTO DE LOJA ============ -->
 <div id="view-acomp" hidden>
 <section class="card">
+  <div class="eyebrow">Resultado · mês a mês</div>
+  <h2>Demonstração de lucros e perdas</h2>
+  <p class="note">Quanto entrou, quanto saiu e <strong>o que sobrou</strong> em cada mês, na mesma ordem da sua planilha. Cada gasto pesa no mês a que pertence (não no dia em que a conta foi baixada). A retirada de sócio entra como custo: o lucro que aparece embaixo já é o que sobrou <strong>depois</strong> de vocês se pagarem. O mês em curso está pela metade — está marcado.</p>
+  <div class="tblwrap" id="tbl-dre"></div>
+  <div id="dre-avisos" style="margin-top:10px"></div>
+</section>
+
+<section class="card">
   <div class="eyebrow">Vendas · mês atual (balcão + delivery)</div>
   <h2>Faturamento por dia — <span id="fatdia-mes"></span></h2>
   <p class="note">Dia a dia do mês, <strong>balcão + delivery somados</strong>. Linha tracejada = ponto de equilíbrio (R$ 1.306/dia sem retirada de sócio). Toque nas barras para ver o valor. O dia de hoje aparece parcial até o painel atualizar de novo.</p>
@@ -702,6 +710,52 @@ const D = JSON.parse(document.getElementById('data').textContent);
 const fmt = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmt0 = n => n.toLocaleString('pt-BR',{maximumFractionDigits:0});
 const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
+
+// ---- Demonstração de lucros e perdas (a planilha do dono, viva) ----
+(function(){
+  const d = D.dre, box = document.getElementById('tbl-dre');
+  if(!box) return;
+  if(!d || !d.meses || !d.meses.length){ box.innerHTML='<p class="note">Ainda não deu pra montar o quadro — clique em Atualizar.</p>'; return; }
+  const ms = d.meses, esc = t => String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const cif = v => (v<0?'−':'')+fmt(Math.abs(v||0));
+  const corDe = v => v<0 ? 'var(--bad,#b91c1c)' : (v>0 ? 'var(--ok,#15803d)' : 'var(--muted)');
+
+  const cab = '<tr><th style="position:sticky;left:0;background:var(--surface2);z-index:2;min-width:190px">Linha</th>'
+    + ms.map(m=>'<th class="num"'+(m.atual?' style="color:var(--accent)"':'')+'>'+esc(m.label)
+        +(m.parcial?'<br><span style="font-weight:400;text-transform:none;opacity:.7">'+esc(m.parcial)+'</span>':'')+'</th>').join('')
+    + '<th class="num" style="border-left:2px solid var(--line)">No ano</th></tr>';
+
+  const linhas = d.linhas.map(l=>{
+    const t = l.estilo, total = t==='total', sub = t==='subtotal';
+    const est = total ? 'font-weight:800;border-top:2px solid var(--line);font-size:.9rem'
+              : sub   ? 'font-weight:700;background:var(--surface2)' : '';
+    const rot = '<td style="position:sticky;left:0;background:'+(sub||total?'var(--surface2)':'var(--surface,#fff)')+';z-index:1;'+est+'">'
+      + esc(l.label) + (l.dica?'<div style="font-weight:400;font-size:.68rem;color:var(--muted);white-space:normal;max-width:220px">'+esc(l.dica)+'</div>':'') + '</td>';
+    const cels = ms.map(m=>{
+      const v = l.mes[m.key]||0;
+      const cor = (total||sub&&/Lucro/.test(l.label)) ? ';color:'+corDe(v) : '';
+      return '<td class="num" style="'+est+(m.atual?';background:var(--accent-soft)':'')+cor+'">'+cif(v)+'</td>';
+    }).join('');
+    const ano = '<td class="num" style="border-left:2px solid var(--line);'+est+((total)?';color:'+corDe(l.aad):'')+'">'+cif(l.aad)+'</td>';
+    return '<tr>'+rot+cels+ano+'</tr>';
+  }).join('');
+
+  box.innerHTML = '<table><thead>'+cab+'</thead><tbody>'+linhas+'</tbody></table>';
+
+  const av = document.getElementById('dre-avisos'); if(!av) return;
+  const L = [];
+  const cmv = d.linhas.find(x=>x.label.indexOf('Custo das mercadorias')===0);
+  const vl  = d.linhas.find(x=>x.label==='Vendas líquidas');
+  if(cmv&&vl){
+    const pior = ms.map(m=>({m:m.label,p: vl.mes[m.key] ? cmv.mes[m.key]/vl.mes[m.key]*100 : 0}))
+                   .filter(x=>x.p>85);
+    if(pior.length) L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ Em <strong>'+pior.map(x=>x.m).join(', ')
+      +'</strong> a mercadoria comprada passou de 85% da venda. Isso normalmente é <strong>estoque comprado adiantado</strong>, não prejuízo — a mercadoria está na prateleira e vira venda no mês seguinte.</div>');
+  }
+  (d.pendentes||[]).forEach(p=>L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ <strong>'+esc(p.categoria)
+    +'</strong> — R$ '+fmt(p.valor)+' em '+p.n+' lançamento(s) — eu não sei em que linha isso entra, joguei em "Outros". Ex.: '+esc(p.exemplo)+'</div>'));
+  av.innerHTML = L.join('');
+})();
 
 document.getElementById('gerado').textContent =
   'Gerado em '+dbr(D.gerado_em)+'/2026 · loja e caixa até '+(D.dia_mes.length?dbr(D.dia_mes[D.dia_mes.length-1].data):'—')+' · boletos DDA de 15/07';

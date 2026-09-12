@@ -87,13 +87,17 @@ def baixar(fetch_pages, hoje, log=lambda *a: None):
     delivery = [v for v in prod if "ANOTA AI" in (v.get("observacoes") or "").upper()]
     vendas += delivery
     produtos = fetch_pages("/produtos", {})
-    pagamentos = fetch_pages("/pagamentos", {})
+    # SEM período o GestãoClick devolve só o MÊS CORRENTE (122 lançamentos em vez de
+    # 675) — o DRE saía com julho e agosto sem custo nenhum, como se fossem lucro puro.
+    pagamentos = fetch_pages("/pagamentos", {"data_inicio": "2026-01-01",
+                                             "data_fim": f"{hoje.year + 1}-12-31"})
     log(f"  vendas={len(vendas)} (delivery {len(delivery)}) produtos={len(produtos)} "
         f"pagamentos={len(pagamentos)}")
     return vendas, produtos, pagamentos
 
 
-def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None):
+def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
+              categoria_fn=None):
     """Monta o dicionário dos gráficos. `old` é o pacote anterior (mantém o histórico
     de meses antes de PRIM_MES_VIVO e os blocos que não recalculamos)."""
     TODAY = hoje or date.today()
@@ -292,5 +296,203 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None):
     novo.update({"gerado_em": YMD(TODAY), "kpis": kpis, "mes_atual": mes_atual,
                  "meses": meses, "dia_mes": dia_mes, "serie_fat": dia_mes,
                  "entradas": entradas, "conta": conta, "fechamentos": fechamentos,
-                 "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar})
+                 "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar,
+                 "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY)})
     return novo
+
+# ======================================================================
+# DRE MENSAL — "Demonstração de lucros e perdas", igual à planilha do dono
+# ----------------------------------------------------------------------
+# Regime de COMPETÊNCIA: cada gasto pesa no mês a que pertence, pago ou não. Tentei
+# por caixa primeiro e não serve: o dono dá baixa das contas em lote, então a data de
+# liquidação jogava o custo de julho e agosto inteiro dentro de setembro.
+#
+# Decisões que ELE tomou em 12/09/2026 (não mudar sem falar com ele):
+#  · custo da mercadoria = a nota de fornecedor daquele mês;
+#  · retirada dos sócios ENTRA como custo (o lucro que sobra já é depois de se pagarem);
+#  · o quadro começa em julho/2026 — antes disso só mercadoria e contabilidade estavam
+#    lançados, e o lucro dos meses anteriores apareceria inflado.
+DRE_INICIO = "2026-07"
+
+# Cada linha da planilha e de onde ela vem. A chave da esquerda é a categoria do
+# painel (ou o plano de contas do GestãoClick, quando o lançamento não tem categoria).
+DRE_DE_PARA = {
+    # --- pessoas ---
+    "Igor (pró-labore / retirada)":      "Salários e remunerações",
+    "Retirada Victor":                   "Salários e remunerações",
+    "Retirada do sócio (Victor)":        "Salários e remunerações",
+    "Biel (Gabriel)":                    "Salários e remunerações",
+    "Vigia":                             "Salários e remunerações",
+    "INSS s/ pró-labore":                "Salários e remunerações",
+    # --- estrutura ---
+    "Aluguel (IPTU)":                    "Aluguel",
+    "Energia (CEMIG)":                   "Luz",
+    "Água (COPASA)":                     "Água",
+    "Internet / telefone":               "Telefone / internet",
+    "Telefonia e internet":              "Telefone / internet",
+    "Contabilidade (Werdeiros)":         "Contabilidade",
+    "Reparo da loja":                    "Manutenção de equipamentos",
+    "Limpeza":                           "Material de limpeza",
+    # --- operação ---
+    "Motoboy / entrega":                 "Motoboy / entregas",
+    "PH Motoca":                         "Motoboy / entregas",
+    "Sacolas / gelo / copos":            "Sacolas / gelo / copos",
+    "Anota AI":                          "Publicidade",
+    # --- impostos (linha própria, embaixo do lucro das operações) ---
+    "DAS (Simples)":                     "@impostos",
+    "Parcelamento Simples (PARCSN)":     "@impostos",
+    "Taxas / alvará (PBH)":              "@impostos",
+    # --- financeiro ---
+    "Despesas bancárias":                "@financeiro",
+    # --- mercadoria (vira o CMV, não é custo operacional) ---
+    "Compras":                           "@mercadoria",
+    # --- sobras conhecidas ---
+    "Lanche":                            "Outros",
+    "Almoço":                            "Outros",
+    "Padaria":                           "Outros",
+    "Seguro do carro":                   "Outros",
+    "Material de escritório":            "Outros",
+    "Supermercado":                      "Outros",
+    "Água / luz / internet":             "Outros",
+}
+
+# Lançamento que NÃO é despesa: é o dinheiro da gaveta indo pro cofre/conta.
+# Se entrar na conta, o mês inteiro vira prejuízo falso.
+DRE_IGNORAR = {"Ajuste de caixa", "Saque", "Transferência entre contas"}
+
+# A ordem exata em que as linhas aparecem, como na planilha.
+DRE_OPERACIONAIS = [
+    "Salários e remunerações", "Perdas de mercadoria", "Aluguel", "Material de limpeza",
+    "Luz", "Telefone / internet", "Água", "Gasolina", "Manutenção de equipamentos",
+    "Publicidade", "Contabilidade", "Motoboy / entregas", "Sacolas / gelo / copos",
+    "Outros",
+]
+MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun",
+             "jul", "ago", "set", "out", "nov", "dez"]
+
+
+def _dre_venda_eh_saque(v):
+    """Saque = troca de cartão por dinheiro. Não é venda, não entra no faturamento."""
+    return any((((w.get("produto", w) or {}).get("nome_produto")) or "").upper()
+               .startswith("SAQUE") for w in (v.get("produtos") or []))
+
+
+def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None):
+    """Demonstração de lucros e perdas, mês a mês. Devolve também o que não soube
+    classificar, pra perguntar ao dono em vez de enfiar em 'Outros' calado."""
+    TODAY = hoje or date.today()
+    curm = YMD(TODAY)[:7]
+
+    receita = defaultdict(lambda: {"bruto": 0.0, "desconto": 0.0, "devolucao": 0.0,
+                                   "cartao": 0.0, "n": 0})
+    for v in vendas:
+        mk = (v.get("data") or "")[:7]
+        if not mk or mk < DRE_INICIO:
+            continue
+        if _dre_venda_eh_saque(v):
+            continue
+        r = receita[mk]
+        if "cancel" in (v.get("nome_situacao") or "").lower():
+            r["devolucao"] += num(v.get("valor_total"))
+            continue
+        # valor_total = produtos + frete − desconto. O bruto da planilha é antes do
+        # desconto, senão a linha "Descontos (redução)" desconta duas vezes.
+        r["bruto"] += num(v.get("valor_produtos")) + num(v.get("valor_frete"))
+        r["desconto"] += num(v.get("desconto_valor"))
+        r["n"] += 1
+        for wrap in v.get("pagamentos") or []:
+            p = wrap.get("pagamento", wrap)
+            if _classifica_pgto(p.get("nome_forma_pagamento")) == "cartao":
+                r["cartao"] += num(p.get("valor"))
+
+    custo = defaultdict(lambda: defaultdict(float))   # linha -> mês -> valor
+    desconhecidos = defaultdict(lambda: {"valor": 0.0, "n": 0, "exemplo": "", "plano": ""})
+    for p in pagamentos:
+        # Mês do gasto = COMPETÊNCIA (ou vencimento). NÃO dá pra usar a data em que a
+        # conta foi baixada: o dono dá baixa em lote, e aí julho e agosto apareciam sem
+        # custo nenhum e setembro com tudo. Conta atrasada continua pesando no mês dela.
+        mk = ((p.get("data_competencia") or p.get("data_vencimento") or "")[:7])
+        if not mk or mk < DRE_INICIO:
+            continue
+        plano = p.get("nome_plano_conta") or ""
+        if plano in DRE_IGNORAR:
+            continue
+        v = num(p.get("valor_total")) or num(p.get("valor"))
+        if v <= 0:
+            continue
+        chave = (categoria_fn(p) if categoria_fn else None) or plano
+        linha = DRE_DE_PARA.get(chave)
+        if linha is None:
+            d = desconhecidos[chave or "(sem plano de contas)"]
+            d["valor"] += v
+            d["n"] += 1
+            d["plano"] = plano
+            if not d["exemplo"]:
+                d["exemplo"] = (p.get("descricao") or "")[:60]
+            linha = "Outros"                           # entra, mas sinalizado
+        custo[linha][mk] += v
+
+    # Só até o mês corrente: contas de aluguel já lançadas pra outubro/novembro faziam
+    # o quadro mostrar "prejuízo" em mês que ainda nem começou.
+    meses = sorted(set(receita) | {m for l in custo.values() for m in l})
+    meses = [m for m in meses if DRE_INICIO <= m <= curm]
+    if not meses:
+        return {}
+
+    def mesdict(fn):
+        return {m: round(fn(m), 2) for m in meses}
+
+    vendas_liq = mesdict(lambda m: receita[m]["bruto"] - receita[m]["desconto"]
+                         - receita[m]["devolucao"])
+    merc = mesdict(lambda m: custo["@mercadoria"].get(m, 0.0))
+    bruto = mesdict(lambda m: vendas_liq[m] - merc[m])
+    oper = {l: mesdict(lambda m, l=l: custo[l].get(m, 0.0)) for l in DRE_OPERACIONAIS}
+    tot_oper = mesdict(lambda m: sum(oper[l][m] for l in DRE_OPERACIONAIS))
+    lucro_op = mesdict(lambda m: bruto[m] - tot_oper[m])
+    # taxa de cartão não é boleto: sai descontada na hora, então é calculada
+    fin = mesdict(lambda m: custo["@financeiro"].get(m, 0.0)
+                  + receita[m]["cartao"] * CARTAO_FEE)
+    antes_imp = mesdict(lambda m: lucro_op[m] - fin[m])
+    imp = mesdict(lambda m: custo["@impostos"].get(m, 0.0))
+    liquido = mesdict(lambda m: antes_imp[m] - imp[m])
+
+    def L(label, dados, estilo="normal", dica=""):
+        return {"label": label, "mes": dados, "aad": round(sum(dados.values()), 2),
+                "estilo": estilo, "dica": dica}
+
+    linhas = [
+        L("Vendas", mesdict(lambda m: receita[m]["bruto"]), "normal",
+          "balcão + delivery, antes do desconto; saque não entra"),
+        L("Devoluções (redução)", mesdict(lambda m: -receita[m]["devolucao"])),
+        L("Descontos (redução)", mesdict(lambda m: -receita[m]["desconto"])),
+        L("Vendas líquidas", vendas_liq, "subtotal"),
+        L("Custo das mercadorias vendidas", merc, "normal",
+          "nota de fornecedor lançada no mês"),
+        L("Lucro bruto", bruto, "subtotal"),
+    ]
+    linhas += [L(l, oper[l]) for l in DRE_OPERACIONAIS]
+    linhas += [
+        L("Total de custos operacionais", tot_oper, "subtotal"),
+        L("Lucro das operações", lucro_op, "subtotal"),
+        L("Taxas de cartão e banco", fin, "normal",
+          f"~{CARTAO_FEE*100:.2f}% do que passou no cartão, mais tarifa do banco"),
+        L("Lucro antes do imposto", antes_imp, "subtotal"),
+        L("Impostos", imp, "normal", "DAS, parcelamento do Simples e taxas da prefeitura"),
+        L("LUCRO LÍQUIDO", liquido, "total"),
+    ]
+
+    pend = [{"categoria": k, "valor": round(d["valor"], 2), "n": d["n"],
+             "exemplo": d["exemplo"], "plano": d["plano"]}
+            for k, d in sorted(desconhecidos.items(), key=lambda x: -x[1]["valor"])]
+
+    # o mês corrente está pela metade: dizer até que dia, pra ninguém comparar um mês
+    # de 12 dias com um mês fechado e achar que despencou
+    dia_hoje = TODAY.day
+    dim = (date(TODAY.year + (TODAY.month == 12), TODAY.month % 12 + 1, 1)
+           - timedelta(days=1)).day
+    return {"meses": [{"key": m, "label": MES_CURTO[int(m[5:7]) - 1] + "/" + m[2:4],
+                       "atual": m == curm,
+                       "parcial": (f"{dia_hoje} de {dim} dias" if m == curm else None)}
+                      for m in meses],
+            "linhas": linhas, "pendentes": pend, "mes_atual": curm,
+            "inicio": DRE_INICIO, "gerado_em": YMD(TODAY)}
