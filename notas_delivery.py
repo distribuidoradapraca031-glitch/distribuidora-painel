@@ -114,13 +114,26 @@ def notas_do_periodo(gc, ini, fim, rascunhos):
 # ---------------------------------------------------------------- montar / emitir
 def monta_rascunho(gc, v):
     """Cria a nota da venda no GC e devolve o id do rascunho (ou None)."""
-    prods = [{"produto_id": p["produto"]["produto_id"],
-              "quantidade": float(p["produto"]["quantidade"]),
-              # unitário já arredondado em 2 casas: é assim que o GC grava na nota. Com o
-              # valor cheio o total do pagamento nasce diferente do total da nota, e a
-              # correção por PUT reprova na SEFAZ ("Rejeição 899: meio de pagamento").
-              "valor_venda": round(float(p["produto"]["valor_venda"]), 2)}
-             for p in v.get("produtos", [])]
+    prods, orfaos = [], []
+    for p in v.get("produtos", []):
+        q = p.get("produto", p)
+        if not str(q.get("produto_id") or "").strip():
+            # item que o app vendeu sem produto cadastrado no GestãoClick. O GC
+            # SILENCIOSAMENTE joga essa linha fora e a nota sai com valor MENOR que a
+            # venda — foi o que aconteceu com a NF 12344 (R$ 24,00 numa venda de
+            # R$ 28,50, faltando o Cebolitos). Melhor não emitir nota nenhuma e avisar.
+            orfaos.append((q.get("detalhes") or q.get("nome_produto") or "item sem nome"))
+            continue
+        prods.append({"produto_id": q["produto_id"],
+                      "quantidade": float(q["quantidade"]),
+                      # unitário já arredondado em 2 casas: é assim que o GC grava na
+                      # nota. Com o valor cheio o total do pagamento nasce diferente do
+                      # total da nota e a correção por PUT reprova na SEFAZ
+                      # ("Rejeição 899: meio de pagamento").
+                      "valor_venda": round(float(q["valor_venda"]), 2)})
+    if orfaos:
+        return None, ("item sem produto cadastrado no sistema, a nota sairia com valor "
+                      "menor que a venda: " + "; ".join(orfaos[:3]))
     if not prods:
         return None, "venda sem produtos"
 

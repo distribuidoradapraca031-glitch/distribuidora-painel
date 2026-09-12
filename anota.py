@@ -146,10 +146,21 @@ def emit_nfce(venda_id, data_brt, forma_pagamento_id):
         # unitário já arredondado em 2 casas — é assim que o GC grava na nota. Mandando o
         # valor cheio, o total do pagamento nascia diferente do total da nota e a correção
         # por PUT reprovava a nota na SEFAZ ("Rejeição 899: meio de pagamento incorreto").
-        prods = [{"produto_id": p["produto"]["produto_id"],
-                  "quantidade": float(p["produto"]["quantidade"]),
-                  "valor_venda": round(float(p["produto"]["valor_venda"]), 2)}
-                 for p in v.get("produtos", [])]
+        prods, orfaos = [], []
+        for p in v.get("produtos", []):
+            q = p.get("produto", p)
+            if not str(q.get("produto_id") or "").strip():
+                # item do app sem produto cadastrado: o GC descarta a linha em silêncio
+                # e a nota sai valendo MENOS que a venda. Não emitir é o certo.
+                orfaos.append(q.get("detalhes") or q.get("nome_produto") or "item sem nome")
+                continue
+            prods.append({"produto_id": q["produto_id"],
+                          "quantidade": float(q["quantidade"]),
+                          "valor_venda": round(float(q["valor_venda"]), 2)})
+        if orfaos:
+            print(f"   NFC-e do pedido {venda_id}: NÃO emitida — item sem produto "
+                  f"cadastrado ({'; '.join(orfaos[:3])}). Cadastre e vincule no app.")
+            return None
         if not prods:
             return None
         dt = datetime.strptime(data_brt, "%Y-%m-%d").strftime("%d/%m/%Y")
