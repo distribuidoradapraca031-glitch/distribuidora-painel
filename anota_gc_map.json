@@ -5528,5 +5528,14 @@
   "gc_nome": "HEINEKEN ZERO LONG NECK 330 ML",
   "mult": 1,
   "manual": true
+ },
+ "ENERGETICO JACK POWER MANGO LOUCO 2L": {
+  "anota_title": "Energetico Jack Power Mango Louco 2L",
+  "categoria": "Bebidas",
+  "gc_id": "84577972",
+  "gc_nome": "ENERGY JACK POWER 2L SABORES",
+  "mult": 1,
+  "manual": true,
+  "obs": "15/09/2026: sabor novo — cai no guarda-chuva, igual Tropical/Melancia/Tradicional"
  }
 }
