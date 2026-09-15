@@ -1159,10 +1159,18 @@ def api_compras_painel():
                 p = w.get("produto", w)
                 q = _num(p.get("quantidade"))
                 fator = _num(p.get("quantidade_saida")) or 1
+                do_painel = "painel" in (p.get("detalhes") or "")
+                # Só a compra do painel é digitada em FARDO — aí sim o estoque recebe
+                # qtd x fator. A nota de XML já vai gravada em UNIDADE (o maço do cigarro,
+                # a garrafa), então multiplicar aqui mostrava 10 maços como "100 un" e
+                # dava susto de entrada errada. O fator segue no campo `fardo`, mas só
+                # entra na conta quando ele de fato multiplicou o estoque.
                 prods.append({"produto_id": str(p.get("produto_id")), "nome": p.get("nome_produto"),
-                              "qtd": q, "fardo": fator, "unidades": round(q * fator, 2),
+                              "qtd": q, "fardo": fator,
+                              "unidades": round(q * fator, 2) if do_painel else q,
+                              "multiplicou": do_painel,
                               "valor": _num(p.get("valor_total")),
-                              "unid": p.get("unidade") or "", "painel": "painel" in (p.get("detalhes") or "")})
+                              "unid": p.get("unidade") or "", "painel": do_painel})
             pags = [{"forma": (w.get("pagamento", w)).get("nome_forma_pagamento") or "—",
                      "valor": _num((w.get("pagamento", w)).get("valor"))}
                     for w in (c.get("pagamentos") or [])]

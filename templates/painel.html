@@ -1771,9 +1771,17 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       box.innerHTML='<table><thead><tr><th>Data</th><th>Fornecedor</th><th>O que entrou</th>'+
         '<th class="num">Valor</th><th>Pagamento</th><th></th></tr></thead><tbody>'+
         d.itens.map(c=>{
-          const prods=c.produtos.map(p=>'<div style="font-size:.8rem">'+esc(p.nome||'—')+
-            ' <span style="color:var(--muted)">'+fmt0(p.qtd)+(p.unid?' '+p.unid:'')+
-            (p.fardo>1?' × '+fmt0(p.fardo):'')+' = <strong>'+fmt0(p.unidades)+' un</strong></span></div>').join('');
+          const prods=c.produtos.map(p=>{
+            // cigarro/seda entram em MAÇO — a nota da indústria vem em milheiro, mas o
+            // estoque é maço. Só mostro a conta "× fardo" quando ela de fato aconteceu
+            // (compra do painel, digitada em fardo).
+            const rot = /^MA[ÇC]O/i.test(p.nome||'') ? 'maços' : 'un';
+            const conta = (p.multiplicou && p.fardo>1)
+              ? fmt0(p.qtd)+(p.unid?' '+p.unid:'')+' × '+fmt0(p.fardo)+' = <strong>'+fmt0(p.unidades)+' '+rot+'</strong>'
+              : '<strong>'+fmt0(p.unidades)+' '+rot+'</strong>';
+            return '<div style="font-size:.8rem">'+esc(p.nome||'—')+
+              ' <span style="color:var(--muted)">'+conta+'</span></div>';
+          }).join('');
           const pags=c.pagamentos.map(p=>'<div style="font-size:.78rem">'+esc(p.forma)+' <span style="color:var(--muted)">R$ '+fmt(p.valor)+'</span></div>').join('');
           return '<tr><td>'+dbr(c.data)+'</td><td class="nome">'+esc(c.fornecedor)+
             (c.do_painel?'':' <span class="pill pB" style="font-size:.65rem">nota</span>')+'</td>'+
