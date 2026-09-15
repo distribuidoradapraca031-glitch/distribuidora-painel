@@ -509,9 +509,10 @@ def _saque_banco(valor, motivo, data):
 
 def _origem_dinheiro(body):
     """De onde veio o dinheiro que o dono está guardando: 'caixa' (gaveta), 'banco'
-    (saque) ou 'nenhum' (já estava fora). do_caixa é o formato antigo da tela."""
+    (saque), 'sobra'/'reserva' (veio do outro monte guardado — transferência) ou
+    'nenhum' (já estava fora). do_caixa é o formato antigo da tela."""
     o = (body.get("origem") or "").strip().lower()
-    if o in ("caixa", "banco", "nenhum"):
+    if o in ("caixa", "banco", "sobra", "reserva", "nenhum"):
         return o
     return "caixa" if body.get("do_caixa") else "nenhum"
 
@@ -2317,6 +2318,8 @@ def api_reserva():
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{RES_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
         origem = _origem_dinheiro(body)
+        if origem == "reserva":        # veio dela mesma: não é transferência
+            origem = "nenhum"
         rot = f"RESERVA — guardei no cofre{(' (' + nota + ')') if nota else ''}"
         try:
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
@@ -2330,8 +2333,12 @@ def api_reserva():
                 _saque_banco(valor, f"BANCO — saquei pra {rot.split('—')[0].strip().lower()}"
                                     f"{(' (' + nota + ')') if nota else ''}", data)
                 _invalida("gastos_mes")
+            elif origem == "sobra":   # veio do outro monte: só troca de bolso, desconta lá
+                _sobra_saida(valor, f"passei pra reserva{(' (' + nota + ')') if nota else ''}",
+                             data)
             _invalida("reserva", "pagar", "previsoes", "mapa")
-            return jsonify({"ok": True, "origem": origem, "sangria": origem == "caixa"})
+            return jsonify({"ok": True, "origem": origem, "sangria": origem == "caixa",
+                            "saldo_origem": _sobra_saldo() if origem == "sobra" else None})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
@@ -2393,6 +2400,8 @@ def api_sobra():
             return jsonify({"ok": False, "erro": "valor inválido"}), 400
         desc = f"{SOB_DEP_TAG} guardei" + (f" — {nota}" if nota else "")
         origem = _origem_dinheiro(body)
+        if origem == "sobra":          # veio dela mesma: não é transferência
+            origem = "nenhum"
         rot = f"SOBRA — guardei fora da gaveta{(' (' + nota + ')') if nota else ''}"
         try:
             gcapi.post("/pagamentos", {"descricao": desc, "valor": f"{valor:.2f}",
@@ -2406,8 +2415,12 @@ def api_sobra():
                 _saque_banco(valor, f"BANCO — saquei pra sobra de caixa"
                                     f"{(' (' + nota + ')') if nota else ''}", data)
                 _invalida("gastos_mes")
+            elif origem == "reserva": # veio do cofre: só troca de bolso, desconta lá
+                _reserva_saida(valor, f"passei pra sobra de caixa"
+                                      f"{(' (' + nota + ')') if nota else ''}", data)
             _invalida("sobra", "pagar", "previsoes", "mapa")
-            return jsonify({"ok": True, "origem": origem, "sangria": origem == "caixa"})
+            return jsonify({"ok": True, "origem": origem, "sangria": origem == "caixa",
+                            "saldo_origem": _reserva_saldo() if origem == "reserva" else None})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 

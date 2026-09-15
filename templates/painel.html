@@ -157,7 +157,7 @@ th.g,td.g{background:var(--accent-soft)}
   <div class="eyebrow">Caixa · dinheiro reserva</div>
   <h2>💰 Dinheiro reserva</h2>
   <div id="reserva-saldo-box" style="margin:8px 0"></div>
-  <p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Toda vez que você paga uma compra, gasto ou conta escolhendo a fonte <strong>Dinheiro reserva</strong>, eu <strong>desconto daqui sozinho</strong>.</p>
+  <p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Toda vez que você paga uma compra, gasto ou conta escolhendo a fonte <strong>Dinheiro reserva</strong>, eu <strong>desconto daqui sozinho</strong>. Se o dinheiro veio do outro monte, escolha <strong>Da sobra de caixa</strong> em "de onde veio": eu tiro de lá e ponho aqui, sem mexer no caixa do dia.</p>
   <div class="fbox" style="margin-top:8px">
     <strong style="font-size:.9rem">➕ Guardar na reserva (sobra do dia)</strong>
     <div class="fform" style="margin-top:6px">
@@ -167,6 +167,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label style="flex:1 1 220px">De onde veio esse dinheiro
         <select id="res-origem" style="width:100%">
           <option value="caixa">Do caixa (gaveta) desse dia</option>
+          <option value="sobra">Da sobra de caixa (passei pra cá)</option>
           <option value="banco">Saquei do banco</option>
           <option value="nenhum">Já estava fora do caixa</option>
         </select>
@@ -204,6 +205,7 @@ th.g,td.g{background:var(--accent-soft)}
       <label style="flex:1 1 220px">De onde veio esse dinheiro
         <select id="sob-origem" style="width:100%">
           <option value="caixa">Do caixa (gaveta) desse dia</option>
+          <option value="reserva">Do dinheiro reserva (passei pra cá)</option>
           <option value="banco">Saquei do banco</option>
           <option value="nenhum">Já estava fora do caixa</option>
         </select>
@@ -2117,8 +2119,10 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         nb.disabled=false;
         if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na reserva.'+
             (res.origem==='caixa'?' Tirei do caixa do dia (sangria) — o fechamento já conta com isso.'
-             :res.origem==='banco'?' Lancei como saque do banco — saiu da conta, não do caixa.':'')+'</span>';
+             :res.origem==='banco'?' Lancei como saque do banco — saiu da conta, não do caixa.'
+             :res.origem==='sobra'?' Descontei da <b>sobra de caixa</b> — ela ficou com R$ '+fmt(res.saldo_origem||0)+'. Não mexe no fechamento.':'')+'</span>';
           g('res-valor').value=''; g('res-desc').value=''; loadReserva(true);
+          if(res.origem==='sobra') loadSobra(true);
           if(res.origem==='caixa'){ loadFechHoje(true); loadFechamentos(true); loadResumo(true); } }
         else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
       }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
@@ -2195,8 +2199,10 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         nb.disabled=false;
         if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na sobra de caixa.'+
             (res.origem==='caixa'?' Tirei do caixa do dia (sangria) — o fechamento já conta com isso.'
-             :res.origem==='banco'?' Lancei como saque do banco — saiu da conta, não do caixa.':'')+'</span>';
+             :res.origem==='banco'?' Lancei como saque do banco — saiu da conta, não do caixa.'
+             :res.origem==='reserva'?' Descontei do <b>dinheiro reserva</b> — ele ficou com R$ '+fmt(res.saldo_origem||0)+'. Não mexe no fechamento.':'')+'</span>';
           g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true);
+          if(res.origem==='reserva') loadReserva(true);
           if(res.origem==='caixa'){ loadFechHoje(true); loadFechamentos(true); loadResumo(true); } }
         else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
       }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
