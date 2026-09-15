@@ -1776,8 +1776,10 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
             // estoque é maço. Só mostro a conta "× fardo" quando ela de fato aconteceu
             // (compra do painel, digitada em fardo).
             const rot = /^MA[ÇC]O/i.test(p.nome||'') ? 'maços' : 'un';
+            // sem a sigla do cadastro do GC no meio: ela diz "UN" onde o dono comprou
+            // CAIXA e só atrapalha a leitura da conta
             const conta = (p.multiplicou && p.fardo>1)
-              ? fmt0(p.qtd)+(p.unid?' '+p.unid:'')+' × '+fmt0(p.fardo)+' = <strong>'+fmt0(p.unidades)+' '+rot+'</strong>'
+              ? fmt0(p.qtd)+' × '+fmt0(p.fardo)+' = <strong>'+fmt0(p.unidades)+' '+rot+'</strong>'
               : '<strong>'+fmt0(p.unidades)+' '+rot+'</strong>';
             return '<div style="font-size:.8rem">'+esc(p.nome||'—')+
               ' <span style="color:var(--muted)">'+conta+'</span></div>';

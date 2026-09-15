@@ -1127,6 +1127,23 @@ def _grava_fardo(prod, n):
         "nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno"),
         "descricao": novo})
 
+def _fardos_confirmados():
+    """Mapa produto_id -> [fardo=N] que o dono já confirmou, pra ler em lote.
+
+    Serve pro histórico de compras: quando o GestãoClick tem fator 1 no cadastro (cigarro
+    de fumo picado, por exemplo), o estoque só entra certo porque a compra do painel
+    corrige depois — e a linha da compra fica com a quantidade em CAIXA. Sem esse mapa a
+    tela mostraria "1 un" onde entraram 10 maços.
+    """
+    def build():
+        fard = {}
+        for p in gcapi.get_all("/produtos"):
+            n = _fardo_cadastrado(p)
+            if n:
+                fard[str(p.get("id"))] = n
+        return fard
+    return cached("fardos_confirmados", 3600, build)
+
 def _fatores_das_compras():
     """Fator de fardo que o GestãoClick usa em cada produto.
 
@@ -1158,17 +1175,31 @@ def api_compras_painel():
             for w in (c.get("produtos") or []):
                 p = w.get("produto", w)
                 q = _num(p.get("quantidade"))
+                det = p.get("detalhes") or ""
                 fator = _num(p.get("quantidade_saida")) or 1
-                do_painel = "painel" in (p.get("detalhes") or "")
-                # Só a compra do painel é digitada em FARDO — aí sim o estoque recebe
-                # qtd x fator. A nota de XML já vai gravada em UNIDADE (o maço do cigarro,
-                # a garrafa), então multiplicar aqui mostrava 10 maços como "100 un" e
-                # dava susto de entrada errada. O fator segue no campo `fardo`, mas só
-                # entra na conta quando ele de fato multiplicou o estoque.
+                do_painel = "painel" in det
+                # Quanto ENTROU no estoque, que é o que o dono quer ver:
+                #  · nota de XML já vai gravada em UNIDADE (maço, garrafa) — não multiplica.
+                #    Multiplicar mostrava 10 maços de cigarro como "100 un" (fator 10 = o
+                #    pacote do cadastro) e parecia entrada errada.
+                #  · compra do painel é digitada em FARDO. O GC multiplica pelo fator DELE
+                #    quando tem um; quando o cadastro dele está em 1 (Coyote, Porto Faria),
+                #    quem acertou o estoque foi a própria rotina da compra, usando o
+                #    [fardo=N] confirmado — então é esse número que vale aqui.
+                #  · compra nova marca a conta no `detalhes` ("1 x 10 = 10 un"): quando tem
+                #    a marca, ela manda, porque é o que aconteceu de fato naquele dia.
+                m = re.search(r"=\s*([\d.,]+)\s*un\b", det, re.I)
+                if m:
+                    un = _num(m.group(1))
+                    emb = round(un / q, 2) if q else 1
+                elif do_painel:
+                    emb = fator if fator > 1 else (_fardos_confirmados().get(str(p.get("produto_id"))) or 1)
+                    un = round(q * emb, 2)
+                else:
+                    emb, un = 1, q
                 prods.append({"produto_id": str(p.get("produto_id")), "nome": p.get("nome_produto"),
-                              "qtd": q, "fardo": fator,
-                              "unidades": round(q * fator, 2) if do_painel else q,
-                              "multiplicou": do_painel,
+                              "qtd": q, "fardo": emb, "unidades": un,
+                              "multiplicou": emb > 1,
                               "valor": _num(p.get("valor_total")),
                               "unid": p.get("unidade") or "", "painel": do_painel})
             pags = [{"forma": (w.get("pagamento", w)).get("nome_forma_pagamento") or "—",
@@ -1227,7 +1258,7 @@ def api_compra_excluir():
                 ajustes.append(l["nome"])
         devolvido = _reserva_apaga_saida(c.get("codigo"))   # devolve o que saiu da reserva
         devolvido += _sobra_apaga_saida(c.get("codigo"))     # e o que saiu da sobra de caixa
-        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "compras_painel", "fatores_compra", "mapa")
+        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "compras_painel", "fatores_compra", "fardos_confirmados", "mapa")
         return jsonify({"ok": True, "codigo": c.get("codigo"), "ajustados": ajustes,
                         "itens": len(linhas), "reserva_devolvida": devolvido})
     except Exception as e:
@@ -1275,10 +1306,15 @@ def api_compra():
         total += valor
         # o GC multiplica a quantidade pela conversão do cadastro dele (que a API não
         # lê nem escreve), então mando em FARDOS e confiro o estoque depois.
+        # a conta fica escrita na linha: o fator do cadastro do GC pode ser outro (ou 1),
+        # e sem isso o histórico não sabe que 1 caixa foram 10 maços.
+        marca = "compra sem nota (painel)"
+        if mult > 1:
+            marca += f" · {qtd:g} x {mult:g} = {units:g} un"
         produtos.append({"produto": {
             "produto_id": pid, "quantidade": qtd,
             "valor_custo": round(valor / qtd, 4), "valor_total": round(valor, 2),
-            "detalhes": "compra sem nota (painel)",
+            "detalhes": marca,
         }})
         plano.append({"pid": pid, "qtd": qtd, "mult": mult, "units": units, "valor": valor,
                       "antes": _num(_produto_bruto(pid).get("estoque"))})
@@ -1420,7 +1456,8 @@ def api_compra():
                              if (p.get("forma") or "Caixa") == "Sobra"), 2)
         if em_sobra > 0:
             _sobra_saida(em_sobra, f"Compra {d.get('codigo') or ''}".strip(), data)
-        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "mapa")
+        _invalida("resumo", "pagar", "catalogo", "reserva", "sobra", "abc", "mapa",
+                  "compras_painel", "fatores_compra", "fardos_confirmados")
         return jsonify({"ok": True, "id": d.get("id"), "codigo": d.get("codigo"),
                         "total": round(total, 2), "itens": len(produtos),
                         "conferencia": conf})
