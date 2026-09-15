@@ -1279,8 +1279,8 @@
  "COCA COLA 200ML": {
   "anota_title": "Coca-cola 200ml",
   "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
-  "gc_id": "84578021",
-  "gc_nome": "REFRI  COQUINHA PET 200 ML",
+  "gc_id": "84658541",
+  "gc_nome": "COCA COLA MINI 200 ML",
   "candidatos": [
    [
     0.6,
@@ -1291,7 +1291,8 @@
   "mult": 1,
   "score": 0.6,
   "sugestao": "COCA MINI 200ML",
-  "manual": true
+  "manual": true,
+  "obs": "15/09/2026: Coquinha 84578021 inativada — app passa a baixar do cadastro novo"
  },
  "COCA COLA 350ML": {
   "anota_title": "Coca-cola 350ml",
