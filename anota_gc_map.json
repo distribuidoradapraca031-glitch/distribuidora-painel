@@ -4008,7 +4008,7 @@
  "CEBOLITOS ELMA CHIPS 36G": {
   "anota_title": "Cebolitos Elma Chips 36g",
   "categoria": "Petiscos",
-  "gc_id": "84577950",
+  "gc_id": "95932685",
   "gc_nome": "CHIPS CEBOLITOS PEQ",
   "candidatos": [
    [
@@ -4030,7 +4030,8 @@
   "mult": 1,
   "score": 0.67,
   "sugestao": "CHIPS CEBOLITOS GDE",
-  "manual": true
+  "manual": true,
+  "obs": "15/09/2026: id antigo 84577950 foi excluído do GC — reapontado pro cadastro atual"
  },
  "CHIPS CHEETOS ONDA REQUEIJAO 45G": {
   "anota_title": "Chips Cheetos Onda Requeijão 45g",

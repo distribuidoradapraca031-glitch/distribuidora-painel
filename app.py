@@ -140,6 +140,45 @@ def _baixa_drinks_do_dia():
         _drinks["rodando"] = True
     threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
 
+# ---- baixa dos maços (cigarro avulso, fumo picado e seda), aqui na nuvem ----
+# Mesma história das garrafas: a porção não movimenta estoque, quem sai é o MAÇO —
+# 20 porções fecham 1 maço, 33 sedas fecham 1 caixa — e só sai inteiro. Até 15/09/2026
+# isso só rodava na mão no Mac (scripts/baixa_tabacaria.py), então os maços iam ficando
+# no sistema depois de vendidos. O controle do que já foi baixado mora num produto
+# técnico do GestãoClick, senão o reinício da nuvem faria a baixa em dobro.
+_tabaco = {"rodando": False, "quando": None, "erro": None, "ultimo": None}
+_tabaco_lock = threading.Lock()
+
+def _roda_baixa_tabacaria():
+    global _tabaco
+    try:
+        import tabacaria
+        r = tabacaria.rodar(gcapi, aplicar=True, dias=10)
+        _tabaco["ultimo"] = {"vendas": r["vendas_novas"], "porcoes": r["porcoes"],
+                             "macos": [{"nome": l["nome"], "baixado": l["baixado"],
+                                        "antes": l["antes"], "depois": l["depois"]}
+                                       for l in r["linhas"]], "ate": r["ate"]}
+        _tabaco["quando"] = time.strftime("%d/%m/%Y %H:%M")
+        _tabaco["erro"] = None
+        if r["linhas"]:
+            _invalida("resumo", "catalogo", "abc", "tabacaria_status")
+    except Exception as e:
+        _tabaco["erro"] = str(e)[:200]
+    finally:
+        _tabaco["rodando"] = False
+
+def _baixa_tabacaria_do_dia():
+    """Dispara a baixa dos maços em segundo plano, no máximo de hora em hora."""
+    agora = time.time()
+    with _tabaco_lock:
+        if _tabaco["rodando"]:
+            return
+        if _tabaco.get("_t") and agora - _tabaco["_t"] < 3600:
+            return
+        _tabaco["_t"] = agora
+        _tabaco["rodando"] = True
+    threading.Thread(target=_roda_baixa_tabacaria, daemon=True).start()
+
 # ---- notas fiscais do delivery (era a rotina das 9h no Mac) ----
 # O robô do delivery já emite a NFC-e na hora que importa o pedido. Quando essa emissão
 # falha (API fora do ar, SEFAZ recusando, serviço reiniciando no meio), a venda fica sem
@@ -242,6 +281,7 @@ def logout():
 def home():
     _graficos_do_dia()      # snapshot velho? o servidor regenera sozinho, em segundo plano
     _baixa_drinks_do_dia()  # garrafas dos copões vendidos: desconta o que ainda não passou
+    _baixa_tabacaria_do_dia()  # maços do cigarro avulso/picado/seda: mesma ideia
     with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
         tpl = f.read()
     return tpl.replace("__DATA__", _painel_data_atual())
@@ -271,6 +311,33 @@ def api_baixa_drinks():
         _drinks["rodando"] = True
     threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
     _invalida("drinks_status")
+    return jsonify({"ok": True, "ja_rodando": False})
+
+@app.route("/api/tabacaria-status")
+@login_required
+def api_tabacaria_status():
+    """Como está a baixa dos maços: porções paradas, última rodada e o que baixou."""
+    def build():
+        import tabacaria
+        estado, pid = tabacaria.carrega_estado(gcapi)
+        return {"ate": estado.get("ate"), "controle_id": pid,
+                "saldo": tabacaria.saldo_legivel(gcapi, estado.get("saldo") or {}),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    d = cached("tabacaria_status", 120, build)
+    return jsonify(dict(d, rodando=_tabaco["rodando"], erro=_tabaco["erro"],
+                        ultima_rodada=_tabaco["quando"], ultimo=_tabaco["ultimo"]))
+
+@app.route("/api/baixa-tabacaria", methods=["POST"])
+@login_required
+def api_baixa_tabacaria():
+    """Roda a baixa dos maços agora (botão do painel)."""
+    with _tabaco_lock:
+        if _tabaco["rodando"]:
+            return jsonify({"ok": True, "ja_rodando": True})
+        _tabaco["_t"] = time.time()
+        _tabaco["rodando"] = True
+    threading.Thread(target=_roda_baixa_tabacaria, daemon=True).start()
+    _invalida("tabacaria_status")
     return jsonify({"ok": True, "ja_rodando": False})
 
 @app.route("/api/graficos-status")

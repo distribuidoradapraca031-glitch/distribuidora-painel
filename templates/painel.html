@@ -421,6 +421,18 @@ th.g,td.g{background:var(--accent-soft)}
   <div class="tblwrap" id="dk-saldo"></div>
 </section>
 
+<section class="card" id="card-tabaco">
+  <div class="eyebrow">Estoque · cigarro avulso, picado e seda</div>
+  <h2>🚬 Baixa dos maços</h2>
+  <p class="note">Mesma regra do whisky, só que com o <strong>maço</strong>: cigarro avulso, fumo picado e seda não saem do estoque sozinhos — quem sai é o maço, e só <strong>inteiro</strong>: <strong>20 porções fecham 1 maço</strong> e <strong>33 sedas fecham 1 caixa</strong>. O que ainda não fechou fica guardado aqui embaixo e entra na próxima. O avulso não diz a marca, então ele é <strong>dividido entre as marcas na proporção do que você compra</strong> (últimos 90 dias). Roda sozinho quando você abre o painel, de hora em hora — balcão <strong>e</strong> delivery.</p>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    <button id="tb-rodar">Descontar agora</button>
+    <span class="note" id="tb-stamp" style="margin:0"></span>
+  </div>
+  <div id="tb-msg"></div>
+  <div class="tblwrap" id="tb-saldo"></div>
+</section>
+
 <section class="card">
   <div class="eyebrow">Estoque · acertar no sistema</div>
   <h2>📦 Inventário (salvar contagem)</h2>
@@ -1572,6 +1584,50 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }).catch(()=>{ b.disabled=false; b.textContent='Descontar agora'; });
   });
   loadDrinks();
+
+  function pintaTabaco(d){
+    const st=g('tb-stamp'), msg=g('tb-msg'), tbl=g('tb-saldo');
+    if(!st) return;
+    st.textContent = d.rodando ? 'descontando agora...'
+      : (d.ultima_rodada ? 'última vez: '+d.ultima_rodada
+                         : (d.ate ? 'processado até '+d.ate : 'ainda não rodou'));
+    let h='';
+    if(d.erro) h+='<div class="banner">Não consegui descontar: '+esc(d.erro)+'</div>';
+    const u=d.ultimo;
+    if(u){
+      if(u.macos && u.macos.length){
+        h+='<div class="banner" style="border-color:var(--good)">Saíram do estoque: '+
+           u.macos.map(x=>esc(x.nome)+' <b>−'+x.baixado+'</b>').join(' · ')+'</div>';
+      } else if(u.vendas===0){
+        h+='<p class="note">Nenhuma venda nova desde a última vez — nada a descontar.</p>';
+      } else {
+        h+='<p class="note">'+u.porcoes+' avulso/picado/seda entraram na conta, mas nenhum maço fechou ainda.</p>';
+      }
+    }
+    msg.innerHTML=h;
+    const s=d.saldo||[];
+    tbl.innerHTML = s.length
+      ? '<table><thead><tr><th>Maço aberto</th><th class="num">Porções vendidas</th><th class="num">Fecha em</th><th class="num">Falta</th></tr></thead><tbody>'+
+        s.map(x=>'<tr><td class="nome">'+esc(x.maco)+'</td><td class="num">'+x.porcoes+
+          '</td><td class="num">'+x.por_maco+'</td><td class="num">'+
+          Math.max(0,(x.por_maco-x.porcoes)).toFixed(1).replace('.0','')+'</td></tr>').join('')+'</tbody></table>'
+      : '<p class="note">Nenhum maço aberto no momento.</p>';
+  }
+  function loadTabaco(){ return fetch('/api/tabacaria-status').then(r=>r.json())
+      .then(pintaTabaco).catch(()=>{}); }
+  if(g('tb-rodar')) g('tb-rodar').addEventListener('click',()=>{
+    const b=g('tb-rodar'); b.disabled=true; b.textContent='descontando...';
+    post('/api/baixa-tabacaria',{}).then(()=>{
+      let n=0;
+      const olhar=setInterval(()=>{ n++;
+        fetch('/api/tabacaria-status').then(r=>r.json()).then(d=>{
+          pintaTabaco(d);
+          if(!d.rodando || n>40){ clearInterval(olhar); b.disabled=false; b.textContent='Descontar agora'; }
+        }).catch(()=>{});
+      },3000);
+    }).catch(()=>{ b.disabled=false; b.textContent='Descontar agora'; });
+  });
+  loadTabaco();
 
   function loadResumo(f){ return fetch('/api/resumo'+qf(f)).then(r=>r.json()).then(d=>{
       if(g('k-prod')) g('k-prod').textContent = fmt0(d.produtos_ativos);
