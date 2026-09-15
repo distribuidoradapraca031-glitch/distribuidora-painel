@@ -74,6 +74,49 @@ def _fetch_pages(path, params):
             return out
         page += 1
 
+def _monta_catalogo(produtos, old_cat):
+    """Lista de produtos e fornecedores das telas de estoque, inventário e compra.
+
+    Isso vinha do `build_catalogo.py` rodando no Mac do dono e era só COPIADO adiante a
+    cada regeração aqui na nuvem — quando o Mac saiu das rotinas (12/09/2026) o catálogo
+    congelou: produto renomeado aparecia com o nome velho, produto novo não aparecia na
+    lista, e o estoque do seletor era o de 12/09. Agora sai do GestãoClick junto com os
+    gráficos, todo dia.
+
+    O fardo não vem da API: é o [fardo=N] que o dono confirmou na descrição; se não tiver,
+    reaproveito o que o catálogo antigo sabia — por ID primeiro, que sobrevive a renomear.
+    """
+    fardo_id = {str(p.get("id")): p.get("fardo")
+                for p in (old_cat.get("produtos") or []) if p.get("fardo")}
+    fardo_nome = {(p.get("nome") or "").upper(): p.get("fardo")
+                  for p in (old_cat.get("produtos") or []) if p.get("fardo")}
+    prods = []
+    for p in produtos:
+        if str(p.get("ativo")) not in ("1", "true", "True"):
+            continue
+        pid, nome = str(p.get("id")), p.get("nome") or ""
+        f = _fardo_cadastrado(p) or fardo_id.get(pid) or fardo_nome.get(nome.upper())
+        prods.append({"id": pid, "nome": nome,
+                      "estoque": round(_num(p.get("estoque")), 0),
+                      "custo": round(_num(p.get("valor_custo")), 3),
+                      "venda": round(_num(p.get("valor_venda")), 2),
+                      "grupo": p.get("nome_grupo") or "",
+                      "fardo": int(f) if f else None,
+                      "mov": str(p.get("movimenta_estoque")) == "1"})
+    prods.sort(key=lambda x: (x["nome"] or "").upper())
+    forns = []
+    for f in _fetch_pages("/fornecedores", {}):
+        if str(f.get("ativo")) not in ("1", "true", "True", ""):
+            continue
+        forns.append({"id": str(f.get("id")),
+                      "nome": f.get("nome") or f.get("razao_social") or f"Fornecedor {f.get('id')}"})
+    forns.sort(key=lambda x: (x["nome"] or "").upper())
+    if not prods:                      # deu ruim na busca? fica com o que já havia
+        return old_cat
+    return {"gerado_em": time.strftime("%Y-%m-%d %H:%M"),
+            "fornecedores": forns or (old_cat.get("fornecedores") or []),
+            "produtos": prods}
+
 def _regera_graficos():
     """Recalcula o pacote dos gráficos do CRM e grava no disco do servidor."""
     global PAINEL_DATA
@@ -90,6 +133,7 @@ def _regera_graficos():
                  for p in (old.get("catalogo") or {}).get("produtos", []) if p.get("fardo")}
         novo = graficos.construir(vendas, produtos, pagamentos, old, fardo, hoje,
                                   categoria_fn=_categoria_conta, interno_fn=_eh_interno)
+        novo["catalogo"] = _monta_catalogo(produtos, old.get("catalogo") or {})
         with open(PAINEL_JSON, "w", encoding="utf-8") as f:
             _json.dump(novo, f, ensure_ascii=False)
         PAINEL_DATA = _carrega_painel_data()
