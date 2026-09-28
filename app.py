@@ -1162,6 +1162,28 @@ def _fatores_das_compras():
         return fat
     return cached("fatores_compra", 3600, build)
 
+def _qtd_no_fator_do_gc(units, valor, fator):
+    """Quantidade a mandar pro GC pra ele mesmo pôr `units` no estoque.
+
+    O GC multiplica a linha pela "unidade de compra" do cadastro dele, que a API não lê
+    nem grava. Em 28/09/2026 eram 59 produtos com esse fator diferente do fardo que o
+    dono compra (Corona ×1 comprada em fardo de 24, maço ×10 comprado por maço…), então
+    toda compra entrava errada e era corrigida depois ("o sistema tinha colocado X —
+    corrigi"), sem nunca aprender. Sabendo o fator dele (vem das compras anteriores),
+    mando units ÷ fator e o GC acerta de primeira. Só quando a conta fecha exata em 2
+    casas (o GC guarda a quantidade assim) e o custo não sobra centavo contra o total —
+    senão devolve None e fica o jeito antigo, com a correção depois.
+    """
+    if not fator or fator <= 0 or units <= 0:
+        return None, None
+    q = round(units / fator, 2)
+    if q <= 0 or abs(q * fator - units) > 0.0005:
+        return None, None
+    custo = round(valor / q, 4)
+    if abs(q * custo - valor) >= 0.005:
+        return None, None
+    return q, custo
+
 @app.route("/api/compras-painel")
 @login_required
 def api_compras_painel():
@@ -1189,7 +1211,12 @@ def api_compras_painel():
                 #  · compra nova marca a conta no `detalhes` ("1 x 10 = 10 un"): quando tem
                 #    a marca, ela manda, porque é o que aconteceu de fato naquele dia.
                 m = re.search(r"=\s*([\d.,]+)\s*un\b", det, re.I)
-                if m:
+                # a marca guarda a conta do jeito do DONO ("2 x 24 = 48 un"); a quantidade
+                # da linha pode estar no fator do GC (ver _qtd_no_fator_do_gc)
+                m2 = re.search(r"([\d.,]+)\s*x\s*([\d.,]+)\s*=\s*([\d.,]+)\s*un\b", det, re.I)
+                if m2:
+                    q, emb, un = _num(m2.group(1)), _num(m2.group(2)), _num(m2.group(3))
+                elif m:
                     un = _num(m.group(1))
                     emb = round(un / q, 2) if q else 1
                 elif do_painel:
@@ -1237,9 +1264,12 @@ def api_compra_excluir():
             pid = str(p.get("produto_id"))
             q = _num(p.get("quantidade"))
             prod = _produto_bruto(pid)
+            # compra nova diz na marca quantas unidades entraram ("= 48 un") — vale mais
+            # que q × fardo, porque q pode estar no fator do GC (_qtd_no_fator_do_gc)
+            m = re.search(r"=\s*([\d.,]+)\s*un\b", p.get("detalhes") or "", re.I)
             fardo = _fardo_cadastrado(prod) or _num(p.get("quantidade_saida")) or 1
             linhas.append({"pid": pid, "nome": prod.get("nome"), "antes": _num(prod.get("estoque")),
-                           "units": q * fardo})
+                           "units": _num(m.group(1)) if m else q * fardo})
             produtos_put.append({"produto": {"produto_id": pid, "quantidade": q,
                                              "valor_custo": _num(p.get("valor_custo")),
                                              "valor_total": _num(p.get("valor_total"))}})
@@ -1295,6 +1325,10 @@ def api_compra():
     if not itens:
         return jsonify({"ok": False, "erro": "adicione ao menos um item"}), 400
     produtos, total, plano = [], 0.0, []
+    try:
+        fatores_gc = _fatores_das_compras()
+    except Exception:
+        fatores_gc = {}      # sem o fator do GC: manda em fardo e corrige depois, como antes
     for it in itens:
         pid = str(it.get("produto_id") or "").strip()
         qtd = _num(it.get("quantidade"))          # quantos FARDOS/caixas
@@ -1308,12 +1342,15 @@ def api_compra():
         # lê nem escreve), então mando em FARDOS e confiro o estoque depois.
         # a conta fica escrita na linha: o fator do cadastro do GC pode ser outro (ou 1),
         # e sem isso o histórico não sabe que 1 caixa foram 10 maços.
+        q_gc, custo_gc = _qtd_no_fator_do_gc(units, valor, fatores_gc.get(pid))
         marca = "compra sem nota (painel)"
-        if mult > 1:
+        if mult > 1 or q_gc is not None:
             marca += f" · {qtd:g} x {mult:g} = {units:g} un"
         produtos.append({"produto": {
-            "produto_id": pid, "quantidade": qtd,
-            "valor_custo": round(valor / qtd, 4), "valor_total": round(valor, 2),
+            "produto_id": pid,
+            "quantidade": q_gc if q_gc is not None else qtd,
+            "valor_custo": custo_gc if q_gc is not None else round(valor / qtd, 4),
+            "valor_total": round(valor, 2),
             "detalhes": marca,
         }})
         plano.append({"pid": pid, "qtd": qtd, "mult": mult, "units": units, "valor": valor,
