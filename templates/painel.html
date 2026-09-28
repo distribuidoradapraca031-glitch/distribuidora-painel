@@ -90,6 +90,10 @@ a{color:var(--accent)}
   padding:10px 16px;border-radius:10px;font-size:.82rem;max-width:min(92vw,460px);box-shadow:0 6px 24px rgba(0,0,0,.28);
   opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;line-height:1.4}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.aviso-graf{margin:10px 0 0;padding:10px 14px;border-radius:10px;font-size:.86rem;line-height:1.45;
+  background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.aviso-graf.ok{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.aviso-graf.crit{background:var(--crit-bg);color:var(--crit);border-color:var(--crit)}
 .bar-row{display:grid;grid-template-columns:118px 1fr auto;gap:10px;align-items:center;padding:7px 0;font-size:.82rem}
 .bar-row+.bar-row{border-top:1px solid var(--line)}
 .bar-row .lbl2{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2488,12 +2492,50 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       return Promise.all([loadHojeDelivery(true),loadDelivery(true),loadHoje(true)]);
     }).catch(()=>{}).finally(()=>{ bsync.disabled=false; bsync.textContent='Puxar pedidos agora'; });
   });
+  /* ---------- gráficos do mês: foto velha nunca passa por número de hoje ---------- */
+  // O Render grátis dorme sem acesso e, ao acordar, volta com a foto guardada no
+  // repositório — em 28/09 o dono abriu o painel e viu setembro parado em 12/09, sem
+  // aviso nenhum. A conta nova já dispara sozinha quando a página abre (home() no
+  // servidor); aqui eu aviso que o número é velho e recarrego quando o novo chegar.
+  function avisoGraf(html, tipo){
+    let a=g('aviso-graficos');
+    if(!html){ if(a) a.remove(); return; }
+    if(!a){ a=document.createElement('div'); a.id='aviso-graficos';
+      const h=document.querySelector('header.top'); h.parentNode.insertBefore(a,h.nextSibling); }
+    a.className='aviso-graf'+(tipo?' '+tipo:''); a.innerHTML=html;
+  }
+  let vigiando=false;
+  function vigiaGraficos(){
+    if(vigiando) return; vigiando=true;
+    let tent=0;
+    const passo=()=>fetch('/api/graficos-status').then(r=>r.json()).then(s=>{
+      if(s.de_hoje){
+        vigiando=false;
+        if(s.gerado_em!==D.gerado_em){
+          avisoGraf('✓ Números do mês atualizados — recarregando…','ok');
+          setTimeout(()=>location.reload(),1200);
+        } else avisoGraf(null);
+        return;
+      }
+      if(s.erro && !s.gerando){ vigiando=false;
+        avisoGraf('Não consegui atualizar os números do mês agora ('+esc(s.erro)+'). Os gráficos e o resultado abaixo são de <b>'+dbr(D.gerado_em)+'</b>. Tente o botão Atualizar daqui a pouco.','crit');
+        return; }
+      if(++tent>60){ vigiando=false;
+        avisoGraf('A atualização dos números do mês está demorando mais que o normal. Recarregue a página daqui a pouco.');
+        return; }
+      avisoGraf('⏳ <b>Atualizando os números do mês…</b> Os gráficos e o resultado abaixo ainda são de <b>'+dbr(D.gerado_em)+'</b>. Leva uns 3 minutos — a página recarrega sozinha.');
+      setTimeout(passo,5000);
+    }).catch(()=>{ if(++tent>60){ vigiando=false; return; } setTimeout(passo,5000); });
+    passo();
+  }
+  vigiaGraficos();
+
   loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
-    nrb.addEventListener('click',()=>{ nrb.classList.add('spin');
+    nrb.addEventListener('click',()=>{ nrb.classList.add('spin'); vigiaGraficos();
       Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
-        toast('Números do sistema atualizados. Os gráficos usam a última leitura salva — me peça <b>"atualiza o painel"</b> pra eu regerar.'); }); });
+        toast('Números do sistema atualizados ✓'); }); });
   }
 })();
 </script>
