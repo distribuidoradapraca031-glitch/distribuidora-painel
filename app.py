@@ -437,7 +437,10 @@ def api_resumo():
 def api_pagar():
     """Contas a pagar em aberto (liquidado != 1), ao vivo."""
     def build():
-        pgs = gcapi.get_all("/pagamentos")
+        # sem data o GestãoClick devolve só o mês corrente — boleto que vence mês que vem
+        # (ou atrasado do mês passado) sumia daqui
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
         # aqui embaixo só mercadoria (nota de compra/boleto DDA). Tudo que é previsão,
         # provisão ou recorrente vai pro bloco de cima, então sai daqui.
         abertos = [p for p in pgs if str(p.get("liquidado")) != "1"
@@ -2210,7 +2213,9 @@ def api_saque_resumo():
     """Total sacado e lucro do saque acumulados (desde que começou a registrar no
     painel) — lê as sangrias de saque gravadas no sistema."""
     def build():
-        pgs = gcapi.get_all("/pagamentos")
+        # "desde a abertura": sem data o GestãoClick só devolve o mês corrente
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                            "data_fim": "2027-12-31"})
         principal = lucro = 0.0
         n = 0
         for p in pgs:
