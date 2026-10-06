@@ -575,6 +575,20 @@ RES_OUT_TAG = "[RES-]"
 SOB_DEP_TAG = "[SOB+]"
 SOB_OUT_TAG = "[SOB-]"
 
+# ---- FREEZER DE GELO CONSIGNADO ----
+# O dono paga um valor fixo por mês pelo freezer e esse valor vira CRÉDITO em gelo: cada
+# saco que chega é abatido do crédito e entra no estoque. O crédito zera todo mês.
+#  · pagamento do mês = conta paga normal com a marca na descrição. Começa com
+#    "Compra de": é mercadoria (soma em Compras e entra no DRE como mercadoria).
+#  · cada entrega = registro [GELO-] só do painel (liquidado=0), igual ao [RES-]: não é
+#    conta a pagar, porque aquele gelo já foi pago pelo crédito.
+GELO_CRED_MARCA = "FREEZER CONSIGNADO"
+GELO_USO_TAG = "[GELO-]"
+GELO_MENSAL = 300.00
+GELO_PLANO = "33015669"      # plano "Compras" (mercadoria)
+_GELO_SACO = re.compile(r"^GELO\s+\d+\s*KG", re.I)   # gelo em saco: 4, 10, 20 kg
+_GELO_USO_RE = re.compile(r"^\[GELO-\] ([\d.]+) x (.+?) · R\$ ([\d.]+) cada · #(\d+)")
+
 def _sem_tag(desc, tag):
     d = desc or ""
     if d.startswith(tag):
@@ -596,7 +610,8 @@ def _eh_interno(desc):
     """Registro de controle do painel (recurso próprio / reserva) — some dos blocos normais."""
     d = (desc or "")
     return (d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
-            or d.startswith(SOB_DEP_TAG) or d.startswith(SOB_OUT_TAG))
+            or d.startswith(SOB_DEP_TAG) or d.startswith(SOB_OUT_TAG)
+            or d.startswith(GELO_USO_TAG))
 
 def _sangria_caixa(valor, motivo, data):
     """Tira da GAVETA o dinheiro que o dono guardou no cofre/sobra no mesmo dia.
@@ -825,6 +840,8 @@ def _categoria_conta(p):
     if c:
         return c
     du = desc.upper()
+    if GELO_CRED_MARCA in du:
+        return None                # crédito do freezer de gelo = mercadoria, não custo fixo
     # uma pessoa = uma categoria (nomes antigos caem na mesma linha); INSS antes do Igor
     if "IGOR" in du and "INSS" not in du:
         return "Igor (pró-labore / retirada)"
@@ -1550,6 +1567,167 @@ def api_inventario():
         _invalida("resumo", "catalogo", "abc")
         return jsonify({"ok": True, "antes": antes, "depois": contagem,
                         "dif": contagem - antes, "nome": cur.get("nome")})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+def _gelo_produtos():
+    """Gelo em saco que vem do freezer (GELO 4 KG, 10 KG, 20 KG...), direto do cadastro."""
+    out = []
+    for p in gcapi.get_all("/produtos"):
+        if str(p.get("ativo")) == "1" and _GELO_SACO.match(p.get("nome") or ""):
+            out.append({"id": str(p.get("id")), "nome": p.get("nome"),
+                        "custo": round(_num(p.get("valor_custo")), 2),
+                        "estoque": _num(p.get("estoque"))})
+    out.sort(key=lambda x: _num(re.search(r"\d+", x["nome"]).group()))
+    return out
+
+@app.route("/api/gelo")
+@login_required
+def api_gelo():
+    """Freezer de gelo no mês: crédito pago, gelo que já chegou (abatido) e o que falta usar."""
+    def build():
+        hoje = _hoje()
+        mes = hoje[:7]
+        pagos, itens = [], []
+        for p in gcapi.get_all("/pagamentos", {"data_inicio": mes + "-01",
+                                               "data_fim": _ultimo_dia_mes(hoje)}):
+            desc = p.get("descricao") or ""
+            data = (p.get("data_competencia") or p.get("data_vencimento") or "")[:10]
+            if data[:7] != mes:
+                continue
+            val = _num(p.get("valor_total")) or _num(p.get("valor"))
+            if desc.startswith(GELO_USO_TAG):
+                m = _GELO_USO_RE.match(desc)
+                itens.append({"id": p.get("id"), "data": data, "valor": val,
+                              "qtd": _num(m.group(1)) if m else 0,
+                              "nome": m.group(2) if m else _sem_tag(desc, GELO_USO_TAG),
+                              "unit": _num(m.group(3)) if m else 0})
+            elif GELO_CRED_MARCA in desc.upper() and str(p.get("liquidado")) == "1":
+                pagos.append({"id": p.get("id"), "data": data, "valor": val,
+                              "forma": p.get("nome_forma_pagamento") or ""})
+        credito = round(sum(x["valor"] for x in pagos), 2)
+        usado = round(sum(x["valor"] for x in itens), 2)
+        itens.sort(key=lambda x: (x["data"], str(x["id"])), reverse=True)
+        return {"mes": mes, "mensal": GELO_MENSAL, "credito": credito, "usado": usado,
+                "saldo": round(credito - usado, 2), "pagamentos": pagos, "itens": itens,
+                "produtos": _gelo_produtos(),
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("gelo", 60, build))
+
+@app.route("/api/gelo-credito", methods=["POST"])
+@login_required
+def api_gelo_credito():
+    """Lança o pagamento mensal do freezer — é ele que vira o crédito de gelo do mês."""
+    body = request.get_json(force=True, silent=True) or {}
+    valor = round(_num(body.get("valor")) or GELO_MENSAL, 2)
+    forma = body.get("forma") or "PIX"
+    data = (body.get("data") or _hoje())[:10]
+    if valor <= 0:
+        return jsonify({"ok": False, "erro": "valor inválido"}), 400
+    if forma not in POTES:
+        return jsonify({"ok": False, "erro": "escolha de onde saiu o dinheiro"}), 400
+    pot = POTES[forma]
+    desc = _marca_rp(f"Compra de gelo — freezer consignado · crédito {data[5:7]}/{data[:4]}", forma)
+    try:
+        r = gcapi.post("/pagamentos", {
+            "descricao": desc, "valor": f"{valor:.2f}", "data_vencimento": data,
+            "data_competencia": data, "data_liquidacao": data, "liquidado": "1",
+            "plano_contas_id": GELO_PLANO, "conta_bancaria_id": pot["conta"],
+            "forma_pagamento_id": pot["forma"]})
+        d = r.get("data") or {}
+        if forma == "Dinheiro":
+            _reserva_saida(valor, desc, data)
+        elif forma == "Sobra":
+            _sobra_saida(valor, desc, data)
+        _invalida("gelo", "pagar", "resumo", "reserva", "sobra", "gastos_mes", "mapa",
+                  "hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
+                  "fechamentos_12", "fechamentos_31")
+        return jsonify({"ok": True, "id": d.get("id") if isinstance(d, dict) else None,
+                        "valor": valor})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+@app.route("/api/gelo-entrada", methods=["POST"])
+@login_required
+def api_gelo_entrada():
+    """Chegou gelo: abate do crédito do freezer e dá entrada no estoque com o custo."""
+    body = request.get_json(force=True, silent=True) or {}
+    pid = str(body.get("produto_id") or "").strip()
+    qtd = _num(body.get("qtd"))
+    unit = round(_num(body.get("unit")), 2)
+    data = (body.get("data") or _hoje())[:10]
+    if not pid or qtd <= 0 or qtd != int(qtd):
+        return jsonify({"ok": False, "erro": "escolha o gelo e quantos sacos chegaram"}), 400
+    if unit <= 0:
+        return jsonify({"ok": False, "erro": "informe o preço do saco"}), 400
+    qtd = int(qtd)
+    try:
+        prod = _produto_bruto(pid)
+    except Exception:
+        return jsonify({"ok": False, "erro": "o GestãoClick não respondeu agora. NÃO gravei "
+                        "nada — espere um pouquinho e clique de novo."}), 502
+    nome = prod.get("nome") or ""
+    if not _GELO_SACO.match(nome):
+        return jsonify({"ok": False, "erro": "esse produto não é gelo do freezer"}), 400
+    antes = _num(prod.get("estoque"))
+    total = round(qtd * unit, 2)
+    try:
+        r = gcapi.post("/pagamentos", {
+            "descricao": f"{GELO_USO_TAG} {qtd} x {nome} · R$ {unit:.2f} cada · #{pid}"[:180],
+            "valor": f"{total:.2f}", "data_vencimento": data, "data_competencia": data,
+            "liquidado": "0", "plano_contas_id": CATS["Outros"],
+            "forma_pagamento_id": BOLETO_FORMA_ID})
+        d = r.get("data") or {}
+        lid = d.get("id") if isinstance(d, dict) else None
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+    try:
+        gcapi.put(f"/produtos/{pid}", {
+            "nome": nome, "codigo_interno": prod.get("codigo_interno"),
+            "estoque": str(round(antes + qtd, 2)), "valor_custo": f"{unit:.4f}"})
+    except Exception:
+        # abater sem dar entrada no estoque gastaria o crédito à toa: desfaz o abatimento
+        try:
+            if lid:
+                gcapi.delete(f"/pagamentos/{lid}")
+        except Exception:
+            pass
+        _invalida("gelo")
+        return jsonify({"ok": False, "erro": "não consegui dar entrada no estoque agora — "
+                        "não abati nada do crédito. Tente de novo."}), 502
+    _invalida("gelo", "resumo", "catalogo", "abc")
+    return jsonify({"ok": True, "id": lid, "nome": nome, "qtd": qtd, "total": total,
+                    "antes": antes, "depois": antes + qtd})
+
+@app.route("/api/gelo-excluir", methods=["POST"])
+@login_required
+def api_gelo_excluir():
+    """Apaga uma entrega de gelo lançada errada: tira do estoque e devolve o crédito."""
+    body = request.get_json(force=True, silent=True) or {}
+    lid = str(body.get("id") or "").strip()
+    if not lid:
+        return jsonify({"ok": False, "erro": "sem id"}), 400
+    try:
+        cur = gcapi.get(f"/pagamentos/{lid}").get("data") or {}
+        if isinstance(cur, list):
+            cur = cur[0] if cur else {}
+        cur = cur.get("Pagamento", cur) if isinstance(cur, dict) else {}
+        m = _GELO_USO_RE.match(cur.get("descricao") or "")
+        if not m:
+            return jsonify({"ok": False, "erro": "esse lançamento não é uma entrega de gelo"}), 400
+        qtd, pid = _num(m.group(1)), m.group(4)
+        prod = _produto_bruto(pid)
+        antes = _num(prod.get("estoque"))
+        base = {"nome": prod.get("nome"), "codigo_interno": prod.get("codigo_interno")}
+        gcapi.put(f"/produtos/{pid}", dict(base, estoque=str(round(antes - qtd, 2))))
+        try:
+            gcapi.delete(f"/pagamentos/{lid}")
+        except Exception:
+            gcapi.put(f"/produtos/{pid}", dict(base, estoque=str(antes)))   # volta o estoque
+            raise
+        _invalida("gelo", "resumo", "catalogo", "abc")
+        return jsonify({"ok": True, "nome": prod.get("nome"), "qtd": qtd,
+                        "antes": antes, "depois": antes - qtd})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 

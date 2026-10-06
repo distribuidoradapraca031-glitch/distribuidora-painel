@@ -413,6 +413,38 @@ th.g,td.g{background:var(--accent-soft)}
   <div id="inv-resumo-box"></div>
 </section>
 
+<section class="card" id="card-gelo">
+  <div class="eyebrow">Estoque · freezer consignado</div>
+  <h2>🧊 Gelo do freezer</h2>
+  <p class="note">Você paga <strong>R$ 300 por mês</strong> pelo freezer e esse valor vira <strong>crédito em gelo</strong>. Toda vez que chegar gelo, lance aqui: eu <strong>desconto do crédito</strong> e <strong>dou entrada no estoque</strong> já com o custo. O crédito <strong>zera todo mês</strong> — o que não usar, não passa pro mês seguinte.</p>
+  <div id="gl-resumo"></div>
+  <div class="fbox">
+    <div class="fform">
+      <label style="flex:1 1 180px">Chegou gelo
+        <select id="gl-prod" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%"></select></label>
+      <label>Quantos sacos<input type="number" step="1" min="1" inputmode="numeric" id="gl-qtd" placeholder="0" style="width:100px"></label>
+      <label>R$ por saco<input type="number" step="0.01" inputmode="decimal" id="gl-unit" placeholder="0,00" style="width:100px"></label>
+      <label>Dia<input type="date" id="gl-data"></label>
+      <button id="gl-add">Dar entrada</button>
+    </div>
+    <div class="fres" id="gl-msg"></div>
+  </div>
+  <div class="tblwrap" id="gl-itens" style="margin-top:12px"></div>
+  <div class="fbox">
+    <div class="fform">
+      <label>Paguei o freezer (R$)<input type="number" step="0.01" inputmode="decimal" id="gl-pg-valor" value="300" style="width:110px"></label>
+      <label>De onde saiu
+        <select id="gl-pg-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:190px">
+          <option value="PIX">PIX (conta)</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Victor">Recurso próprio (Victor)</option>
+        </select></label>
+      <label>Dia<input type="date" id="gl-pg-data"></label>
+      <button id="gl-pg-add">Lançar pagamento</button>
+    </div>
+    <div class="fres" id="gl-pg-msg"></div>
+  </div>
+  <span class="stamp" id="gl-stamp"></span>
+</section>
+
 <section class="card" id="card-drinks">
   <div class="eyebrow">Estoque · copão, dose e combo</div>
   <h2>🥃 Baixa das garrafas</h2>
@@ -1932,6 +1964,95 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
+  /* ---------- Freezer de gelo consignado: crédito do mês x gelo que chegou ---------- */
+  let geloProds=[], geloCredito=0;
+  function glUnit(force){ const s=g('gl-prod'), u=g('gl-unit'); if(!s||!u) return;
+    const p=geloProds.find(x=>x.id===s.value); if(p&&(force||!u.value)) u.value=p.custo?p.custo.toFixed(2):''; }
+  function loadGelo(f){ return fetch('/api/gelo'+qf(f)).then(r=>r.json()).then(d=>{
+    const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const mes=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'este mês';
+    geloProds=d.produtos||[]; geloCredito=d.credito||0;
+    const sel=g('gl-prod');
+    if(sel){ const cur=sel.value;
+      sel.innerHTML=geloProds.map(p=>'<option value="'+p.id+'">'+esc(p.nome)+' — tem '+fmt0(p.estoque)+' no estoque</option>').join('');
+      if(cur) sel.value=cur; glUnit(false); }
+    const box=g('gl-resumo');
+    if(box){
+      if(!d.credito){
+        box.innerHTML='<div class="banner">Ainda não tem pagamento do freezer lançado em <strong>'+mes+'</strong>. Lance ali embaixo em "Paguei o freezer" pra o crédito do mês começar a contar.'+
+          (d.usado?' Já chegou <strong>R$ '+fmt(d.usado)+'</strong> de gelo neste mês.':'')+'</div>';
+      } else {
+        const passou=d.saldo<0, pct=Math.min(100,Math.round(d.usado/d.credito*100));
+        box.innerHTML='<div style="font-size:1.5rem;font-weight:800;line-height:1.1'+(passou?';color:var(--crit)':'')+'">'+
+          (passou?'Passou R$ '+fmt(-d.saldo)+' do crédito':(d.saldo<0.01?'Crédito todo usado':'Falta usar R$ '+fmt(d.saldo)))+'</div>'+
+          '<div class="note" style="margin:3px 0 8px">Crédito de '+mes+': <strong>R$ '+fmt(d.credito)+'</strong> · já chegou <strong>R$ '+fmt(d.usado)+'</strong> de gelo ('+Math.round(d.usado/d.credito*100)+'%)</div>'+
+          '<div class="bar-track"><span class="bar-fill" style="display:block;width:'+pct+'%'+(passou?';background:var(--crit)':'')+'"></span></div>';
+      }
+    }
+    const tb=g('gl-itens');
+    if(tb){
+      const xb='font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer';
+      let h='';
+      if(d.itens&&d.itens.length){
+        h='<table><thead><tr><th>Dia</th><th>Gelo que chegou</th><th class="num">Sacos</th><th class="num">R$ por saco</th><th class="num">Abatido</th><th></th></tr></thead><tbody>'+
+          d.itens.map(i=>'<tr><td>'+dbr(i.data)+'</td><td class="nome">'+esc(i.nome)+'</td><td class="num">'+fmt0(i.qtd)+'</td><td class="num">R$ '+fmt(i.unit)+'</td><td class="num">R$ '+fmt(i.valor)+'</td>'+
+            '<td class="num"><button class="gl-del" data-id="'+i.id+'" title="apagar e tirar do estoque" style="'+xb+'">✕</button></td></tr>').join('')+
+          '<tr><td colspan="4" style="font-weight:700">Gelo que chegou em '+mes+'</td><td class="num" style="font-weight:700">R$ '+fmt(d.usado)+'</td><td></td></tr></tbody></table>';
+      } else h='<p class="note" style="margin:0">Nenhuma entrega de gelo lançada em '+mes+'.</p>';
+      (d.pagamentos||[]).forEach(p=>{ h+='<p class="note" style="margin:8px 0 0">✅ Freezer pago em '+dbr(p.data)+' — <strong>R$ '+fmt(p.valor)+'</strong> ('+esc(p.forma)+') '+
+        '<button class="gl-pg-del" data-id="'+p.id+'" title="apagar esse pagamento" style="'+xb+'">✕</button></p>'; });
+      tb.innerHTML=h;
+      tb.querySelectorAll('.gl-del').forEach(b=>b.addEventListener('click',()=>{
+        if(!confirm('Apagar essa entrega de gelo? Ela sai do estoque e o valor volta pro crédito.')) return;
+        b.disabled=true; b.textContent='…';
+        post('/api/gelo-excluir',{id:b.dataset.id}).then(res=>{
+          if(res.ok){ toast('🗑️ Entrega apagada — estoque de '+esc(res.nome)+' voltou pra '+fmt0(res.depois)+'.'); loadGelo(true); loadResumo(true); loadABC(true); }
+          else{ b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+      }));
+      tb.querySelectorAll('.gl-pg-del').forEach(b=>b.addEventListener('click',()=>{
+        if(!confirm('Apagar esse pagamento do freezer? O crédito do mês some junto.')) return;
+        b.disabled=true; b.textContent='…';
+        post('/api/excluir-conta',{id:b.dataset.id}).then(res=>{
+          if(res.ok){ toast('🗑️ Pagamento do freezer apagado.'); loadGelo(true); loadGastosMes(true); }
+          else{ b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
+      }));
+    }
+    if(g('gl-stamp')) g('gl-stamp').textContent=d.gerado_em?'Atualizado '+d.gerado_em:'';
+  }).catch(()=>{}); }
+  (function(){
+    const b=g('gl-add'); if(!b) return;
+    g('gl-data').value=hoje; g('gl-pg-data').value=hoje;
+    g('gl-prod').addEventListener('change',()=>glUnit(true));
+    b.addEventListener('click',()=>{
+      const msg=g('gl-msg'), pid=g('gl-prod').value, q=parseFloat(g('gl-qtd').value), u=parseFloat(g('gl-unit').value);
+      if(!pid){ msg.innerHTML='<span style="color:var(--crit)">Escolha qual gelo chegou.</span>'; return; }
+      if(isNaN(q)||q<=0||q!==Math.floor(q)){ msg.innerHTML='<span style="color:var(--crit)">Digite quantos sacos chegaram.</span>'; return; }
+      if(isNaN(u)||u<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o preço do saco.</span>'; return; }
+      b.disabled=true; b.textContent='…';
+      post('/api/gelo-entrada',{produto_id:pid,qtd:q,unit:u,data:g('gl-data').value||hoje}).then(res=>{
+        b.disabled=false; b.textContent='Dar entrada';
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ '+res.qtd+' x '+esc(res.nome)+': abati R$ '+fmt(res.total)+' do crédito e o estoque foi de '+fmt0(res.antes)+' pra '+fmt0(res.depois)+'.</span>';
+          g('gl-qtd').value=''; loadGelo(true); loadResumo(true); loadABC(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ b.disabled=false; b.textContent='Dar entrada'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+    const pb=g('gl-pg-add');
+    pb.addEventListener('click',()=>{
+      const msg=g('gl-pg-msg'), v=parseFloat(g('gl-pg-valor').value);
+      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor pago.</span>'; return; }
+      if(geloCredito>0 && !confirm('Já tem R$ '+fmt(geloCredito)+' de freezer lançado neste mês. Lançar mais um pagamento?')) return;
+      pb.disabled=true; pb.textContent='…';
+      post('/api/gelo-credito',{valor:v,forma:g('gl-pg-forma').value,data:g('gl-pg-data').value||hoje}).then(res=>{
+        pb.disabled=false; pb.textContent='Lançar pagamento';
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Pagamento de R$ '+fmt(res.valor)+' lançado — virou crédito de gelo.</span>';
+          loadGelo(true); loadGastosMes(true); loadReserva(true); loadSobra(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ pb.disabled=false; pb.textContent='Lançar pagamento'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
+    });
+  })();
+
   /* ---------- Saque: AO VIVO (venda no cartão + sangria) ---------- */
   (function(){
     const vEl=g('sq-valor'), tEl=g('sq-tipo'), calc=g('sq-calc'), msg=g('sq-msg'), btn=g('sq-registrar');
@@ -2530,11 +2651,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   }
   vigiaGraficos();
 
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist();
+  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin'); vigiaGraficos();
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados ✓'); }); });
   }
 })();
