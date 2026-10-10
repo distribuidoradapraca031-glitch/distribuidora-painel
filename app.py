@@ -1211,8 +1211,28 @@ def api_compras_painel():
     def build():
         cs = sorted(gcapi.get_all("/compras"),
                     key=lambda c: ((c.get("data_emissao") or ""), str(c.get("id"))), reverse=True)
+        ult = cs[:15]
+        # A forma de pagamento que vale é a do lançamento FINANCEIRO ("Compra de nº X"),
+        # não a cópia que fica dentro da compra: o GC grava essa cópia na hora do
+        # lançamento e não mexe mais nela. Quando o pote de uma parcela é acertado depois
+        # (compra dividida, ou forma corrigida — Varejão 10/10/2026, dinheiro → PIX), o
+        # dinheiro sai do lugar certo mas a cópia continua dizendo a forma antiga.
+        fin = {}
+        try:
+            datas = [(c.get("data_emissao") or "")[:10] for c in ult if c.get("data_emissao")]
+            if datas:   # o filtro é por vencimento: boleto de compra vence semanas depois
+                fim = (datetime.date.fromisoformat(max(datas))
+                       + datetime.timedelta(days=120)).isoformat()
+                for p in gcapi.get_all("/pagamentos", {"data_inicio": min(datas), "data_fim": fim}):
+                    m = re.search(r"Compra de nº\s*(\d+)", p.get("descricao") or "")
+                    if m:
+                        fin.setdefault(m.group(1), []).append(
+                            {"forma": p.get("nome_forma_pagamento") or "—",
+                             "valor": _num(p.get("valor"))})
+        except Exception:
+            fin = {}    # sem o financeiro, vale a cópia da compra (melhor que tela vazia)
         itens = []
-        for c in cs[:15]:
+        for c in ult:
             prods = []
             for w in (c.get("produtos") or []):
                 p = w.get("produto", w)
@@ -1252,6 +1272,10 @@ def api_compras_painel():
             pags = [{"forma": (w.get("pagamento", w)).get("nome_forma_pagamento") or "—",
                      "valor": _num((w.get("pagamento", w)).get("valor"))}
                     for w in (c.get("pagamentos") or [])]
+            reais = fin.get(str(c.get("codigo") or "")) or []
+            # só troca se achou TODAS as parcelas (a soma fecha com o total da compra)
+            if reais and abs(sum(x["valor"] for x in reais) - _num(c.get("valor_total"))) < 0.05:
+                pags = reais
             itens.append({"id": str(c.get("id")), "codigo": c.get("codigo"),
                           "data": (c.get("data_emissao") or "")[:10],
                           "fornecedor": c.get("nome_fornecedor") or "—",
