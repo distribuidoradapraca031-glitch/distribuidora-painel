@@ -589,73 +589,10 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
-  <div class="eyebrow">Contas a pagar · lançar</div>
-  <h2>Adicionar uma conta ao mapa</h2>
-  <div class="fbox" style="margin-top:12px">
-    <strong style="font-size:.9rem">➕ Adicionar previsão</strong>
-    <p class="note" style="margin-top:2px">Uma conta que tem pra pagar (aluguel, energia, contabilidade, motoboy...). Escolha a categoria, o valor, o vencimento e (se quiser) uma observação tipo o mês de referência.</p>
-    <div class="fform">
-      <label style="flex:1 1 180px">Categoria
-        <select id="prev-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)"></select>
-      </label>
-      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="prev-desc" placeholder="ex.: ref. agosto" style="width:100%"></label>
-      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="prev-valor" placeholder="0,00" style="width:110px"></label>
-      <label>Vencimento<input type="date" id="prev-venc"></label>
-      <button id="prev-add">Adicionar previsão</button>
-    </div>
-    <div class="fres" id="prev-msg"></div>
-  </div>
-</section>
-<section class="card" id="card-gasto-mes">
-  <div class="eyebrow">Fechamento do mês · o que já saiu</div>
-  <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
-  <div id="gasto-mes-topo" style="margin:8px 0"></div>
-  <p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra), saque e <strong>o que você paga com recurso próprio</strong> (esse fica na aba <strong>💰 Financeiro</strong>, separado).</p>
-</section>
-
-<section class="card" id="card-ultima-atualizacao">
-  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
-  <div id="ua-box">
-    <div class="note" style="margin:0">carregando…</div>
-  </div>
-</section>
-
-</div><!-- /view-contas -->
-
-<div id="view-financeiro" hidden>
-<section class="card" id="card-recurso-proprio">
-  <div class="eyebrow">Recurso próprio · dinheiro do Victor</div>
-  <h2>Pago com recurso próprio — <span id="rp-mes"></span></h2>
-  <div id="rp-total-box" style="margin:8px 0"></div>
-  <p class="note">Pagamentos que você fez com o <strong>seu dinheiro</strong>. Fica <strong>separado de propósito</strong>: NÃO entra no caixa, nem no banco, nem no "Total gasto no mês" da loja (aba 🧾 Contas) — é só pra você saber quanto colocou do bolso. <strong>Só no painel</strong> (não criei nada no GestãoClick).</p>
-  <div class="tblwrap" id="tbl-rp" style="margin:8px 0"></div>
-  <div class="fbox" style="margin-top:10px">
-    <strong style="font-size:.9rem">➕ Lançar pagamento com recurso próprio</strong>
-    <p class="note" style="margin-top:2px">O que você pagou com seu dinheiro. Escolha a categoria, o valor e a data — ele entra aqui e vai somando, sem mexer no caixa da loja.</p>
-    <div class="fform">
-      <label style="flex:1 1 180px">Categoria
-        <select id="rp-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
-          <option>Mercadoria / fornecedor</option><option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
-          <option>Combustível</option><option>Seguro do carro</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
-          <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Reparo da loja</option><option>Água / luz / internet</option>
-          <option>Retirada do sócio (Victor)</option><option>Igor (pró-labore / retirada)</option>
-          <option>Biel (Gabriel)</option><option>PH Motoca</option><option>Outros</option>
-        </select>
-      </label>
-      <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="rp-desc" placeholder="ex.: paguei a Ambev no meu PIX" style="width:100%"></label>
-      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="rp-valor" placeholder="0,00" style="width:110px"></label>
-      <label>Data<input type="date" id="rp-data"></label>
-      <button id="rp-add">Adicionar</button>
-    </div>
-    <div class="fres" id="rp-msg"></div>
-  </div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Financeiro · lançar gasto</div>
+  <div class="eyebrow">Contas · lançar gasto</div>
   <div class="fbox" style="margin-top:14px">
     <strong style="font-size:.9rem">➕ Lançar um gasto na mão</strong>
-    <p class="note" style="margin-top:2px">Pra despesa do dia a dia (lanche, almoço, papelaria...). Escolha a categoria, o valor e <strong>de onde saiu o dinheiro</strong> (mesma regra da compra: Caixa = gaveta · Dinheiro = reserva · PIX/Cartão = conta · Boleto = a pagar). Vai juntando e me manda o resumo que eu lanço no GestãoClick.</p>
+    <p class="note" style="margin-top:2px">Pra tudo que <strong>já foi pago</strong>: retirada e pró-labore, motoca, Biel, lanche, almoço, papelaria... Escolha a categoria, o valor e <strong>de onde saiu o dinheiro</strong> (Caixa = gaveta · Dinheiro = reserva · PIX = conta). Grava na hora e já soma no <strong>total gasto no mês</strong> logo abaixo. Se ainda <strong>não pagou</strong>, escolha <strong>Boleto</strong>: aí fica no mapa lá em cima como conta a pagar.</p>
     <div class="fform">
       <label style="flex:1 1 180px">Categoria
         <select id="ex-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
@@ -706,6 +643,50 @@ th.g,td.g{background:var(--accent-soft)}
     <div class="fres" id="ex-msg"></div>
     <div class="tblwrap" id="tbl-ex"></div>
     <div id="ex-out-box"></div>
+  </div>
+</section>
+<section class="card" id="card-gasto-mes">
+  <div class="eyebrow">Fechamento do mês · o que já saiu</div>
+  <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
+  <div id="gasto-mes-topo" style="margin:8px 0"></div>
+  <p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra), saque e <strong>o que você paga com recurso próprio</strong> (esse fica na aba <strong>💰 Financeiro</strong>, separado).</p>
+</section>
+
+<section class="card" id="card-ultima-atualizacao">
+  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
+  <div id="ua-box">
+    <div class="note" style="margin:0">carregando…</div>
+  </div>
+</section>
+
+</div><!-- /view-contas -->
+
+<div id="view-financeiro" hidden>
+<section class="card" id="card-recurso-proprio">
+  <div class="eyebrow">Recurso próprio · dinheiro do Victor</div>
+  <h2>Pago com recurso próprio — <span id="rp-mes"></span></h2>
+  <div id="rp-total-box" style="margin:8px 0"></div>
+  <p class="note">Pagamentos que você fez com o <strong>seu dinheiro</strong>. Fica <strong>separado de propósito</strong>: NÃO entra no caixa, nem no banco, nem no "Total gasto no mês" da loja (aba 🧾 Contas) — é só pra você saber quanto colocou do bolso. <strong>Só no painel</strong> (não criei nada no GestãoClick).</p>
+  <div class="tblwrap" id="tbl-rp" style="margin:8px 0"></div>
+  <div class="fbox" style="margin-top:10px">
+    <strong style="font-size:.9rem">➕ Lançar pagamento com recurso próprio</strong>
+    <p class="note" style="margin-top:2px">O que você pagou com seu dinheiro. Escolha a categoria, o valor e a data — ele entra aqui e vai somando, sem mexer no caixa da loja.</p>
+    <div class="fform">
+      <label style="flex:1 1 180px">Categoria
+        <select id="rp-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
+          <option>Mercadoria / fornecedor</option><option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
+          <option>Combustível</option><option>Seguro do carro</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
+          <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Reparo da loja</option><option>Água / luz / internet</option>
+          <option>Retirada do sócio (Victor)</option><option>Igor (pró-labore / retirada)</option>
+          <option>Biel (Gabriel)</option><option>PH Motoca</option><option>Outros</option>
+        </select>
+      </label>
+      <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="rp-desc" placeholder="ex.: paguei a Ambev no meu PIX" style="width:100%"></label>
+      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="rp-valor" placeholder="0,00" style="width:110px"></label>
+      <label>Data<input type="date" id="rp-data"></label>
+      <button id="rp-add">Adicionar</button>
+    </div>
+    <div class="fres" id="rp-msg"></div>
   </div>
 </section>
 
@@ -826,7 +807,7 @@ const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
   });
   (d.duplicadas||[]).forEach(x=>L.push('<div class="note">🔁 <strong>'+esc(x.categoria)+'</strong> em '+esc(x.mes)
     +': a previsão de R$ '+fmt(x.valor)+' ficou aberta do lado da conta de verdade, de R$ '+fmt(x.real)
-    +'. Não contei duas vezes — mas vale apagar a previsão na aba Financeiro.</div>'));
+    +'. Não contei duas vezes — mas vale apagar a previsão no mapa da aba Contas.</div>'));
   (d.pendentes||[]).forEach(p=>L.push('<div class="note" style="color:var(--warn,#b45309)">⚠️ <strong>'+esc(p.categoria)
     +'</strong> — R$ '+fmt(p.valor)+' em '+p.n+' lançamento(s) — eu não sei em que linha isso entra, joguei em "Outros". Ex.: '+esc(p.exemplo)+'</div>'));
   av.innerHTML = L.join('');
@@ -2426,9 +2407,6 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   /* ---------- MAPA: tudo que falta pagar, categoria x mês (aba Contas) ---------- */
   const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Victor','Recurso próprio (Victor)']];
   function loadMapa(f){ return fetch('/api/mapa'+qf(f)).then(r=>r.json()).then(d=>{
-    // popula o select do formulário (uma vez) com as categorias do servidor
-    const sel=g('prev-cat');
-    if(sel && !sel.options.length) sel.innerHTML=(d.cats_form||[]).map(c=>'<option>'+esc(c)+'</option>').join('');
     if(g('k-pagar')) g('k-pagar').textContent='R$ '+fmt(d.total||0);
     if(g('k-pagar-sub')) g('k-pagar-sub').innerHTML=((d.tot_atrasado||0)>0
         ? '<b style="color:var(--crit)">R$ '+fmt(d.tot_atrasado)+' atrasado</b> · '
@@ -2526,25 +2504,9 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }));
   }).catch(()=>{}); }
 
-  /* ---------- Adicionar previsão ---------- */
-  (function(){
-    const btn=g('prev-add'); if(!btn) return;
-    const pv=g('prev-venc'); if(pv&&!pv.value) pv.value=hoje;
-    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
-    nb.addEventListener('click',()=>{
-      const msg=g('prev-msg'), v=parseFloat(g('prev-valor').value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
-      const payload={ categoria:g('prev-cat').value, valor:v,
-        vencimento:g('prev-venc').value, descricao:g('prev-desc').value.trim() };
-      nb.disabled=true; nb.textContent='gravando…';
-      post('/api/previsao',payload).then(res=>{
-        nb.disabled=false; nb.textContent='Adicionar previsão';
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Previsão adicionada em '+esc(payload.categoria)+'.</span>';
-          g('prev-valor').value=''; g('prev-desc').value=''; loadMapa(true); }
-        else{ msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>'; }
-      }).catch(()=>{ nb.disabled=false; nb.textContent='Adicionar previsão'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
+  /* O formulário "Adicionar previsão" saiu da aba Contas em 10/10/2026: retirada já paga
+     era lançada ali por engano e ficava como conta em aberto. No lugar dele entrou o
+     "Lançar um gasto" (conta que ainda não foi paga = gasto com pagamento Boleto). */
 
   /* ---------- saque: valor sacado + lucro acumulados (na régua) ---------- */
   function loadSaqueResumo(f){ return fetch('/api/saque-resumo'+qf(f)).then(r=>r.json()).then(d=>{
