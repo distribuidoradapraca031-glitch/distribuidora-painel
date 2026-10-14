@@ -2155,6 +2155,14 @@ def _cat_resumo(p):
         return c
     return "Gastos adicionais"
 
+# de onde saiu o dinheiro, com os nomes que o dono usa no formulário
+_FORMA_ROTULO = {"6055919": "Caixa (gaveta)", "6780142": "Dinheiro guardado",
+                 "6055931": "PIX", "6776761": "Recurso próprio", "6687681": "Boleto"}
+
+def _rotulo_forma(p):
+    return (_FORMA_ROTULO.get(str(p.get("forma_pagamento_id") or ""))
+            or p.get("nome_forma_pagamento") or "—")
+
 @app.route("/api/gastos-mes")
 @login_required
 def api_gastos_mes():
@@ -2167,6 +2175,7 @@ def api_gastos_mes():
         mes = _hoje()[:7]
         buckets = {k: 0.0 for k in RESUMO_FIXOS}   # nomes fixos sempre aparecem
         extras, compras = {}, 0.0
+        lanc = {}       # cada linha guarda os lançamentos do mês (histórico com a setinha)
         for p in pgs:
             if str(p.get("liquidado")) != "1":
                 continue  # só o que já saiu da conta (pago)
@@ -2186,8 +2195,17 @@ def api_gastos_mes():
                 buckets[cat] += val
             else:
                 extras[cat] = extras.get(cat, 0.0) + val
-        itens = [{"cat": k, "total": round(buckets[k], 2), "fixo": True} for k in RESUMO_FIXOS]
-        itens += sorted([{"cat": k, "total": round(v, 2), "fixo": False}
+            nota = _nota_conta(p)
+            lanc.setdefault(cat, []).append({
+                "id": p.get("id"), "data": (p.get("data_liquidacao") or "")[:10],
+                "valor": round(val, 2), "forma": _rotulo_forma(p),
+                "nota": "" if nota.strip().lower() == cat.lower() else nota})
+        for L in lanc.values():
+            L.sort(key=lambda x: (x["data"], str(x["id"])), reverse=True)   # mais recente primeiro
+        itens = [{"cat": k, "total": round(buckets[k], 2), "fixo": True,
+                  "lancamentos": lanc.get(k, [])} for k in RESUMO_FIXOS]
+        itens += sorted([{"cat": k, "total": round(v, 2), "fixo": False,
+                          "lancamentos": lanc.get(k, [])}
                          for k, v in extras.items()], key=lambda x: -x["total"])
         total = round(sum(buckets.values()) + sum(extras.values()), 2)
         return {"itens": itens, "total": total,

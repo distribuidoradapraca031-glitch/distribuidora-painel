@@ -2191,15 +2191,31 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     if(g('gm-mes')) g('gm-mes').textContent=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'';
     // lista os nomes fixos SEMPRE (zerados em cinza) e sobe conforme o dono paga
-    let rows=(d.itens||[]).map(i=>{ const z=i.total<=0;
-      return '<tr><td class="nome"'+(z?' style="color:var(--muted)"':'')+'>'+esc(i.cat)+'</td>'+
-        '<td class="num"'+(z?' style="color:var(--muted)"':' style="font-weight:600"')+'>R$ '+fmt(i.total)+'</td></tr>'; }).join('');
+    // cada linha abre (setinha) o histórico do mês: dia, de onde saiu e quanto — igual ao mapa
+    let rows=(d.itens||[]).map((i,gi)=>{ const z=i.total<=0, L=i.lancamentos||[], has=L.length>0;
+      let r='<tr class="gm-cat'+(has?' clic':'')+'" data-gi="'+gi+'"'+(has?' style="cursor:pointer"':'')+'>'+
+        '<td class="nome"'+(z?' style="color:var(--muted)"':'')+'>'+
+          (has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+
+          esc(i.cat)+(has?' <span style="color:var(--muted);font-size:.72rem">'+L.length+'</span>':'')+'</td>'+
+        '<td class="num"'+(z?' style="color:var(--muted)"':' style="font-weight:600"')+'>R$ '+fmt(i.total)+'</td></tr>';
+      if(has) r+='<tr class="gm-det" data-gi="'+gi+'" hidden><td colspan="2" style="padding:0">'+
+        '<div style="padding:6px 12px;background:var(--bg)">'+
+        L.map(x=>'<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)">'+
+          '<span style="font-size:.85rem">'+dbr(x.data)+' · <span style="color:var(--muted)">'+esc(x.forma)+'</span>'+
+            (x.nota?' · '+esc(x.nota):'')+'</span>'+
+          '<span class="num" style="font-size:.85rem;font-weight:600">R$ '+fmt(x.valor)+'</span></div>').join('')+
+        '</div></td></tr>';
+      return r; }).join('');
     rows+='<tr><td class="nome" style="font-weight:600">Mercadoria (compras)</td><td class="num" style="font-weight:600">R$ '+fmt(d.compras)+'</td></tr>';
     topo.innerHTML='<div style="font-size:1.75rem;font-weight:800;line-height:1.1">R$ '+fmt(d.total_geral)+'</div>'+
       '<div class="note" style="margin:4px 0 10px">despesas <b>R$ '+fmt(d.total)+'</b> + mercadoria <b>R$ '+fmt(d.compras)+'</b> = o que já saiu no mês</div>'+
       '<div class="tblwrap"><table><thead><tr><th>Onde foi</th><th class="num">Pago no mês</th></tr></thead><tbody>'+rows+
       '<tr><td style="font-weight:800">Total gasto no mês</td><td class="num" style="font-weight:800">R$ '+fmt(d.total_geral)+'</td></tr>'+
       '</tbody></table></div>';
+    topo.querySelectorAll('tr.gm-cat.clic').forEach(r=>r.addEventListener('click',()=>{
+      const det=topo.querySelector('tr.gm-det[data-gi="'+r.dataset.gi+'"]');
+      if(det){ det.hidden=!det.hidden; const ch=r.querySelector('.chev'); if(ch) ch.textContent=det.hidden?'▸':'▾'; }
+    }));
   }).catch(()=>{}); }
 
   /* ---------- Última atualização das contas a pagar ---------- */
