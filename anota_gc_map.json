@@ -5537,5 +5537,16 @@
   "mult": 1,
   "manual": true,
   "obs": "15/09/2026: sabor novo — cai no guarda-chuva, igual Tropical/Melancia/Tradicional"
+ },
+ "COPAO BALLANTINE S SUNSHINE": {
+  "anota_title": "Copão Ballantine´s Sunshine",
+  "categoria": "Copão Whisky",
+  "gc_id": "95404668",
+  "gc_nome": "COPAO WHISKY BALLANTINES SUNSHINE",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY BALLANTINES SUNSHINE",
+  "manual": true
  }
 }
