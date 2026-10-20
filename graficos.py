@@ -359,6 +359,12 @@ DRE_DE_PARA = {
     "Almoço":                            "Almoço",
     "Padaria":                           "Padaria",
     "Seguro do carro":                   "Seguro do carro",
+    # categorias do gasto do dia a dia que caíam em "Outros" (dono pediu cada uma na sua linha, 20/10)
+    "Papelaria":                         "Material de escritório",
+    "Combustível":                       "Gasolina",
+    "Limpeza / higiene":                 "Material de limpeza",
+    "Descartáveis (copo/saco)":          "Sacolas / gelo / copos",
+    "Manutenção / conserto":             "Manutenção de equipamentos",
     "Material de escritório":            "Material de escritório",
     "Supermercado":                      "Outros",
     "Água / luz / internet":             "Outros",
@@ -441,6 +447,11 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
             return False
         d = p.get("descricao") or ""
         if "[PROVISAO]" in d.upper():
+            return False
+        # SANGRIA é dinheiro trocando de lugar (gaveta → cofre/sobra, saque do banco, dinheiro
+        # entregue no saque), não é gasto. Ela vai no plano "Compras" e entrava aqui como
+        # MERCADORIA: R$ 3.462 em ago, 4.458 em set e 3.529 em out/2026 até o dia 20.
+        if d.strip().upper().startswith("SANGRIA"):
             return False
         if interno_fn and interno_fn(d):
             return False

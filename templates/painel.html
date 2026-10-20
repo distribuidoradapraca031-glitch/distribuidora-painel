@@ -673,6 +673,14 @@ Use os botões no topo (<strong>Loja · Acompanhamento · Estoque · Financeiro 
 <script id="data" type="application/json">__DATA__</script>
 <script>
 const D = JSON.parse(document.getElementById('data').textContent);
+// DATA DE HOJE NO HORÁRIO DE BRASÍLIA. Nunca usar toISOString() pra saber "hoje": ele dá a
+// data de Londres (UTC) e, depois das 21h daqui, já é o dia seguinte. Era isso que fazia o
+// fechamento da noite abrir com a data de amanhã (corrigido em 20/10/2026, pedido do dono).
+function hojeBR(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const v=t=>(p.find(x=>x.type===t)||{}).value;
+  return v('year')+'-'+v('month')+'-'+v('day');
+}
 const fmt = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmt0 = n => n.toLocaleString('pt-BR',{maximumFractionDigits:0});
 const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
@@ -1057,7 +1065,7 @@ const abByData={}; D.fechamentos.forEach(f=>abByData[f.data]=f.abertura);
   const dEl=document.getElementById('f-data'), cEl=document.getElementById('f-contado'),
         eEl=document.getElementById('f-esperado'), res=document.getElementById('f-resultado'),
         abEl=document.getElementById('f-abertura');
-  dEl.value = new Date().toISOString().slice(0,10);  // fechamento é do dia de hoje
+  dEl.value = hojeBR();  // fechamento é do dia de hoje, no horário de Brasília
 
   // ---- contador de cédulas e moedas -> preenche o "contado" ----
   const NOTAS=[200,100,50,20,10,5,2], MOEDAS=[1,0.5,0.25,0.1,0.05], TODAS=NOTAS.concat(MOEDAS);
@@ -1266,7 +1274,7 @@ function copyBtn(boxId, txt){
     catch(e){ try{document.execCommand('copy');done();}catch(_){} }
   });
 }
-const hoje = new Date().toISOString().slice(0,10);
+const hoje = hojeBR();   // horário de Brasília (ver hojeBR)
 const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4) : s;
 
 // ---- GERAR COMPRA (sem nota) ----
@@ -2030,7 +2038,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }));
   }).catch(()=>{}); }
   // data de hoje no horário daqui (a conta em UTC vira o dia seguinte depois das 21h)
-  const HOJE_LOCAL=(()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); })();
+  const HOJE_LOCAL=hojeBR();
   ['res-data','sob-data'].forEach(id=>{ const el=g(id); if(el&&!el.value) el.value=HOJE_LOCAL; });
   (function(){
     const b=g('res-set'); if(!b) return;
@@ -2298,7 +2306,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     if(!lc||!body||!fab) return;
     const tit=g('lc-titulo'), sub=g('lc-sub'), voltar=g('lc-voltar');
     // data de HOJE no horário daqui (a conta em UTC virava "amanhã" depois das 21h)
-    const hojeL=(()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); })();
+    const hojeL=hojeBR();
     let CFG=null;
     const cfg=()=>CFG?Promise.resolve(CFG):fetch('/api/lancar-config').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>(CFG=d));
     const OK=t=>'<span style="color:var(--good)">✅ '+t+'</span>';
