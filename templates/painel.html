@@ -159,7 +159,7 @@ body{padding-bottom:84px}
 .lc-big .s{font-size:.8rem;opacity:.92}
 .lc-big.saida{background:#B3403A}
 .lc-big.entrada{background:#2E7D4F}
-.lc-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.lc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
 .lc-tile{font:inherit;text-align:left;border:1px solid var(--line);background:var(--surface2);color:var(--ink);
   border-radius:12px;padding:14px;cursor:pointer;font-size:1.1rem}
 .lc-tile b{display:block;font-size:.92rem;margin-top:4px}
@@ -201,6 +201,12 @@ body.lc-aberto{overflow:hidden}
 .lc-box .note{font-size:.8rem;color:var(--muted);margin:4px 0 0}
 .toast{bottom:86px;z-index:50}   /* acima do botão + Lançar e da janela da central */
 .lc-atalho{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lc-link{font:inherit;font-size:.74rem;font-weight:600;border:0;background:none;color:var(--accent);cursor:pointer;padding:2px 0;align-self:flex-start}
+.lc-link:hover{text-decoration:underline}
+.lc-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.lc-row.ct-off .q{color:var(--muted)}
+.ct-ed{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;width:100%;margin-top:6px}
+.ct-ed label{display:flex;flex-direction:column;gap:3px;font-size:.72rem;color:var(--muted)}
 
 /* ---- INÍCIO (painel do dia) ---- */
 .ini-hero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -2670,6 +2676,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       arr.map(x=>'<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join('');
     const selCats=id=>'<select id="'+id+'"><option value="" selected disabled>escolha a categoria…</option>'+
       CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>';
+    const linkNovaCat='<button type="button" class="lc-link" data-novacat>＋ não achou? criar categoria</button>';
+    body.addEventListener('click',e=>{ const b=e.target.closest('[data-novacat]'); if(b){ e.preventDefault(); ir('categorias'); } });
     function sugere(txt){ const t=' '+norm(txt)+' '; for(const [kw,cat] of (CFG.palavras||[])){ if(t.indexOf(kw)>=0) return cat; } return null; }
     // depois de lançar, recarrega SÓ os quadros que aquele lançamento mexe, e de uma vez só
     // (vários lançamentos seguidos viram uma recarga): cada quadro relê o sistema inteiro e,
@@ -2740,7 +2748,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<div class="lc-tiles">'+
         '<button class="lc-tile" data-t="mover">🔁<b>Mover dinheiro</b><span>entre gaveta, reserva, sobra e banco</span></button>'+
         '<button class="lc-tile" data-t="extrato">🏦<b>Conferir extrato</b><span>Itaú ou Nubank: o que falta lançar</span></button>'+
-        '<button class="lc-tile" data-t="lista">📋<b>Meus lançamentos</b><span>tudo que foi lançado no mês</span></button></div>';
+        '<button class="lc-tile" data-t="lista">📋<b>Meus lançamentos</b><span>tudo que foi lançado no mês</span></button>'+
+        '<button class="lc-tile" data-t="categorias">🏷️<b>Minhas categorias</b><span>criar, renomear ou esconder</span></button></div>';
       body.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.t)));
     };
 
@@ -2759,7 +2768,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }
     function painelPago(p){
       p.innerHTML='<div class="lc-form">'+
-        '<label>Categoria'+selCats('lc-cat')+'</label>'+
+        '<label>Categoria'+selCats('lc-cat')+linkNovaCat+'</label>'+
         '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '<label>De onde saiu o dinheiro<select id="lc-forma">'+opts(FORMA_PAGO,'escolha de onde saiu…')+'</select></label>'+
         '<label>Dia que pagou<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label>'+
@@ -2805,7 +2814,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }
     function painelAPagar(p){
       p.innerHTML='<div class="lc-form">'+
-        '<label>Categoria'+selCats('lc-cat')+'</label>'+
+        '<label>Categoria'+selCats('lc-cat')+linkNovaCat+'</label>'+
         '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '<label>Vencimento<input id="lc-data" type="date" value="'+hojeL+'"></label>'+
         '<label class="lg">Descrição (opcional)<input id="lc-desc" placeholder="ex.: conta de outubro"><span id="lc-sug-box"></span></label>'+
@@ -3164,6 +3173,82 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           if(res.ok){ x.status='lancado'; fim(b,'<span style="color:var(--good);font-weight:700">✅ baixa dada: pago no PIX '+esc(NB)+' dia '+dbr(x.data)+'</span>'); recarrega(['mapa','gasto']); }
           else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
         }).catch(()=>{ solta(b); toast('❌ sem resposta: confira no mapa antes de repetir'); });
+      }));
+    }
+
+    /* ---- MINHAS CATEGORIAS ----
+       O dono cria, renomeia e esconde categoria sem depender de mim (fase 2, 20/10/2026).
+       Renomear não mexe nos lançamentos: o nome velho vira apelido e os antigos aparecem com o
+       nome novo. Categoria não se apaga (tem histórico): ela some dos formulários. */
+    TELAS.categorias=()=>{
+      cab('Minhas categorias','crie, renomeie ou esconda as categorias dos lançamentos');
+      body.innerHTML='<p class="note">carregando suas categorias…</p>';
+      fetch('/api/categorias').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(pintaCats)
+        .catch(()=>{ body.innerHTML='<p class="note">Não consegui ler as categorias agora. Tente de novo em alguns segundos.</p>'; });
+    };
+    function pintaCats(d,msgOk){
+      const optG=sel=>'<option value="" disabled'+(sel?'':' selected')+'>escolha o grupo…</option>'+
+        d.grupos.map(x=>'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
+      const optL=sel=>d.linhas.map(o=>'<option value="'+esc(o.v)+'"'+(o.v===sel?' selected':'')+'>'+esc(o.rotulo)+'</option>').join('');
+      const linha=x=>'<div class="lc-row'+(x.ativa?'':' ct-off')+'" data-k="'+esc(x.chave)+'"><div style="flex:1 1 240px;min-width:0">'+
+        '<div class="q">'+esc(x.nome)+(x.ativa?'':' <span class="m">(escondida)</span>')+'</div>'+
+        '<div class="m">quadro de lucros: '+esc(x.linha_rotulo)+((x.antes||[]).length?' · antes se chamava '+esc(x.antes.join(', ')):'')+'</div></div>'+
+        '<div class="a"><button class="lc-btn ghost mini ct-edit" type="button">Editar</button></div></div>';
+      let h=(d.aviso?'<div class="lc-aviso">'+esc(d.aviso)+'</div>':'')+
+        '<div class="lc-sec">➕ Nova categoria</div><div class="lc-form">'+
+          '<label>Nome<input id="ct-nome" maxlength="40" placeholder="ex.: Gás de cozinha" autocomplete="off"></label>'+
+          '<label>Grupo<select id="ct-grupo">'+optG('')+'</select></label>'+
+          '<label class="lg">No quadro de lucros<select id="ct-linha">'+optL('*')+'</select></label></div>'+
+        '<div class="lc-acts"><button class="lc-btn" id="ct-criar" type="button">Criar categoria</button></div>'+
+        '<div class="lc-msg" id="lc-msg" aria-live="polite">'+(msgOk?OK(msgOk):'')+'</div>';
+      d.grupos.forEach(gr=>{
+        const its=d.itens.filter(x=>x.grupo===gr&&x.ativa);
+        h+='<div class="lc-sec">'+esc(gr)+' ('+its.length+')</div>'+(its.length?its.map(linha).join(''):'<p class="note">Nenhuma categoria nesse grupo.</p>');
+      });
+      const off=d.itens.filter(x=>!x.ativa);
+      if(off.length) h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">Escondidas ('+off.length+')</summary>'+
+        '<p class="note">Não aparecem pra escolher, mas o que já foi lançado nelas continua nos quadros.</p>'+off.map(linha).join('')+'</details>';
+      h+='<p class="note" style="margin-top:14px">Renomear não mexe nos lançamentos: os antigos passam a aparecer com o nome novo. '+
+         'No quadro de lucros, a mudança aparece na próxima atualização dos números (de manhã, ou no botão Atualizar).</p>';
+      body.innerHTML=h;
+      const recarregaTudo=(txt)=>{ CFG=null; recarrega(['mapa','gasto']);
+        fetch('/api/categorias').then(r=>r.json()).then(nd=>pintaCats(nd,txt)).catch(()=>TELAS.categorias()); };
+      g('ct-criar').addEventListener('click',()=>{
+        const b=g('ct-criar'), msg=g('lc-msg'), nome=val('ct-nome'), grupo=val('ct-grupo'), lin=val('ct-linha');
+        if(!nome){ msg.innerHTML=ER('Digite o nome da categoria.'); return; }
+        if(!grupo){ msg.innerHTML=ER('Escolha o grupo.'); return; }
+        trava(b,'criando…');
+        post('/api/categorias',{acao:'criar', nome, grupo, linha:lin}).then(res=>{ solta(b);
+          if(res.ok) recarregaTudo('Categoria "'+res.nome+'" criada em '+grupo+'. Ela já aparece pra escolher na hora de lançar.');
+          else msg.innerHTML=ER(esc(res.erro||'não consegui criar'));
+        }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Recarregue a tela antes de tentar de novo.'); });
+      });
+      body.querySelectorAll('.ct-edit').forEach(b=>b.addEventListener('click',()=>{
+        const row=b.closest('.lc-row'), x=d.itens.find(i=>i.chave===row.dataset.k); if(!x) return;
+        row.innerHTML='<div class="ct-ed">'+
+          '<label>Nome<input class="ct-n" maxlength="40" value="'+esc(x.nome)+'" autocomplete="off"></label>'+
+          '<label>Grupo<select class="ct-g">'+optG(x.grupo)+'</select></label>'+
+          '<label style="grid-column:1/-1">No quadro de lucros<select class="ct-l">'+optL(x.linha)+'</select></label></div>'+
+          '<label class="lc-chk" style="margin-top:6px"><input type="checkbox" class="ct-h"'+(x.ativa?'':' checked')+'> Esconder: não aparece mais pra escolher na hora de lançar</label>'+
+          '<div class="lc-acts" style="margin-top:8px"><button class="lc-btn good mini ct-ok" type="button">Salvar</button>'+
+          '<button class="lc-btn ghost mini ct-no" type="button">Cancelar</button><span class="m ct-msg" aria-live="polite"></span></div>';
+        row.querySelector('.ct-n').focus();
+        row.querySelector('.ct-no').addEventListener('click',()=>pintaCats(d));
+        row.querySelector('.ct-ok').addEventListener('click',()=>{
+          const ok=row.querySelector('.ct-ok'), m=row.querySelector('.ct-msg');
+          const nome=row.querySelector('.ct-n').value.trim(), grupo=row.querySelector('.ct-g').value, lin=row.querySelector('.ct-l').value, ativa=!row.querySelector('.ct-h').checked;
+          if(!nome){ m.innerHTML=ER('Digite o nome.'); return; }
+          trava(ok,'salvando…');
+          post('/api/categorias',{acao:'editar', chave:x.chave, nome, grupo, linha:lin, ativa}).then(res=>{ solta(ok);
+            if(!res.ok){ m.innerHTML=ER(esc(res.erro||'não consegui salvar')); return; }
+            const ren=nome!==x.nome, partes=[];
+            if(ren) partes.push('"'+x.nome+'" agora se chama "'+res.nome+'" (os lançamentos antigos vêm junto)');
+            if(grupo!==x.grupo) partes.push('foi pro grupo '+grupo);
+            if(lin!==x.linha) partes.push('muda de linha no quadro de lucros na próxima atualização');
+            if(ativa!==x.ativa) partes.push(ativa?'voltou a aparecer pra escolher':'escondida dos formulários');
+            recarregaTudo(partes.length?(ren?'':'"'+res.nome+'": ')+partes.join(', ')+'.':'Nada mudou.');
+          }).catch(()=>{ solta(ok); m.innerHTML=ER('Sem resposta do sistema. Recarregue antes de tentar de novo.'); });
+        });
       }));
     }
 

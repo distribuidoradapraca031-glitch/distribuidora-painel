@@ -132,7 +132,8 @@ def _regera_graficos():
         fardo = {(p.get("nome") or "").upper(): int(p["fardo"])
                  for p in (old.get("catalogo") or {}).get("produtos", []) if p.get("fardo")}
         novo = graficos.construir(vendas, produtos, pagamentos, old, fardo, hoje,
-                                  categoria_fn=_categoria_conta, interno_fn=_eh_interno)
+                                  categoria_fn=_categoria_dre, interno_fn=_eh_interno,
+                                  cats_dre=_categ_dre())
         novo["catalogo"] = _monta_catalogo(produtos, old.get("catalogo") or {})
         with open(PAINEL_JSON, "w", encoding="utf-8") as f:
             _json.dump(novo, f, ensure_ascii=False)
@@ -774,8 +775,10 @@ def _sobra_apaga_saida(codigo):
 CAT_TAG_RE = re.compile(r"^\[cat:([^\]]+)\]\s*")
 
 def _cat_marcada(desc):
+    """Categoria da etiqueta, pela CHAVE fixa: o [cat:nome velho] de antes de o dono
+    renomear cai na mesma categoria do nome novo (ver Minhas categorias)."""
     m = CAT_TAG_RE.match(desc or "")
-    return m.group(1).strip() if m else None
+    return _cat_chave(m.group(1).strip()) if m else None
 
 def _sem_cat(desc):
     return CAT_TAG_RE.sub("", desc or "").strip()
@@ -867,7 +870,17 @@ PREV_KEYWORDS = [
 ]
 
 def _categoria_conta(p):
-    """Categoria (das 17) de uma conta a pagar, ou None se não for previsão/recorrente."""
+    """Categoria (pela chave) de uma conta a pagar, ou None se não for previsão/recorrente."""
+    c = _categoria_conta_texto(p)
+    return _cat_chave(c) if c else c
+
+def _categoria_dre(p):
+    """Categoria pro quadro de lucros. Igual à da aba Contas, só que "Outros" escolhido
+    pelo dono vai pra linha Outros: lá ele cai junto da mercadoria, e no quadro entrava
+    como custo de mercadoria (pelo plano Compras)."""
+    return _cat_marcada(p.get("descricao")) or _categoria_conta(p)
+
+def _categoria_conta_texto(p):
     desc = p.get("descricao") or ""
     marcada = _cat_marcada(desc)   # categoria escolhida no formulário manda
     if marcada:
@@ -1003,6 +1016,7 @@ def api_gasto():
     """
     body = request.get_json(force=True, silent=True) or {}
     cat = body.get("categoria") or "Outros"
+    cat = _cat_nome(cat)      # a etiqueta leva o nome de hoje (tela velha manda o antigo)
     valor = _num(body.get("valor"))
     forma = body.get("forma") or ""
     data = (body.get("data") or _hoje())[:10]
@@ -1132,11 +1146,321 @@ CENTRAL_GRUPOS = [
 ]
 CATS_EXTRA = {"Tarifa do banco": "33015677"}   # plano "Despesas bancárias"
 
+def _plano_cat_fabrica(cat):
+    return CATS.get(cat) or _PREV_PLANO.get(cat) or CATS_EXTRA.get(cat) or CATS["Outros"]
+
 def _plano_cat(cat):
     """Plano de contas do GestãoClick de uma categoria do painel. Antes só valiam as
     categorias do gasto do dia a dia: "Energia (CEMIG)" lançada como gasto ia pro plano
     Compras. O que manda no painel continua sendo a etiqueta [cat:]."""
-    return CATS.get(cat) or _PREV_PLANO.get(cat) or CATS_EXTRA.get(cat) or CATS["Outros"]
+    it = _cat_item(cat)
+    return (it and it["plano"]) or _plano_cat_fabrica(cat)
+
+# ---- MINHAS CATEGORIAS (o dono cria, renomeia e esconde, sem depender de mim) ----
+# Fase 2 da central (20/10/2026), na linha do cadastro de plano de contas da planilha
+# "Meu Caixa Organizado". As categorias de fábrica são as da central (CENTRAL_GRUPOS). O
+# que o dono muda fica no produto técnico inativo "CONTROLE CATEGORIAS" do GestãoClick, só
+# a diferença: o disco do servidor some a cada atualização, então não pode ser arquivo.
+#  · cada categoria tem uma CHAVE que nunca muda (o nome de fábrica, ou o nome com que
+#    nasceu) e o NOME da tela, que ele troca quando quiser. O código continua falando a
+#    chave (Igor, Victor e Biel têm regra própria no resumo); a tela mostra o nome;
+#  · renomear não reescreve lançamento nenhum: o nome velho vira apelido, e o
+#    [cat:nome velho] dos lançamentos antigos cai na categoria com o nome novo;
+#  · categoria não se apaga (tem histórico): ela some dos formulários e fica nos quadros.
+CATEG_CONTROLE = "CONTROLE CATEGORIAS"
+CATEG_GRUPOS = [g for g, _ in CENTRAL_GRUPOS]
+# nomes que já foram usados pra mesma coisa (lançamentos antigos e a aba Contas antiga)
+CATEG_APELIDOS = {
+    "Retirada do sócio (Victor)": ["Retirada Victor"],
+    "Igor (pró-labore / retirada)": ["Retirada do sócio (Igor)", "Pró-labore Igor"],
+    "Biel (Gabriel)": ["Pagamento Biel", "Funcionário Gabriel (FDS)"],
+    "PH Motoca": ["Pagamento PH Motoca", "PH Motoca / motoboy"],
+}
+LINHA_PROPRIA = "*"     # no quadro de lucros, uma linha só dela, com o nome dela
+# linhas do quadro de lucros que não são custo da operação
+CATEG_LINHAS_ESPECIAIS = [("@impostos", "Impostos"), ("@financeiro", "Taxas de cartão e banco")]
+# plano do GestãoClick de uma categoria NOVA, pela linha que o dono escolheu. O painel
+# classifica pela etiqueta [cat:]; o plano só arruma os relatórios do próprio GC.
+PLANO_DA_LINHA = {
+    "Salários e remunerações": "33015660", "Aluguel": "33015630",
+    "Material de limpeza": "33015655", "Luz": "33015649", "Água": "33015649",
+    "Telefone / internet": "33015663", "Gasolina": "33015633",
+    "Manutenção de equipamentos": "33015656", "Publicidade": "33015657",
+    "Sistema (app do delivery)": "33015654", "Contabilidade": "33015635",
+    "Motoboy / entregas": "33015664", "Sacolas / gelo / copos": "33015662",
+    "Seguro do carro": "33015633", "Lanches": "33015662", "Almoço": "33015662",
+    "Padaria": "33015662", "Material de escritório": "33015658",
+    "@impostos": "33015650", "@financeiro": "33015677",
+}
+_CATEG_NOME_OK = re.compile(r"^[0-9A-Za-zÀ-ÿºª ()/.,+'\-]+$")
+
+_categ = {"t": 0.0, "cfg": None, "pid": None, "lista": None, "idx": None, "erro": None}
+_categ_lock = threading.Lock()
+
+def _norm_cat(s):
+    import unicodedata
+    s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode()
+    return re.sub(r"\s+", " ", s.upper()).strip()
+
+def _categ_le_gc():
+    """(id do produto de controle ou None, o que está guardado nele). Erro sobe: com o
+    GestãoClick fora, melhor não gravar nada do que gravar em cima do que ele fez."""
+    import json as _json
+    pid = _categ["pid"]          # já achado antes: vai direto (a busca por nome pode demorar
+    if not pid:                  # a enxergar o produto recém-criado e eu criaria outro)
+        for p in gcapi.get_all("/produtos", {"nome": CATEG_CONTROLE}):
+            if (p.get("nome") or "").strip().upper() == CATEG_CONTROLE:
+                pid = str(p.get("id"))
+                break
+    if not pid:
+        return None, {}
+    d = gcapi.get(f"/produtos/{pid}").get("data") or {}
+    cfg = _json.loads((d.get("descricao") or "").strip() or "{}")
+    return pid, (cfg if isinstance(cfg, dict) else {})
+
+def _categ_cfg(fresh=False):
+    """O que o dono mudou nas categorias, com 60 s de cache por processo. Se o GC não
+    responder, segue com o último que leu (ou o de fábrica) e tenta de novo depois."""
+    agora = time.time()
+    if not fresh and _categ["cfg"] is not None and agora - _categ["t"] < 60:
+        return _categ["cfg"]
+    try:
+        pid, cfg = _categ_le_gc()
+    except Exception as e:
+        with _categ_lock:
+            _categ.update(t=agora, erro=str(e)[:200])
+            if _categ["cfg"] is None:
+                _categ.update(cfg={}, lista=None, idx=None)
+        if fresh:
+            raise
+        return _categ["cfg"]
+    with _categ_lock:
+        if cfg != _categ["cfg"]:
+            _categ.update(lista=None, idx=None)
+        _categ.update(t=agora, cfg=cfg, pid=pid, erro=None)
+    return cfg
+
+def _categ_monta(cfg):
+    """Todas as categorias, na ordem da central: as de fábrica (com o que ele mudou) e,
+    no fim de cada grupo, as que ele criou."""
+    import graficos
+    mud = cfg.get("cats") or {}
+    def item(chave, m, grupo, linha, plano, nova):
+        g = m.get("g") if m.get("g") in CATEG_GRUPOS else grupo
+        l = m.get("l") or linha
+        return {"chave": chave, "nome": m.get("n") or chave, "grupo": g, "linha": l,
+                "plano": plano or PLANO_DA_LINHA.get(l) or CATS["Outros"],
+                "ativa": not m.get("off"), "nova": nova,
+                "antigos": [a for a in (m.get("a") or []) + CATEG_APELIDOS.get(chave, [])
+                            if _norm_cat(a) != _norm_cat(m.get("n") or chave)]}
+    fab = []
+    for grupo, cats in CENTRAL_GRUPOS:
+        for c in cats:
+            fab.append(item(c, mud.get(c) or {}, grupo,
+                            graficos.DRE_DE_PARA.get(c) or "Outros", _plano_cat_fabrica(c), False))
+    novas = [item(c, m, "Dia a dia", LINHA_PROPRIA, None, True)
+             for c, m in mud.items() if m.get("novo")]
+    return [it for g in CATEG_GRUPOS for it in fab + novas if it["grupo"] == g]
+
+def _categ_lista():
+    cfg = _categ_cfg()
+    with _categ_lock:
+        if _categ["lista"] is None or _categ["idx"] is None:
+            lista = _categ_monta(cfg)
+            idx = {}
+            for it in lista:     # nome de hoje primeiro, depois a chave e os apelidos
+                for n in [it["nome"], it["chave"]] + it["antigos"]:
+                    idx.setdefault(_norm_cat(n), it)
+            _categ.update(lista=lista, idx=idx)
+        return _categ["lista"]
+
+def _cat_item(nome):
+    """A categoria pelo nome de hoje, pelo nome de fábrica ou por um apelido."""
+    if not nome:
+        return None
+    _categ_lista()
+    return (_categ["idx"] or {}).get(_norm_cat(nome))
+
+def _nomes_cat(nome):
+    """Todos os nomes (normalizados) que a categoria já teve, ou só o próprio texto."""
+    if not nome:
+        return set()
+    it = _cat_item(nome)
+    if not it:
+        return {_norm_cat(nome)}
+    return {_norm_cat(x) for x in [it["nome"], it["chave"]] + it["antigos"]}
+
+def _cat_chave(nome):
+    """Chave fixa da categoria. Nome que não é de categoria nenhuma volta como veio."""
+    it = _cat_item(nome)
+    return it["chave"] if it else nome
+
+def _cat_nome(nome):
+    """Nome de tela: o que o dono deu pra categoria. O resto (Lanches, Mercadoria...) fica."""
+    it = _cat_item(nome)
+    return it["nome"] if it else nome
+
+def _categ_dre():
+    """Pro quadro de lucros: a linha de cada categoria (pela chave e pelos apelidos) e,
+    na ordem, as linhas próprias que não existem na planilha."""
+    import graficos
+    de_para, extras = {}, []
+    for it in _categ_lista():
+        l = it["linha"]
+        if l == LINHA_PROPRIA:
+            l = it["nome"]
+            if l not in graficos.DRE_OPERACIONAIS and l not in extras:
+                extras.append(l)
+        for n in [it["chave"]] + it["antigos"]:
+            de_para[n] = l
+    return {"de_para": de_para, "extras": extras}
+
+def _categ_grava(cfg):
+    """Guarda no produto de controle (cria na 1ª vez) e confere lendo de volta."""
+    import json as _json
+    texto = _json.dumps(cfg, ensure_ascii=False, separators=(",", ":"))
+    pid = _categ["pid"]
+    if not pid:
+        r = gcapi.post("/produtos", {"nome": CATEG_CONTROLE, "movimenta_estoque": "0",
+                                     "ativo": "0", "valor_custo": "0.00",
+                                     "valor_venda": "0.00", "descricao": texto})
+        d = r.get("data") or {}
+        pid = str(d.get("id") or d.get("dados") or "") or _categ_le_gc()[0]
+        if not pid:
+            raise RuntimeError("não consegui criar o registro das categorias no sistema")
+    else:
+        d = gcapi.get(f"/produtos/{pid}").get("data") or {}
+        gcapi.put(f"/produtos/{pid}", {"nome": d.get("nome") or CATEG_CONTROLE,
+                                       "codigo_interno": d.get("codigo_interno"),
+                                       "descricao": texto})
+    volta = gcapi.get(f"/produtos/{pid}").get("data") or {}
+    try:
+        ok = _json.loads(volta.get("descricao") or "{}") == cfg
+    except ValueError:
+        ok = False
+    with _categ_lock:
+        _categ.update(t=0.0, cfg=None, lista=None, idx=None, pid=pid)    # relê na próxima
+    if not ok:
+        raise RuntimeError("o sistema não guardou a mudança inteira, tente de novo")
+    return pid
+
+def _categ_linhas_opcoes():
+    import graficos
+    return ([{"v": LINHA_PROPRIA, "rotulo": "Linha própria, com o nome da categoria"}]
+            + [{"v": l, "rotulo": l} for l in graficos.DRE_OPERACIONAIS]
+            + [{"v": v, "rotulo": r} for v, r in CATEG_LINHAS_ESPECIAIS])
+
+def _categ_rotulo_linha(it):
+    if it["linha"] == LINHA_PROPRIA:
+        return f"linha própria ({it['nome']})"
+    return dict(CATEG_LINHAS_ESPECIAIS).get(it["linha"], it["linha"])
+
+def _categ_nome_valido(nome, chave_atual=None):
+    """Erro (texto pro dono) ou None. O nome não pode repetir o de outra categoria, nem
+    um apelido dela, nem um nome que o painel já usa pra outra coisa."""
+    import graficos
+    if len(nome) < 2 or len(nome) > 40:
+        return "o nome precisa ter de 2 a 40 letras"
+    if not _CATEG_NOME_OK.match(nome):
+        return "use só letras, números, espaço e ( ) / - . , +"
+    reservados = {"MERCADORIA", "MERCADORIA (NOTAS)", "DO MEU BOLSO", "SAQUE",
+                  "GASTOS ADICIONAIS", "LANCHES", "IMPOSTOS", "TAXAS DE CARTAO E BANCO"}
+    reservados |= {_norm_cat(x) for x in ("Vendas no balcão", "Vendas no delivery",
+                   "Vendas totais", "Vendas líquidas", "Lucro bruto", "Lucro das operações",
+                   "Lucro antes do imposto", "LUCRO LÍQUIDO", "Custo das mercadorias vendidas",
+                   "Total de custos operacionais")}
+    n = _norm_cat(nome)
+    if n in reservados:
+        return f'"{nome}" é um nome que o painel já usa pra outra coisa'
+    for it in _categ_lista():
+        if it["chave"] == chave_atual:
+            continue
+        if n in {_norm_cat(x) for x in [it["nome"], it["chave"]] + it["antigos"]}:
+            return (f'já existe a categoria "{it["nome"]}"' if n == _norm_cat(it["nome"])
+                    else f'"{nome}" já foi nome da categoria "{it["nome"]}"')
+    return None
+
+@app.route("/api/categorias", methods=["GET", "POST"])
+@login_required
+def api_categorias():
+    """GET: a lista pra tela "Minhas categorias". POST: criar ou editar uma (nome, grupo,
+    linha do quadro de lucros, escondida ou não). A mudança é aplicada em cima do que
+    está guardado no GC AGORA, nunca em cima do que a tela tinha."""
+    if request.method == "GET":
+        lista = _categ_lista()
+        return jsonify({"itens": [dict(it, linha_rotulo=_categ_rotulo_linha(it),
+                                       # nomes que ELE deu antes (os de fábrica não contam)
+                                       antes=[x for x in it["antigos"]
+                                              if x not in CATEG_APELIDOS.get(it["chave"], [])])
+                                  for it in lista],
+                        "grupos": CATEG_GRUPOS, "linhas": _categ_linhas_opcoes(),
+                        "aviso": _categ["erro"] and "Não consegui ler suas categorias no "
+                                 "sistema agora; estou mostrando as últimas que li."})
+    body = request.get_json(force=True, silent=True) or {}
+    acao = (body.get("acao") or "").strip()
+    nome = re.sub(r"\s+", " ", str(body.get("nome") or "")).strip()
+    grupo = (body.get("grupo") or "").strip()
+    linha = (body.get("linha") or "").strip()
+    linhas_ok = {o["v"] for o in _categ_linhas_opcoes()}
+    try:
+        cfg = _categ_cfg(fresh=True)
+    except Exception:
+        return jsonify({"ok": False, "erro": "o sistema não respondeu agora, nada foi "
+                                             "mudado. Tente de novo em alguns segundos"}), 502
+    cats = dict(cfg.get("cats") or {})
+    if grupo not in CATEG_GRUPOS:
+        return jsonify({"ok": False, "erro": "escolha o grupo"}), 400
+    if linha not in linhas_ok:
+        return jsonify({"ok": False, "erro": "escolha onde ela entra no quadro de lucros"}), 400
+    if acao == "criar":
+        erro = _categ_nome_valido(nome)
+        if erro:
+            return jsonify({"ok": False, "erro": erro}), 400
+        chave = nome
+        cats[chave] = {"novo": 1, "g": grupo, "l": linha}
+    elif acao == "editar":
+        it = next((x for x in _categ_lista() if x["chave"] == body.get("chave")), None)
+        if not it:
+            return jsonify({"ok": False, "erro": "não achei essa categoria, recarregue a tela"}), 400
+        chave = it["chave"]
+        erro = _categ_nome_valido(nome, chave)
+        if erro:
+            return jsonify({"ok": False, "erro": erro}), 400
+        m = dict(cats.get(chave) or {})
+        if _norm_cat(nome) != _norm_cat(it["nome"]):          # renomeou
+            antigos = [a for a in (m.get("a") or []) if _norm_cat(a) != _norm_cat(nome)]
+            if _norm_cat(it["nome"]) != _norm_cat(chave) and it["nome"] not in antigos:
+                antigos.append(it["nome"])
+            m["a"] = antigos
+        m["n"] = nome
+        m["g"], m["l"] = grupo, linha
+        m["off"] = 0 if body.get("ativa", True) else 1
+        # tira do registro o que voltou a ser igual ao de fábrica (mantém o guardado pequeno)
+        if m.get("n") == chave:
+            m.pop("n")
+        if not m.get("a"):
+            m.pop("a", None)
+        if not m.get("off"):
+            m.pop("off", None)
+        if not m.get("novo"):
+            fab = next((x for x in _categ_monta({}) if x["chave"] == chave), None)
+            if fab:
+                if m.get("g") == fab["grupo"]: m.pop("g")
+                if m.get("l") == fab["linha"]: m.pop("l")
+        cats[chave] = m
+        if not cats[chave]:
+            cats.pop(chave)
+    else:
+        return jsonify({"ok": False, "erro": "ação inválida"}), 400
+    novo = dict(cfg, v=1, cats=cats)
+    try:
+        _categ_grava(novo)
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+    _invalida("mapa", "gastos_mes", "lancamentos_" + _hoje()[:7], "pagar", "previsoes",
+              "ultima_atualizacao")
+    it = _cat_item(nome)
+    return jsonify({"ok": True, "chave": chave, "nome": it["nome"] if it else nome})
 
 # palavra no texto -> categoria SUGERIDA. É só sugestão: o dono confirma, e a categoria
 # que ele escolhe é a que vale (ver o [cat:] lá em cima). Da mais longa pra mais curta.
@@ -1211,8 +1535,15 @@ def _serie_vencimentos(inicio, vezes, freq):
 def api_lancar_config():
     """O que a central precisa pra montar os formulários: as categorias por grupo e as
     palavras que sugerem categoria enquanto o dono digita."""
-    return jsonify({"grupos": [{"grupo": g, "cats": c} for g, c in CENTRAL_GRUPOS],
-                    "palavras": SUGESTAO_PALAVRAS})
+    lista = _categ_lista()        # as categorias do dono (Minhas categorias), sem as escondidas
+    grupos = [{"grupo": g, "cats": [it["nome"] for it in lista if it["grupo"] == g and it["ativa"]]}
+              for g in CATEG_GRUPOS]
+    palavras = []
+    for kw, cat in SUGESTAO_PALAVRAS:
+        it = _cat_item(cat)
+        if it and it["ativa"]:
+            palavras.append((kw, it["nome"]))
+    return jsonify({"grupos": [x for x in grupos if x["cats"]], "palavras": palavras})
 
 # ---- OUTRA ENTRADA (aporte, empréstimo, rendimento...) ----
 # Dinheiro que entra e NÃO é venda: não pode ir pro faturamento. Na gaveta vira uma
@@ -1732,7 +2063,7 @@ def api_extrato_ler():
                 "venc": (p.get("data_vencimento") or "")[:10],
                 "valor": round(_num(p.get("valor_total")) or _num(p.get("valor")), 2),
                 "forma": _rotulo_forma(p), "fornecedor": p.get("nome_fornecedor") or "",
-                "cat": "Mercadoria" if _eh_mercadoria(p.get("descricao")) else (_categoria_conta(p) or "")}
+                "cat": "Mercadoria" if _eh_mercadoria(p.get("descricao")) else _cat_nome(_categoria_conta(p) or "")}
 
     out = []
     # primeiro quem tem marca exata, depois o resto em ordem de data
@@ -1773,6 +2104,12 @@ def api_extrato_ler():
                 cat = _sugere_por_palavra(l["memo"])
                 if cat:
                     item["sugestao"], item["por"] = cat, "palavra"
+        if item["sugestao"]:              # o nome da lista do dono; escondida não é sugerida
+            it = _cat_item(item["sugestao"])
+            if it and not it["ativa"]:
+                item["sugestao"], item["por"] = None, None
+            elif it:
+                item["sugestao"] = it["nome"]
         out.append(item)
     out.sort(key=lambda x: x["data"])
     cont = {k: sum(1 for x in out if x["status"] == k) for k in ("lancado", "aberta", "parecido", "falta")}
@@ -1853,6 +2190,8 @@ def api_lancamentos():
                           "desc": d[:140], "valor": round(_num(r.get("valor_total")) or _num(r.get("valor")), 2),
                           "forma": _rotulo_forma(r), "sinal": 1, "pode_excluir": False})
         itens.sort(key=lambda x: (x["lancado"], x["data"], str(x["id"])), reverse=True)
+        for x in itens:                       # o nome que o dono deu (Minhas categorias)
+            x["cat"] = _cat_nome(x["cat"])
         return {"mes": mes, "itens": itens, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("lancamentos_" + mes, 60, build))
 
@@ -3061,8 +3400,8 @@ def _cat_resumo(p):
     if "MOTOCA" in du or "MOTOBOY" in du:
         return "PH Motoca"
     c = _categoria_conta(p)   # aluguel, energia, contab, DAS, seguro... viram linha própria
-    if c and c not in ("Retirada Victor", "PH Motoca", "Biel (Gabriel)",
-                       "Igor (pró-labore / retirada)", "Motoboy / entrega"):
+    if c and c not in ("Retirada Victor", "Retirada do sócio (Victor)", "PH Motoca",
+                       "Biel (Gabriel)", "Igor (pró-labore / retirada)", "Motoboy / entrega"):
         return c
     return "Gastos adicionais"
 
@@ -3112,15 +3451,26 @@ def api_gastos_mes():
             else:
                 extras[cat] = extras.get(cat, 0.0) + val
             nota = _nota_conta(p)
+            # a descrição que é só o nome da linha (o de hoje ou um antigo) não é nota. Numa
+            # linha que junta várias (Lanches = lanche + almoço + padaria) o nome da própria
+            # categoria fica, com o nome de hoje: é ele que diz o que foi.
+            propria = _cat_marcada(desc)
+            if _norm_cat(nota) in _nomes_cat(cat):
+                nota = ""
+            elif propria and _norm_cat(nota) in _nomes_cat(propria):
+                nota = _cat_nome(propria)
             lanc.setdefault(cat, []).append({
                 "id": p.get("id"), "data": (p.get("data_liquidacao") or "")[:10],
-                "valor": round(val, 2), "forma": _rotulo_forma(p),
-                "nota": "" if nota.strip().lower() == cat.lower() else nota})
+                "valor": round(val, 2), "forma": _rotulo_forma(p), "nota": nota})
         for L in lanc.values():
             L.sort(key=lambda x: (x["data"], str(x["id"])), reverse=True)   # mais recente primeiro
-        itens = [{"cat": k, "total": round(buckets[k], 2), "fixo": True,
-                  "lancamentos": lanc.get(k, [])} for k in RESUMO_FIXOS]
-        itens += sorted([{"cat": k, "total": round(v, 2), "fixo": False,
+        def _escondida(k):        # linha fixa de categoria que o dono escondeu, zerada, sai
+            it = _cat_item(k)
+            return bool(it and not it["ativa"] and not buckets[k])
+        # "cat" = o nome que o dono deu pra categoria em Minhas categorias
+        itens = [{"cat": _cat_nome(k), "total": round(buckets[k], 2), "fixo": True,
+                  "lancamentos": lanc.get(k, [])} for k in RESUMO_FIXOS if not _escondida(k)]
+        itens += sorted([{"cat": _cat_nome(k), "total": round(v, 2), "fixo": False,
                           "lancamentos": lanc.get(k, [])}
                          for k, v in extras.items()], key=lambda x: -x["total"])
         total = round(sum(buckets.values()) + sum(extras.values()), 2)
@@ -3401,7 +3751,7 @@ def api_previsoes():
             # no total (o total é só o que o dono confirmou).
             venc = (p.get("data_vencimento") or "")[:10]
             val = _num(p.get("valor_total")) or _num(p.get("valor"))
-            abertos[cat].append({"id": p.get("id"), "nota": _nota_conta(p),
+            abertos.setdefault(cat, []).append({"id": p.get("id"), "nota": _nota_conta(p),
                                  "venc": venc, "valor": val,
                                  "atrasado": bool(venc and venc < hoje),
                                  "futuro": bool(venc and venc > fim_mes),
@@ -3451,7 +3801,8 @@ def api_mapa():
         hoje = _hoje()
         ano, m0 = int(hoje[:4]), int(hoje[5:7])
         meses = [f"{ano:04d}-{m:02d}" for m in range(m0, 13)]
-        cats = [lbl for lbl, _ in CATEGORIAS_PREV] + [MERCADORIA_CAT]
+        # pela chave fixa: a categoria renomeada continua sendo a mesma linha
+        cats = list(dict.fromkeys(_cat_chave(lbl) for lbl, _ in CATEGORIAS_PREV)) + [MERCADORIA_CAT]
         def nova():
             return {"atrasado": 0.0, "depois": 0.0, "n": 0,
                     "mes": {m: 0.0 for m in meses}, "itens": []}
@@ -3492,13 +3843,16 @@ def api_mapa():
         tot_atr = tot_dep = 0.0
         for c in cats:
             L = linhas[c]
+            it = _cat_item(c) if c != MERCADORIA_CAT else None
+            if it and not it["ativa"] and not L["n"]:
+                continue                              # escondida e sem conta: não precisa lembrar
             total = L["atrasado"] + L["depois"] + sum(L["mes"].values())
             tot_atr += L["atrasado"]
             tot_dep += L["depois"]
             for m in meses:
                 tot_mes[m] += L["mes"][m]
             L["itens"].sort(key=lambda x: x["venc"] or "9999")
-            saida.append({"cat": c, "n": L["n"],
+            saida.append({"cat": c, "nome": it["nome"] if it else c, "n": L["n"],
                           "atrasado": round(L["atrasado"], 2),
                           "depois": round(L["depois"], 2),
                           "mes": {m: round(v, 2) for m, v in L["mes"].items()},
@@ -3507,10 +3861,12 @@ def api_mapa():
         # ficam no fim, na ordem de sempre, só pra lembrar que existem.
         ordem = {c: i for i, c in enumerate(cats)}
         saida.sort(key=lambda L: (0, -L["total"]) if L["n"] else (1, ordem[L["cat"]]))
+        for L in saida:                               # a tela mostra o nome que o dono deu
+            L["cat"] = L.pop("nome")
         return {"meses": [{"key": m, "label": MES_CURTO[int(m[5:7]) - 1],
                            "atual": m == hoje[:7]} for m in meses],
                 "linhas": saida,
-                "cats_form": [lbl for lbl, _ in CATEGORIAS_PREV],
+                "cats_form": [_cat_nome(lbl) for lbl, _ in CATEGORIAS_PREV],
                 "tot_atrasado": round(tot_atr, 2),
                 "tot_depois": round(tot_dep, 2),
                 "tot_mes": {m: round(v, 2) for m, v in tot_mes.items()},

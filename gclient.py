@@ -88,6 +88,12 @@ def _req(path, method="GET", params=None, body=None, max_retries=5):
     raise RuntimeError(last_err or f"falhou: {url}")
 
 def get(path, params=None):
+    # Desde 15/10/2026 a lista de produtos SEM filtro dá erro 500 no GestãoClick ("Falha
+    # ao listar produtos") e travou gráficos, catálogo e o status das baixas. Com filtro de
+    # nome ela responde normal, e "%" é o curinga da busca dele: casa todo produto que tem
+    # nome (422 de 422 em 20/10, ativos e inativos). Vale só pra lista, não pro /produtos/{id}.
+    if path.rstrip("/") == "/produtos" and not (params or {}).get("nome"):
+        params = dict(params or {}, nome="%")
     return _req(path, "GET", params=params)
 
 def post(path, body):

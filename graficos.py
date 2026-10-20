@@ -97,7 +97,7 @@ def baixar(fetch_pages, hoje, log=lambda *a: None):
 
 
 def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
-              categoria_fn=None, interno_fn=None):
+              categoria_fn=None, interno_fn=None, cats_dre=None):
     """Monta o dicionário dos gráficos. `old` é o pacote anterior (mantém o histórico
     de meses antes de PRIM_MES_VIVO e os blocos que não recalculamos)."""
     TODAY = hoje or date.today()
@@ -309,7 +309,7 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
                  "entradas": entradas, "conta": conta, "fechamentos": fechamentos,
                  "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar,
                  "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY, interno_fn,
-                                  {k: v["custo"] for k, v in prod_by_id.items()})})
+                                  {k: v["custo"] for k, v in prod_by_id.items()}, cats_dre)})
     return novo
 
 # ======================================================================
@@ -404,11 +404,19 @@ def _dre_venda_eh_saque(v):
 
 
 def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
-              custo_by_id=None):
+              custo_by_id=None, cats=None):
     """Demonstração de lucros e perdas, mês a mês. Devolve também o que não soube
-    classificar, pra perguntar ao dono em vez de enfiar em 'Outros' calado."""
+    classificar, pra perguntar ao dono em vez de enfiar em 'Outros' calado.
+
+    `cats` vem de "Minhas categorias" do painel: {"de_para": categoria -> linha (o que o
+    dono escolheu manda sobre a tabela daqui), "extras": linhas próprias que ele criou}."""
     TODAY = hoje or date.today()
     curm = YMD(TODAY)[:7]
+    de_para = {**DRE_DE_PARA, **((cats or {}).get("de_para") or {})}
+    # as linhas próprias entram antes de "Outros", que fica sempre por último
+    operacionais = (DRE_OPERACIONAIS[:-1]
+                    + [l for l in (cats or {}).get("extras") or [] if l not in DRE_OPERACIONAIS]
+                    + DRE_OPERACIONAIS[-1:])
 
     receita = defaultdict(lambda: {"bruto": 0.0, "balcao": 0.0, "delivery": 0.0,
                                    "desconto": 0.0, "devolucao": 0.0,
@@ -501,7 +509,7 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
         chave = (categoria_fn(p) if categoria_fn else None) or plano
         if _prev_ja_paga(p, (categoria_fn(p) if categoria_fn else None) or "", mk, v):
             continue
-        linha = DRE_DE_PARA.get(chave)
+        linha = de_para.get(chave)
         if linha is None:
             d = desconhecidos[chave or "(sem plano de contas)"]
             d["valor"] += v
@@ -542,8 +550,8 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
                          - receita[m]["devolucao"])
     merc = mesdict(lambda m: custo["@mercadoria"].get(m, 0.0))
     bruto = mesdict(lambda m: vendas_liq[m] - merc[m])
-    oper = {l: mesdict(lambda m, l=l: custo[l].get(m, 0.0)) for l in DRE_OPERACIONAIS}
-    tot_oper = mesdict(lambda m: sum(oper[l][m] for l in DRE_OPERACIONAIS))
+    oper = {l: mesdict(lambda m, l=l: custo[l].get(m, 0.0)) for l in operacionais}
+    tot_oper = mesdict(lambda m: sum(oper[l][m] for l in operacionais))
     lucro_op = mesdict(lambda m: bruto[m] - tot_oper[m])
     # taxa de cartão não é boleto: sai descontada na hora, então é calculada
     fin = mesdict(lambda m: custo["@financeiro"].get(m, 0.0)
@@ -570,7 +578,7 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
           "nota de fornecedor lançada no mês"),
         L("Lucro bruto", bruto, "subtotal"),
     ]
-    linhas += [L(l, oper[l]) for l in DRE_OPERACIONAIS]
+    linhas += [L(l, oper[l]) for l in operacionais]
     linhas += [
         L("Total de custos operacionais", tot_oper, "subtotal"),
         L("Lucro das operações", lucro_op, "subtotal"),
