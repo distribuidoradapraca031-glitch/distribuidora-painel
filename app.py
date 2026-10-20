@@ -514,6 +514,35 @@ POTES = {
     # — nem gaveta, nem reserva, nem sobra. Vai pro quadro "Recurso próprio" pela marca [RP].
     "Victor":   {"conta": RESERVA_CONTA_ID, "forma": RP_FORMA_ID},
 }
+# O PIX sai (e entra) numa das DUAS contas da loja: Itaú (a principal) ou Nubank. No
+# GestãoClick é uma conta bancária só, então o banco vai escrito no lançamento ("PIX Itaú").
+# O dono pediu em 20/10/2026: perguntar SEMPRE em qual conta foi, sem deixar marcada.
+BANCOS = ["Itaú", "Nubank"]
+for _b in BANCOS:
+    POTES[f"PIX {_b}"] = POTES["PIX"]
+
+def _banco_da_forma(f):
+    f = f or ""
+    return f[4:] if f.startswith("PIX ") and f[4:] in BANCOS else None
+
+def _com_banco(texto, f):
+    """Escreve no lançamento em qual banco o PIX passou (se ainda não estiver escrito)."""
+    b = _banco_da_forma(f)
+    if not b or _banco_do_texto(texto) == b:
+        return texto
+    return f"{texto} (PIX {b})"
+
+def _banco_do_texto(desc):
+    u = _sem_acento_up(desc)
+    for b in BANCOS:
+        bu = _sem_acento_up(b)
+        if f"PIX {bu}" in u or f"EXTRATO {bu}" in u:
+            return b
+    return None
+
+def _sem_acento_up(s):
+    import unicodedata
+    return unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().upper()
 
 def _saiu_da_gaveta(p):
     """Esse pagamento tirou dinheiro da GAVETA do dia?
@@ -575,6 +604,13 @@ RES_OUT_TAG = "[RES-]"
 SOB_DEP_TAG = "[SOB+]"
 SOB_OUT_TAG = "[SOB-]"
 
+# ---- SALDO DOS BANCOS (Itaú e Nubank) ----
+# O GestãoClick não sabe quanto tem de verdade em cada banco. O dono informa (ou vem do
+# extrato que ele sobe na central) e eu guardo um registro só do painel, igual o da reserva
+# (liquidado=0, tag no começo). O valor fica escrito na descrição porque pode ser negativo.
+SALDO_TAG = "[SALDO]"
+_SALDO_RE = re.compile(r"^\[SALDO\] (\S+) = (-?[\d.]+) \(([^)]*)\)")
+
 # ---- FREEZER DE GELO CONSIGNADO ----
 # O dono paga um valor fixo por mês pelo freezer e esse valor vira CRÉDITO em gelo: cada
 # saco que chega é abatido do crédito e entra no estoque. O crédito zera todo mês.
@@ -611,7 +647,7 @@ def _eh_interno(desc):
     d = (desc or "")
     return (d.startswith(RP_TAG) or d.startswith(RES_DEP_TAG) or d.startswith(RES_OUT_TAG)
             or d.startswith(SOB_DEP_TAG) or d.startswith(SOB_OUT_TAG)
-            or d.startswith(GELO_USO_TAG))
+            or d.startswith(GELO_USO_TAG) or d.startswith(SALDO_TAG))
 
 def _sangria_caixa(valor, motivo, data):
     """Tira da GAVETA o dinheiro que o dono guardou no cofre/sobra no mesmo dia.
@@ -892,7 +928,7 @@ def api_baixa():
     # dia em que saiu o dinheiro: vem do extrato do banco (a conta foi paga lá atrás);
     # pagando pelo mapa é hoje mesmo
     dia = (body.get("data") or _hoje())[:10]
-    forma = body.get("forma") or "Caixa"
+    forma = body.get("forma") or ""
     valor_real = _num(body.get("valor"))  # valor de fato pago (pode ter juros / ser variável)
     if not pid:
         return jsonify({"ok": False, "erro": "sem id"}), 400
@@ -905,7 +941,9 @@ def api_baixa():
             return jsonify({"ok": False, "erro": "no máximo 3 formas"}), 400
         forma = partes[0].get("forma") or "Caixa"
         valor_real = _num(partes[0].get("valor"))
-    pot = POTES.get(forma, POTES["Caixa"])
+    if forma not in POTES or any((x.get("forma") or "") not in POTES for x in partes):
+        return jsonify({"ok": False, "erro": "escolha de onde saiu o dinheiro"}), 400
+    pot = POTES[forma]
     # preserva os campos da conta e só marca como paga
     cur = gcapi.get(f"/pagamentos/{pid}")
     p = cur.get("data") or cur
@@ -913,7 +951,7 @@ def api_baixa():
         p = p[0] if p else {}
     p = p.get("Pagamento", p) if isinstance(p, dict) else {}
     payload = {
-        "descricao": _marca_rp(p.get("descricao") or "Conta", forma),
+        "descricao": _com_banco(_marca_rp(p.get("descricao") or "Conta", forma), forma)[:180],
         "valor": f"{valor_real:.2f}" if valor_real > 0 else (p.get("valor") or p.get("valor_total") or "0"),
         "plano_contas_id": p.get("plano_contas_id") or "",
         "data_vencimento": (p.get("data_vencimento") or _hoje())[:10],
@@ -1056,7 +1094,7 @@ def api_gasto():
         for parte in partes:
             f = parte.get("forma") or "Caixa"
             v = round(_num(parte.get("valor")), 2)
-            texto = nota if len(partes) == 1 else f"{nota} ({f})"
+            texto = _com_banco(nota, f) if len(partes) == 1 else f"{nota} ({f})"
             r = gcapi.post("/pagamentos", _corpo(f, v, texto))
             d = r.get("data") or {}
             ids.append(d.get("id") if isinstance(d, dict) else None)
@@ -1196,15 +1234,15 @@ def api_entrada():
     nota = (body.get("descricao") or "").strip()
     if valor <= 0:
         return jsonify({"ok": False, "erro": "informe o valor que entrou"}), 400
-    if onde not in ("Caixa", "PIX", "Dinheiro", "Sobra"):
+    if onde not in ("Caixa", "PIX", "Dinheiro", "Sobra") and not _banco_da_forma(onde):
         return jsonify({"ok": False, "erro": "escolha onde o dinheiro entrou"}), 400
     texto = rot + (f" — {nota}" if nota else "")
     plano = PLANO_APLICACOES if tipo == "rendimento" else PLANO_AJUSTE_C
     try:
-        if onde in ("Caixa", "PIX"):
+        if onde in ("Caixa", "PIX") or _banco_da_forma(onde):
             pot = POTES[onde]
             r = gcapi.post("/recebimentos", {
-                "descricao": f"ENTRADA AVULSA — {texto}"[:180], "valor": f"{valor:.2f}",
+                "descricao": _com_banco(f"ENTRADA AVULSA — {texto}", onde)[:180], "valor": f"{valor:.2f}",
                 "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
                 "liquidado": "1", "plano_contas_id": plano,
                 "conta_bancaria_id": pot["conta"], "forma_pagamento_id": pot["forma"]})
@@ -1222,6 +1260,133 @@ def api_entrada():
                         "id": d.get("id") if isinstance(d, dict) else None})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+def _saldos_bancos(pgs):
+    """Último saldo informado de cada banco: {banco: {saldo, data, origem, quando}}."""
+    out = {}
+    for p in pgs:
+        m = _SALDO_RE.match(p.get("descricao") or "")
+        if not m or m.group(1) not in BANCOS:
+            continue
+        reg = {"saldo": round(float(m.group(2)), 2), "data": (p.get("data_competencia") or "")[:10],
+               "origem": m.group(3), "quando": p.get("cadastrado_em") or "", "id": p.get("id")}
+        atual = out.get(m.group(1))
+        if atual is None or (reg["data"], reg["quando"], str(reg["id"])) > (atual["data"], atual["quando"], str(atual["id"])):
+            out[m.group(1)] = reg
+    return out
+
+def _ultimo_extrato(pgs):
+    """Dia do último extrato de cada banco que foi conferido na central (a rotina)."""
+    out = {}
+    for p in pgs:
+        m = _SALDO_RE.match(p.get("descricao") or "")
+        if m and m.group(1) in BANCOS and m.group(3).startswith("extrato"):
+            d = (p.get("data_competencia") or "")[:10]
+            if d > out.get(m.group(1), ""):
+                out[m.group(1)] = d
+    return out
+
+@app.route("/api/saldo-banco", methods=["GET", "POST"])
+@login_required
+def api_saldo_banco():
+    """GET: último saldo de cada banco. POST {banco, valor, data, origem}: guarda um saldo
+    novo (o que o dono informou, ou o saldo final do extrato que ele subiu)."""
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        banco = (body.get("banco") or "").strip()
+        if banco not in BANCOS:
+            return jsonify({"ok": False, "erro": "escolha o banco"}), 400
+        if body.get("valor") in (None, ""):
+            return jsonify({"ok": False, "erro": "informe o saldo"}), 400
+        v = round(_num(body.get("valor")), 2)
+        data = (body.get("data") or _hoje())[:10]
+        if data > _hoje():
+            return jsonify({"ok": False, "erro": "essa data ainda não chegou"}), 400
+        origem = "extrato" if (body.get("origem") or "") == "extrato" else "informado"
+        try:
+            r = gcapi.post("/pagamentos", {
+                "descricao": f"{SALDO_TAG} {banco} = {v:.2f} ({origem})",
+                # o GestãoClick não aceita valor zero em todo lugar; o saldo de verdade é o da descrição
+                "valor": f"{max(abs(v), 0.01):.2f}", "data_vencimento": data,
+                "data_competencia": data, "liquidado": "0",
+                "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+            d = r.get("data") or {}
+            _invalida("como_esta", "saldos_bancos")
+            return jsonify({"ok": True, "banco": banco, "saldo": v, "data": data,
+                            "id": d.get("id") if isinstance(d, dict) else None})
+        except Exception as e:
+            return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+    def build():
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"})
+        return {"bancos": _saldos_bancos(pgs), "extrato": _ultimo_extrato(pgs), "hoje": _hoje()}
+    return jsonify(cached("saldos_bancos", 60, build))
+
+# ---- COMO ESTÁ A LOJA (topo da aba Loja) ----
+# Ideia da planilha (fase 2, 20/10/2026): o dinheiro de hoje somando todos os lugares,
+# até quando ele paga as contas já lançadas, o que vence em 30/60/90 dias. Conta só o que
+# está lançado (regra do dono): venda que ainda vai entrar não conta no "aguenta até".
+@app.route("/api/como-esta")
+@login_required
+def api_como_esta():
+    def build():
+        hoje = _hoje()
+        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"})
+        res = sob = 0.0
+        for p in pgs:
+            d = p.get("descricao") or ""
+            v = _num(p.get("valor_total")) or _num(p.get("valor"))
+            if d.startswith(RES_DEP_TAG): res += v
+            elif d.startswith(RES_OUT_TAG): res -= v
+            elif d.startswith(SOB_DEP_TAG): sob += v
+            elif d.startswith(SOB_OUT_TAG): sob -= v
+        ab = _abertura_caixa(hoje)
+        din, saidas = _fech_calc(hoje)
+        moedas, _ = _fundo_moedas(hoje)
+        gaveta = round((ab if ab is not None else 200.0) + moedas + din - saidas, 2)
+        bancos = _saldos_bancos(pgs)
+        lugares = [{"nome": "Gaveta", "valor": gaveta,
+                    "obs": "esperado agora" if ab is not None else "esperado (sem abertura lançada hoje)"},
+                   {"nome": "Dinheiro reserva", "valor": round(max(res, 0), 2), "obs": ""},
+                   {"nome": "Sobra de caixa", "valor": round(max(sob, 0), 2), "obs": ""}]
+        for b in BANCOS:
+            x = bancos.get(b)
+            lugares.append({"nome": b, "valor": x["saldo"] if x else None,
+                            "obs": (f"saldo de {x['data'][8:10]}/{x['data'][5:7]}" if x else "saldo não informado"),
+                            "data": x["data"] if x else None})
+        total = round(sum(l["valor"] or 0 for l in lugares), 2)
+        # contas em aberto (as mesmas do mapa da aba Contas)
+        d0 = datetime.date.fromisoformat(hoje)
+        contas = []
+        for p in pgs:
+            if str(p.get("liquidado")) == "1":
+                continue
+            d = p.get("descricao") or ""
+            if _eh_interno(d) or "[PROVISAO]" in d.upper():
+                continue
+            venc = (p.get("data_vencimento") or hoje)[:10]
+            contas.append((venc, round(_num(p.get("valor_total")) or _num(p.get("valor")), 2)))
+        contas.sort()
+        def ate(dias):
+            lim = (d0 + datetime.timedelta(days=dias)).isoformat()
+            return round(sum(v for venc, v in contas if venc < hoje or venc <= lim), 2)
+        atrasado = round(sum(v for venc, v in contas if venc < hoje), 2)
+        # até quando o dinheiro de hoje paga as contas, na ordem do vencimento
+        acum, cobre_ate, falta_em = 0.0, None, None
+        for venc, v in contas:
+            acum += v
+            if acum > total + 0.01:
+                falta_em = max(venc, hoje)
+                break
+            cobre_ate = max(venc, hoje)
+        horizonte = (d0 + datetime.timedelta(days=90)).isoformat()
+        return {"hoje": hoje, "lugares": lugares, "total": total,
+                "atrasado": atrasado, "d30": ate(30), "d60": ate(60), "d90": ate(90),
+                "falta_em": falta_em, "cobre_ate": cobre_ate,
+                "sobra_90": round(total - ate(90), 2),
+                "falta_atrasado": round(max(atrasado - total, 0), 2),
+                "extrato": _ultimo_extrato(pgs), "horizonte": horizonte,
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("como_esta", 60, build))
 
 # ---- CONFERIR EXTRATO (Itaú e Nubank) ----
 # O dono baixa o extrato no app do banco (arquivo OFX ou planilha CSV) e sobe aqui. Eu
@@ -1301,7 +1466,15 @@ def _ext_ofx(txt):
         memo = " - ".join(x for x in (tag("NAME"), tag("MEMO")) if x) or tag("PAYEE")
         linhas.append({"data": data, "valor": valor, "memo": memo,
                        "fitid": tag("FITID") or tag("CHECKNUM")})
-    return linhas
+    saldo = None
+    m = re.search(r"<LEDGERBAL>(.*?)(</LEDGERBAL>|<AVAILBAL>|</STMTRS>|$)", txt, flags=re.I | re.S)
+    if m:
+        v = re.search(r"<BALAMT>([^<\r\n]*)", m.group(1), flags=re.I)
+        d = re.search(r"<DTASOF>([^<\r\n]*)", m.group(1), flags=re.I)
+        if v and _ext_valor(v.group(1)) is not None:
+            saldo = {"valor": round(_ext_valor(v.group(1)), 2),
+                     "data": _ext_data(d.group(1)) if d else None}
+    return linhas, saldo
 
 def _ext_csv(txt):
     """Lançamentos de uma planilha CSV: acha a linha de cabeçalho (data / descrição /
@@ -1314,25 +1487,30 @@ def _ext_csv(txt):
              "desc": ("DESCRICAO", "HISTORICO", "LANCAMENTO", "LANCAMENTOS", "TITLE",
                       "DETALHES", "DESCRICAO DO LANCAMENTO", "ESTABELECIMENTO"),
              "valor": ("VALOR", "AMOUNT", "VALOR (R$)", "VALOR R$", "VALOR(R$)")}
-    col, ini = None, 0
+    NOMES_SALDO = ("SALDO", "SALDOS", "SALDO (R$)", "SALDOS (R$)", "SALDO R$", "SALDO(R$)")
+    col, ini, col_saldo = None, 0, None
     for i, r in enumerate(rows[:15]):
         cab = [_ext_norm(c) for c in r]
         achou = {k: next((j for j, c in enumerate(cab) if c in v), None) for k, v in NOMES.items()}
         if None not in achou.values():
             col, ini = achou, i + 1
+            col_saldo = next((j for j, c in enumerate(cab) if c in NOMES_SALDO), None)
             break
     if col is None:                                   # sem cabeçalho: data, descrição, valor
         col = {"data": 0, "desc": 1, "valor": 2}
-    linhas = []
+    linhas, saldo = [], None
     for i, r in enumerate(rows[ini:]):
         if len(r) <= max(col.values()):
             continue
         data, valor = _ext_data(r[col["data"]]), _ext_valor(r[col["valor"]])
         memo = r[col["desc"]].strip()
+        if col_saldo is not None and data and col_saldo < len(r) and _ext_valor(r[col_saldo]) is not None:
+            if saldo is None or data >= saldo["data"]:
+                saldo = {"valor": round(_ext_valor(r[col_saldo]), 2), "data": data}
         if not data or valor is None or "SALDO" in _ext_norm(memo)[:20]:
             continue
         linhas.append({"data": data, "valor": valor, "memo": memo, "fitid": ""})
-    return linhas
+    return linhas, saldo
 
 def _ext_quem(memo):
     """Quem recebeu, a partir do texto do banco. Nubank escreve "Transferência enviada
@@ -1379,7 +1557,7 @@ def api_extrato_ler():
     if len(txt) > 3_000_000:
         return jsonify({"ok": False, "erro": "arquivo grande demais — baixe um mês por vez"}), 400
     txt = txt.lstrip("﻿")
-    linhas = _ext_ofx(txt) if re.search(r"<STMTTRN>", txt, re.I) else _ext_csv(txt)
+    linhas, saldo_ext = _ext_ofx(txt) if re.search(r"<STMTTRN>", txt, re.I) else _ext_csv(txt)
     if not linhas:
         return jsonify({"ok": False, "erro": "não achei lançamento nenhum nesse arquivo. "
                         "No app do banco, exporte o extrato em OFX (ou CSV)."}), 400
@@ -1411,6 +1589,9 @@ def api_extrato_ler():
             continue
         aberto = str(p.get("liquidado")) != "1"
         forma = str(p.get("forma_pagamento_id") or "")
+        b_lanc = _banco_do_texto(d)
+        if b_lanc and b_lanc != nome_banco:
+            continue                    # foi no outro banco
         if aberto:
             grupo = "aberta"
         elif forma not in DINHEIRO or d.upper().startswith("SANGRIA BANCO"):
@@ -1508,6 +1689,7 @@ def api_extrato_ler():
     out.sort(key=lambda x: x["data"])
     cont = {k: sum(1 for x in out if x["status"] == k) for k in ("lancado", "aberta", "parecido", "falta")}
     return jsonify({"ok": True, "banco": banco, "nome_banco": nome_banco, "de": de, "ate": ate,
+                    "saldo": saldo_ext,
                     "saidas": out, "contagem": cont,
                     "total_saidas": round(sum(x["valor"] for x in out), 2),
                     "entradas": {"n": len(entradas), "total": round(sum(l["valor"] for l in entradas), 2)}})
@@ -1538,7 +1720,7 @@ def api_lancamentos():
                 continue
             if du.startswith("SANGRIA") and not du.startswith("SANGRIA SAQUE"):
                 continue
-            if d.startswith(GELO_USO_TAG) or "[PROVISAO]" in du:
+            if d.startswith((GELO_USO_TAG, SALDO_TAG)) or "[PROVISAO]" in du:
                 continue
             aberto = str(p.get("liquidado")) != "1"
             v = round(_num(p.get("valor_total")) or _num(p.get("valor")), 2)
@@ -1987,7 +2169,7 @@ def api_compra():
     body = request.get_json(force=True, silent=True) or {}
     forn = str(body.get("fornecedor_id") or "").strip()
     data = (body.get("data") or _hoje())[:10]
-    forma = body.get("forma") or "Caixa"
+    forma = body.get("forma") or ""
     itens = body.get("itens") or []
     if not forn:
         return jsonify({"ok": False, "erro": "escolha o fornecedor"}), 400
@@ -2030,6 +2212,9 @@ def api_compra():
     partes = [p for p in (body.get("pagamentos") or []) if _num(p.get("valor")) > 0]
     if not partes:
         partes = [{"forma": forma, "valor": total}]
+    # a forma nunca vem marcada (pedido do dono): sem forma, não grava — antes caía em "Caixa"
+    if any((p.get("forma") or "") not in POTES and p.get("forma") != "Boleto" for p in partes):
+        return jsonify({"ok": False, "erro": "escolha de onde saiu o dinheiro (e, se for PIX, de qual banco)"}), 400
     # não deixa a reserva ficar negativa (o dono pediu): se o que ele quer tirar
     # passa do que tem guardado, avisa antes de gravar qualquer coisa
     quer_reserva = round(sum(_num(p.get("valor")) for p in partes
@@ -2070,10 +2255,12 @@ def api_compra():
                 "liquidado": "0"}})
         else:
             pot = POTES.get(f, POTES["Caixa"])
-            pagamentos.append({"pagamento": {
-                "data_vencimento": data, "valor": v,
-                "forma_pagamento_id": pot["forma"], "plano_contas_id": "33015669",
-                "conta_bancaria_id": pot["conta"], "liquidado": "1", "data_liquidacao": data}})
+            pg = {"data_vencimento": data, "valor": v,
+                  "forma_pagamento_id": pot["forma"], "plano_contas_id": "33015669",
+                  "conta_bancaria_id": pot["conta"], "liquidado": "1", "data_liquidacao": data}
+            if _banco_da_forma(f):
+                pg["observacao"] = f                  # "PIX Itaú" / "PIX Nubank"
+            pagamentos.append({"pagamento": pg})
     condicao = "a_prazo" if all(p.get("forma") == "Boleto" for p in partes) else "a_vista"
     payload = {
         "codigo": _proximo_codigo_compra(), "fornecedor_id": forn,
@@ -2081,6 +2268,9 @@ def api_compra():
         "valor_produtos": round(total, 2), "valor_total": round(total, 2),
         "produtos": produtos, "pagamentos": pagamentos,
     }
+    bancos_usados = sorted({p.get("forma") for p in partes if _banco_da_forma(p.get("forma"))})
+    if bancos_usados:
+        payload["observacoes_interna"] = "Pago no " + " e no ".join(bancos_usados)
     try:
         r = gcapi.post("/compras", payload)
         if r.get("status") != "success":
@@ -2269,14 +2459,14 @@ def api_gelo_credito():
     """Lança o pagamento mensal do freezer — é ele que vira o crédito de gelo do mês."""
     body = request.get_json(force=True, silent=True) or {}
     valor = round(_num(body.get("valor")) or GELO_MENSAL, 2)
-    forma = body.get("forma") or "PIX"
+    forma = body.get("forma") or ""
     data = (body.get("data") or _hoje())[:10]
     if valor <= 0:
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
     if forma not in POTES:
         return jsonify({"ok": False, "erro": "escolha de onde saiu o dinheiro"}), 400
     pot = POTES[forma]
-    desc = _marca_rp(f"Compra de gelo — freezer consignado · crédito {data[5:7]}/{data[:4]}", forma)
+    desc = _com_banco(_marca_rp(f"Compra de gelo — freezer consignado · crédito {data[5:7]}/{data[:4]}", forma), forma)
     try:
         r = gcapi.post("/pagamentos", {
             "descricao": desc, "valor": f"{valor:.2f}", "data_vencimento": data,
@@ -2785,8 +2975,13 @@ _FORMA_ROTULO = {"6055919": "Caixa (gaveta)", "6780142": "Dinheiro guardado",
                  "6055931": "PIX", "6776761": "Recurso próprio", "6687681": "Boleto"}
 
 def _rotulo_forma(p):
-    return (_FORMA_ROTULO.get(str(p.get("forma_pagamento_id") or ""))
-            or p.get("nome_forma_pagamento") or "—")
+    r = (_FORMA_ROTULO.get(str(p.get("forma_pagamento_id") or ""))
+         or p.get("nome_forma_pagamento") or "—")
+    if r == "PIX":
+        b = _banco_do_texto(p.get("descricao"))
+        if b:
+            r = f"PIX {b}"
+    return r
 
 @app.route("/api/gastos-mes")
 @login_required
@@ -2898,6 +3093,9 @@ def api_troca_pix():
     recebido = round(_num(body.get("recebido")), 2)          # dinheiro que veio do cliente
     enviado = round(_num(body.get("enviado")) or recebido, 2)  # PIX mandado pra ele
     data = (body.get("data") or _hoje())[:10]
+    banco = (body.get("banco") or "").strip()
+    if banco and banco not in BANCOS:
+        return jsonify({"ok": False, "erro": "banco inválido"}), 400
     if recebido <= 0 or enviado <= 0:
         return jsonify({"ok": False, "erro": "informe quanto recebeu em dinheiro"}), 400
     if enviado > recebido + 0.01:
@@ -2912,7 +3110,7 @@ def api_troca_pix():
             "data_liquidacao": data, "liquidado": "1", "plano_contas_id": PLANO_AJUSTE_C,
             "conta_bancaria_id": GAVETA_CONTA, "forma_pagamento_id": "6055919"})
         gcapi.post("/pagamentos", {
-            "descricao": f"TROCA PIX R$ {enviado:.2f} — PIX enviado ao cliente",
+            "descricao": f"TROCA PIX R$ {enviado:.2f} — PIX enviado ao cliente" + (f" (PIX {banco})" if banco else ""),
             "valor": f"{enviado:.2f}", "data_vencimento": data, "data_competencia": data,
             "data_liquidacao": data, "liquidado": "1", "plano_contas_id": AJUSTE_CAIXA_PLANO,
             "conta_bancaria_id": RESERVA_CONTA_ID, "forma_pagamento_id": "6055931"})
@@ -2930,12 +3128,14 @@ def api_pagamento_conta():
     body = request.get_json(force=True, silent=True) or {}
     valor = round(_num(body.get("valor")), 2)
     cliente = (body.get("cliente") or "").strip()
-    forma = (body.get("forma") or "Caixa")
+    forma = (body.get("forma") or "")
     data = (body.get("data") or _hoje())[:10]
     if valor <= 0:
         return jsonify({"ok": False, "erro": "informe o valor recebido"}), 400
+    if forma not in ("Caixa", "PIX") and not _banco_da_forma(forma):
+        return jsonify({"ok": False, "erro": "escolha onde recebeu (gaveta ou PIX de qual banco)"}), 400
     pot = POTES.get(forma, POTES["Caixa"])
-    desc = "PAGAMENTO DE CONTA" + (f" — {cliente}" if cliente else "") + " (abatimento de fiado)"
+    desc = _com_banco("PAGAMENTO DE CONTA" + (f" — {cliente}" if cliente else "") + " (abatimento de fiado)", forma)
     try:
         r = gcapi.post("/recebimentos", {
             "descricao": desc[:180], "valor": f"{valor:.2f}",
@@ -3019,6 +3219,9 @@ def api_saque():
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
     if tipo not in SAQUE_FORMA:
         tipo = "debito"
+    banco = (body.get("banco") or "").strip()
+    if tipo == "pix" and banco and banco not in BANCOS:
+        return jsonify({"ok": False, "erro": "banco inválido"}), 400
     total = round(valor * 1.2, 2)                 # cliente paga no cartão (+20%)
     taxa = round(total * SAQUE_FEE[tipo], 2)      # taxa da maquininha
     ganho = round(valor * 0.2 - taxa, 2)          # nosso lucro líquido
@@ -3028,7 +3231,8 @@ def api_saque():
         venda = {
             "tipo": "produto", "cliente_id": SAQUE_CLIENTE, "data": data,
             "situacao_id": SAQUE_SITUACAO, "condicao_pagamento": "a_vista",
-            "observacoes": f"Saque R$ {valor} — cliente pagou R$ {total:.2f} no {tipo}",
+            "observacoes": f"Saque R$ {valor} — cliente pagou R$ {total:.2f} no {tipo}"
+                           + (f" (PIX {banco})" if tipo == "pix" and banco else ""),
             "produtos": [{"produto": {"produto_id": pid, "quantidade": 1,
                                       "valor_venda": total, "detalhes": "Saque"}}],
             "pagamentos": [{"pagamento": {"data_vencimento": data, "valor": total,

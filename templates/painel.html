@@ -230,6 +230,23 @@ body.lc-aberto{overflow:hidden}
 <div id="live-wrap"></div>
 <section class="kpis" id="kpis"></section>
 
+<section class="card" id="card-como">
+  <div class="eyebrow">Agora · tudo que a loja tem e deve</div>
+  <h2>📍 Como está a loja</h2>
+  <div id="ce-box" style="margin-top:8px"><p class="note">carregando…</p></div>
+  <details style="margin-top:12px">
+    <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">✏️ Atualizar o saldo do banco</summary>
+    <div class="fform" style="margin-top:8px">
+      <label>Banco<select id="ce-banco" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)"><option value="" selected disabled>escolha…</option><option>Itaú</option><option>Nubank</option></select></label>
+      <label>Saldo (R$)<input type="number" step="0.01" inputmode="decimal" id="ce-valor" placeholder="0,00" style="width:140px"></label>
+      <label>Dia<input type="date" id="ce-data"></label>
+      <button id="ce-salvar" type="button">Guardar saldo</button>
+    </div>
+    <p class="note">O saldo também se atualiza quando você confere o extrato no <b>＋ Lançar → Conferir extrato</b>.</p>
+    <div class="fres" id="ce-msg"></div>
+  </details>
+</section>
+
 <section class="card" id="card-reserva">
   <div class="eyebrow">Caixa · dinheiro reserva</div>
   <h2>💰 Dinheiro reserva</h2>
@@ -427,7 +444,7 @@ body.lc-aberto{overflow:hidden}
       <label>Paguei o freezer (R$)<input type="number" step="0.01" inputmode="decimal" id="gl-pg-valor" value="300" style="width:110px"></label>
       <label>De onde saiu
         <select id="gl-pg-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:190px">
-          <option value="PIX">PIX (conta)</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Victor">Recurso próprio (Victor)</option>
+          <option value="" selected disabled>escolha…</option><option value="PIX Itaú">PIX Itaú</option><option value="PIX Nubank">PIX Nubank</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Victor">Recurso próprio (Victor)</option>
         </select></label>
       <label>Dia<input type="date" id="gl-pg-data"></label>
       <button id="gl-pg-add">Lançar pagamento</button>
@@ -499,8 +516,8 @@ body.lc-aberto{overflow:hidden}
       </label>
       <label>Data<input type="date" id="cp-data"></label>
       <label>Pagamento
-        <select id="cp-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
+        <select id="cp-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:150px">
+          <option value="" selected disabled>escolha…</option><option value="PIX Itaú">PIX Itaú</option><option value="PIX Nubank">PIX Nubank</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
         </select>
       </label>
     </div>
@@ -1260,7 +1277,7 @@ function loadCatalogoVivo(f){
   }).catch(()=>{});
 }
 const unNome = u=>({UN:'un',CX:'caixa(s)',FD:'fardo(s)',DZ:'dúzia(s)'}[u]||u);
-const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',Sobra:'sai da Sobra de caixa (o outro monte) — desconta lá em cima',PIX:'sai da conta (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)',Victor:'você pagou com o SEU dinheiro — não sai nada da loja, entra no quadro Recurso próprio'}[f]||('pagamento '+f));
+const potInfo = f=>({Caixa:'sai do dinheiro da gaveta do dia',Dinheiro:'sai do Dinheiro reserva (sobras guardadas) — desconta lá em cima',Sobra:'sai da Sobra de caixa (o outro monte) — desconta lá em cima',PIX:'sai da conta (PIX)','PIX Itaú':'sai da conta do Itaú (PIX)','PIX Nubank':'sai da conta do Nubank (PIX)','Cartão':'sai da conta (cartão)',Boleto:'fica em contas a pagar (boleto)',Victor:'você pagou com o SEU dinheiro — não sai nada da loja, entra no quadro Recurso próprio'}[f]||('pagamento '+f));
 function copyBtn(boxId, txt){
   const box=document.getElementById(boxId);
   const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -1678,6 +1695,9 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(!itens.length){ msg.innerHTML='<span style="color:var(--crit)">Adicione pelo menos um item.</span>'; return; }
       if(!forn.value){ msg.innerHTML='<span style="color:var(--crit)">Escolha o fornecedor.</span>'; return; }
       const forma=g('cp-forma').value, data=g('cp-data').value;
+      const dividido=window.cpSplitAtivo && window.cpSplitAtivo();
+      if(!dividido && !forma){ msg.innerHTML='<span style="color:var(--crit)">Escolha de onde saiu o dinheiro (se for PIX, de qual banco).</span>'; return; }
+      if(dividido && window.cpSplitPartes().some(p=>!p.forma)){ msg.innerHTML='<span style="color:var(--crit)">Escolha a forma de cada parte do pagamento.</span>'; return; }
       const payload={ fornecedor_id:forn.value, data:data, forma:forma,
         itens: itens.map(x=>({produto_id:x.pid, quantidade:x.qtd, mult:x.mult, valor:x.valor})) };
       if(window.cpSplitAtivo && window.cpSplitAtivo()){
@@ -1752,13 +1772,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   (function(){
     const chk=g('cp-split'), box=g('cp-split-linhas'), rows=g('cp-split-rows');
     if(!chk||!rows) return;
-    const FORMAS=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Boleto','Boleto (a pagar)'],['Victor','Recurso próprio (Victor)']];
+    const FORMAS=[['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank'],['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['Boleto','Boleto (a pagar)'],['Victor','Recurso próprio (Victor)']];
     const inp='font:inherit;font-size:.85rem;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)';
     rows.innerHTML=[0,1,2,3].map(i=>
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'+
       '<span style="font-size:.8rem;color:var(--muted);width:16px">'+(i+1)+'</span>'+
       '<select class="cps-forma" style="'+inp+';width:150px">'+
-        FORMAS.map(f=>'<option value="'+f[0]+'"'+(f[0]===['PIX','Caixa','Dinheiro','Boleto'][i]?' selected':'')+'>'+f[1]+'</option>').join('')+
+        '<option value="" selected disabled>forma…</option>'+FORMAS.map(f=>'<option value="'+f[0]+'">'+f[1]+'</option>').join('')+
       '</select>'+
       '<label style="font-size:.8rem;color:var(--muted);display:inline-flex;align-items:center;gap:4px">R$ '+
       '<input type="number" step="0.01" inputmode="decimal" class="cps-valor" placeholder="0,00" style="'+inp+';width:110px"></label>'+
@@ -1767,7 +1787,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const out=[];
       rows.querySelectorAll('div').forEach(r=>{
         const f=r.querySelector('.cps-forma'), v=parseFloat((r.querySelector('.cps-valor')||{}).value);
-        if(f && !isNaN(v) && v>0) out.push({forma:f.value, valor:+v.toFixed(2)});
+        if(f && !isNaN(v) && v>0) out.push({forma:f.value||'', valor:+v.toFixed(2)});
       });
       return out;
     }
@@ -1889,6 +1909,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor pago.</span>'; return; }
       if(geloCredito>0 && !confirm('Já tem R$ '+fmt(geloCredito)+' de freezer lançado neste mês. Lançar mais um pagamento?')) return;
       pb.disabled=true; pb.textContent='…';
+      if(!g('gl-pg-forma').value){ msg.innerHTML='<span style="color:var(--crit)">Escolha de onde saiu o dinheiro.</span>'; pb.disabled=false; pb.textContent='Lançar pagamento'; return; }
       post('/api/gelo-credito',{valor:v,forma:g('gl-pg-forma').value,data:g('gl-pg-data').value||hoje}).then(res=>{
         pb.disabled=false; pb.textContent='Lançar pagamento';
         if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Pagamento de R$ '+fmt(res.valor)+' lançado — virou crédito de gelo.</span>';
@@ -2114,7 +2135,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
   /* ---------- MAPA: tudo que falta pagar, categoria x mês (aba Contas) ---------- */
-  const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Victor','Recurso próprio (Victor)']];
+  const PREV_POT=[['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank'],['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['Victor','Recurso próprio (Victor)']];
+  const PREV_OPTS='<option value="" selected disabled>de onde saiu…</option>'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');
   function loadMapa(f){ return fetch('/api/mapa'+qf(f)).then(r=>r.json()).then(d=>{
     if(g('k-pagar')) g('k-pagar').textContent='R$ '+fmt(d.total||0);
     if(g('k-pagar-sub')) g('k-pagar-sub').innerHTML=((d.tot_atrasado||0)>0
@@ -2152,11 +2174,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
             '<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">'+
               '<span style="font-size:.72rem;color:var(--muted)">previsto R$ '+fmt(it.valor)+'</span>'+
               '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">pago R$<input class="pv-valor" type="number" step="0.01" inputmode="decimal" value="'+it.valor+'" title="valor real que você pagou (com juros, se teve)" style="width:80px;'+inp+'"></label>'+
-              '<select class="pv-forma" style="'+inp+'">'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select>'+
+              '<select class="pv-forma" style="'+inp+'">'+PREV_OPTS+'</select>'+
               '<button class="pv-mais" title="paguei essa conta com DUAS formas (ex.: parte no PIX, parte da gaveta)" style="font:inherit;font-size:.72rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:3px 7px;border-radius:6px;cursor:pointer">+ 2ª forma</button>'+
               '<span class="pv-p2" hidden style="display:none;gap:4px;align-items:center">'+
                 '<label style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:3px">e mais R$<input class="pv-valor2" type="number" step="0.01" inputmode="decimal" placeholder="0,00" style="width:74px;'+inp+'"></label>'+
-                '<select class="pv-forma2" style="'+inp+'">'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select>'+
+                '<select class="pv-forma2" style="'+inp+'">'+PREV_OPTS+'</select>'+
               '</span>'+
               '<button class="pv-pay" data-id="'+it.id+'" style="font:inherit;font-size:.74rem;font-weight:600;border:0;background:var(--good);color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer">paguei</button>'+
               '<button class="pv-del" data-id="'+it.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button>'+
@@ -2191,10 +2213,12 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const forma=box.querySelector('.pv-forma').value;
       const valor=parseFloat(box.querySelector('.pv-valor').value)||0;
       if(valor<=0){ toast('❌ digite o valor pago'); return; }
+      if(!forma){ toast('❌ escolha de onde saiu o dinheiro'); return; }
       const p2=box.querySelector('.pv-p2');
       const v2=(p2&&!p2.hidden)?(parseFloat(p2.querySelector('.pv-valor2').value)||0):0;
       const f2=(p2&&!p2.hidden)?p2.querySelector('.pv-forma2').value:null;
       if(p2&&!p2.hidden&&v2<=0){ toast('❌ digite o valor da 2ª forma (ou feche ela)'); return; }
+      if(p2&&!p2.hidden&&!f2){ toast('❌ escolha de onde saiu a 2ª parte'); return; }
       const partes=v2>0?[{forma,valor},{forma:f2,valor:v2}]:null;
       const rotulo=v2>0?('R$ '+fmt(valor)+' ('+forma+') + R$ '+fmt(v2)+' ('+f2+')'):('R$ '+fmt(valor)+' ('+forma+')');
       b.disabled=true; b.textContent='…';
@@ -2297,6 +2321,67 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       inp.addEventListener('input',()=>setTimeout(()=>{ renderFechLive(); guardaContagem(); },0)));
   })();
 
+
+  /* ---------- COMO ESTÁ A LOJA (fase 2, 20/10/2026) ---------- */
+  function loadComoEsta(f){ return fetch('/api/como-esta'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('ce-box'); if(!box) return;
+    const dd=s=>s?dbr(s):'—';
+    const diasDe=s=>{ if(!s) return null; return Math.round((new Date(d.hoje+'T12:00:00')-new Date(s+'T12:00:00'))/86400000); };
+    const chips=(d.lugares||[]).map(l=>'<div class="kpi" style="flex:1 1 140px;padding:10px 12px"><div class="lbl">'+esc(l.nome)+'</div>'+
+      '<div class="val" style="font-size:1.15rem">'+(l.valor==null?'<span style="color:var(--muted)">—</span>':'R$ '+fmt(l.valor))+'</div>'+
+      '<div class="sub">'+esc(l.obs||'')+'</div></div>').join('');
+    const prox=x=>Math.max(0,(x||0)-(d.atrasado||0));
+    let frase;
+    if((d.falta_atrasado||0)>0) frase='<b style="color:var(--crit)">O dinheiro de hoje não cobre nem as contas atrasadas: faltam R$ '+fmt(d.falta_atrasado)+'.</b>';
+    else if(d.falta_em) frase='O dinheiro de hoje paga as contas lançadas <b>até '+dd(d.cobre_ate)+'</b>. A conta de <b>'+dd(d.falta_em)+'</b> já não cabe.';
+    else frase='O dinheiro de hoje paga <b>tudo que vence nos próximos 90 dias</b> e ainda sobram <b style="color:var(--good)">R$ '+fmt(d.sobra_90)+'</b>.';
+    // lucro do mês, do quadro de lucros (aba Acompanhamento)
+    let lucro='';
+    try{
+      const L=(D.dre&&D.dre.linhas||[]).find(x=>x.label==='LUCRO LÍQUIDO'), ms=(D.dre&&D.dre.meses)||[];
+      if(L&&ms.length){
+        const cur=ms[ms.length-1], ant=ms.length>1?ms[ms.length-2]:null;
+        const cor=v=>v<0?'var(--crit)':'var(--good)';
+        lucro='<div class="note" style="margin-top:10px">💰 Lucro de <b>'+esc(cur.label)+'</b>'+(cur.parcial?' ('+esc(cur.parcial)+')':'')+': <b style="color:'+cor(L.mes[cur.key]||0)+'">R$ '+fmt(L.mes[cur.key]||0)+'</b>'+
+          (ant?' · '+esc(ant.label)+' inteiro: <b style="color:'+cor(L.mes[ant.key]||0)+'">R$ '+fmt(L.mes[ant.key]||0)+'</b>':'')+
+          ' <span style="opacity:.8">(quadro de lucros de '+dbr(D.gerado_em)+')</span></div>';
+      }
+    }catch(e){}
+    // rotina do extrato: conferir toda semana
+    const ext=d.extrato||{}, bancoSaldo=Object.fromEntries((d.lugares||[]).map(l=>[l.nome,l.valor]));
+    const atrasados=['Itaú','Nubank'].filter(b=>{ const n=diasDe(ext[b]); return (n===null||n>7) && !(b==='Nubank'&&!bancoSaldo[b]); });
+    const rotina='<div class="note" style="margin-top:6px">🏦 Extrato conferido: '+['Itaú','Nubank'].map(b=>b+' '+(ext[b]?dbr(ext[b])+' (há '+diasDe(ext[b])+' dia'+(diasDe(ext[b])===1?'':'s')+')':'ainda não')).join(' · ')+'</div>'+
+      (atrasados.length?'<div class="banner" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">Hora de conferir o extrato do '+atrasados.join(' e do ')+' (toda semana, junto com o DDA de segunda).'+
+        ' <button class="lc-btn mini" type="button" id="ce-ext">🏦 Conferir agora</button></div>':'');
+    box.innerHTML='<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><div style="font-size:1.9rem;font-weight:800;line-height:1.05">R$ '+fmt(d.total)+'</div>'+
+        '<div class="note" style="margin:0">é o dinheiro da loja hoje, somando:</div></div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+chips+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+
+        '<div class="kpi" style="flex:1 1 140px;padding:10px 12px"><div class="lbl">⚠️ Atrasado</div><div class="val" style="font-size:1.15rem;color:'+((d.atrasado||0)>0?'var(--crit)':'var(--muted)')+'">R$ '+fmt(d.atrasado||0)+'</div><div class="sub">venceu e não pagou</div></div>'+
+        '<div class="kpi" style="flex:1 1 140px;padding:10px 12px"><div class="lbl">Próximos 30 dias</div><div class="val" style="font-size:1.15rem">R$ '+fmt(prox(d.d30))+'</div><div class="sub">até '+dd(((x)=>{const t=new Date(d.hoje+'T12:00:00');t.setDate(t.getDate()+x);return t.toISOString().slice(0,10);})(30))+'</div></div>'+
+        '<div class="kpi" style="flex:1 1 140px;padding:10px 12px"><div class="lbl">Próximos 60 dias</div><div class="val" style="font-size:1.15rem">R$ '+fmt(prox(d.d60))+'</div><div class="sub">somando os 30 de antes</div></div>'+
+        '<div class="kpi" style="flex:1 1 140px;padding:10px 12px"><div class="lbl">Próximos 90 dias</div><div class="val" style="font-size:1.15rem">R$ '+fmt(prox(d.d90))+'</div><div class="sub">somando tudo até lá</div></div>'+
+      '</div>'+
+      '<div class="note" style="margin-top:10px;font-size:.86rem;color:var(--ink)">'+frase+'</div>'+
+      '<div class="note">Conta só o que está lançado no mapa da aba Contas. Venda que ainda vai entrar não está aqui.</div>'+
+      lucro+rotina+'<span class="stamp">lido do sistema em '+esc(d.gerado_em||'')+'</span>';
+    const be=g('ce-ext'); if(be) be.addEventListener('click',()=>window.abreLancar&&window.abreLancar('extrato'));
+  }).catch(()=>{ const box=g('ce-box'); if(box) box.innerHTML='<p class="note">Não consegui ler agora. Clique em Atualizar daqui a pouco.</p>'; }); }
+  (function(){
+    const b=g('ce-salvar'); if(!b) return;
+    if(g('ce-data')&&!g('ce-data').value) g('ce-data').value=hojeBR();
+    b.addEventListener('click',()=>{
+      const msg=g('ce-msg'), banco=g('ce-banco').value, txt=g('ce-valor').value, v=parseFloat(txt);
+      if(!banco){ msg.innerHTML='<span style="color:var(--crit)">Escolha o banco.</span>'; return; }
+      if(txt===''||isNaN(v)){ msg.innerHTML='<span style="color:var(--crit)">Digite o saldo (pode ser 0).</span>'; return; }
+      b.disabled=true; b.textContent='gravando…';
+      post('/api/saldo-banco',{banco, valor:v, data:g('ce-data').value||hojeBR(), origem:'informado'}).then(res=>{
+        b.disabled=false; b.textContent='Guardar saldo';
+        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Saldo do '+esc(res.banco)+' guardado: R$ '+fmt(res.saldo)+' em '+dbr(res.data)+'.</span>'; g('ce-valor').value=''; loadComoEsta(true); }
+        else msg.innerHTML='<span style="color:var(--crit)">❌ '+esc(res.erro||'não consegui')+'</span>';
+      }).catch(()=>{ b.disabled=false; b.textContent='Guardar saldo'; msg.innerHTML='<span style="color:var(--crit)">❌ sem conexão</span>'; });
+    });
+  })();
   /* ================= CENTRAL DE LANÇAMENTOS (botão "+ Lançar", em todas as abas) =================
      Um lugar só pra lançar tudo (pedido do dono em 20/10/2026, inspirado na planilha "Meu Caixa
      Organizado"). As gravações são as rotas de sempre: gasto, baixa, saque, troca, fiado, reserva,
@@ -2314,7 +2399,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const num=id=>{ const el=g(id); const v=parseFloat(String(el?el.value:'').replace(',','.')); return isNaN(v)?NaN:+v.toFixed(2); };
     const val=id=>{ const el=g(id); return el?String(el.value||'').trim():''; };
     const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
-    const FORMA_PAGO=[['PIX','PIX (conta do banco)'],['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],
+    // PIX: o dono pediu pra perguntar SEMPRE em qual banco (Itaú é o mais usado, mas não vem marcado)
+    const FORMA_PAGO=[['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank'],['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],
                       ['Sobra','Sobra de caixa'],['Victor','Do meu bolso (recurso próprio)']];
     const ROT_FORMA=Object.fromEntries(FORMA_PAGO);
     const opts=(arr,ph)=>'<option value="" selected disabled>'+esc(ph||'escolha…')+'</option>'+
@@ -2325,11 +2411,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     // depois de lançar, recarrega SÓ os quadros que aquele lançamento mexe, e de uma vez só
     // (vários lançamentos seguidos viram uma recarga): cada quadro relê o sistema inteiro e,
     // tudo junto, o GestãoClick chegou a recusar leitura no teste.
-    const QUADROS={mapa:loadMapa, gasto:loadGastosMes, gaveta:loadFechHoje, dias:loadFechamentos,
+    const QUADROS={loja:loadComoEsta, mapa:loadMapa, gasto:loadGastosMes, gaveta:loadFechHoje, dias:loadFechamentos,
                    reserva:loadReserva, sobra:loadSobra, bolso:loadRecursoProprio, saque:loadSaqueResumo};
     let _fila=new Set(), _timer=null;
     function recarrega(quais){
-      (quais||Object.keys(QUADROS)).forEach(k=>_fila.add(k));
+      (quais||Object.keys(QUADROS)).forEach(k=>_fila.add(k)); _fila.add('loja');
       clearTimeout(_timer);
       _timer=setTimeout(()=>{ const f=[..._fila]; _fila=new Set(); f.forEach(k=>{ try{ QUADROS[k](true); }catch(e){} }); },1500);
     }
@@ -2594,21 +2680,22 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       p.innerHTML='<p class="note" style="margin:0 0 10px">A venda do fiado <b>já está lançada</b>: aqui entra só o dinheiro (não conta venda de novo).</p><div class="lc-form">'+
         '<label>Cliente (opcional)<input id="lc-cli" placeholder="nome"></label>'+
         '<label>Valor recebido (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
-        '<label>Recebi em<select id="lc-forma">'+opts([['Caixa','Dinheiro (gaveta)'],['PIX','PIX (conta do banco)']],'escolha…')+'</select></label>'+
+        '<label>Recebi em<select id="lc-forma">'+opts([['Caixa','Dinheiro (gaveta)'],['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank']],'escolha…')+'</select></label>'+
         '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label></div>'+rodape('Lançar entrada');
       g('lc-go').addEventListener('click',()=>{
         const v=num('lc-valor'), f=val('lc-forma'), msg=g('lc-msg');
         if(!(v>0)){ msg.innerHTML=ER('Digite o valor recebido.'); return; }
         if(!f){ msg.innerHTML=ER('Escolha onde recebeu.'); return; }
         manda('/api/pagamento-conta',{valor:v, cliente:val('lc-cli'), forma:f, data:val('lc-data')||hojeL},
-              r=>'R$ '+fmt(r.valor)+(r.cliente?' de '+esc(r.cliente):'')+' lançado '+(f==='Caixa'?'na gaveta (o fechamento já conta)':'no PIX')+', sem venda nova.',
+              r=>'R$ '+fmt(r.valor)+(r.cliente?' de '+esc(r.cliente):'')+' lançado '+(f==='Caixa'?'na gaveta (o fechamento já conta)':'no '+esc(f))+', sem venda nova.',
               f==='Caixa'?['gaveta','dias']:[]);
       });
     }
     function painelSaque(p){
       p.innerHTML='<p class="note" style="margin:0 0 10px">O cliente passa o valor <b>+ 20%</b> e leva o dinheiro da gaveta. Eu lanço a entrada e a sangria juntas, com a data de hoje.</p><div class="lc-form">'+
         '<label>Cliente quer sacar (R$)<input id="lc-valor" type="number" step="1" min="0" inputmode="numeric" placeholder="0"></label>'+
-        '<label>Passou no<select id="lc-tipo">'+opts([['debito','Débito'],['credito','Crédito'],['pix','PIX']],'escolha…')+'</select></label></div>'+
+        '<label>Passou no<select id="lc-tipo">'+opts([['debito','Débito'],['credito','Crédito'],['pix','PIX']],'escolha…')+'</select></label>'+
+        '<label id="lc-banco-l" hidden>O PIX caiu em qual conta<select id="lc-banco">'+opts([['Itaú','Itaú'],['Nubank','Nubank']],'escolha o banco…')+'</select></label></div>'+
         '<div class="lc-prev" id="lc-prev" hidden></div>'+rodape('Lançar saque');
       const FEE={debito:0.0085,credito:0.0314,pix:0};
       const upd=()=>{ const v=num('lc-valor'), t=val('lc-tipo'), box=g('lc-prev');
@@ -2616,12 +2703,14 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         const tot=v*1.2, taxa=tot*FEE[t], ganho=v*0.2-taxa; box.hidden=false;
         box.innerHTML='Cliente '+(t==='pix'?'manda <b>R$ '+fmt(tot)+'</b> no PIX (sem taxa)':'passa <b>R$ '+fmt(tot)+'</b> no cartão · taxa R$ '+fmt(taxa))+
           ' · você dá <b>R$ '+fmt(v)+'</b> em dinheiro e <b style="color:var(--good)">ganha R$ '+fmt(ganho)+'</b>.'; };
-      g('lc-valor').addEventListener('input',upd); g('lc-tipo').addEventListener('change',upd);
+      g('lc-valor').addEventListener('input',upd);
+      g('lc-tipo').addEventListener('change',()=>{ g('lc-banco-l').hidden=val('lc-tipo')!=='pix'; upd(); });
       g('lc-go').addEventListener('click',()=>{
         const v=num('lc-valor'), t=val('lc-tipo'), msg=g('lc-msg');
         if(!(v>0)){ msg.innerHTML=ER('Digite quanto o cliente quer sacar.'); return; }
         if(!t){ msg.innerHTML=ER('Escolha onde ele passou.'); return; }
-        manda('/api/saque',{valor:v,tipo:t},r=>'Saque lançado: entrada R$ '+fmt(r.total)+' e sangria R$ '+fmt(r.sangria)+' da gaveta. Você ganhou R$ '+fmt(r.ganho)+'.',['gaveta','dias','saque'])
+        if(t==='pix'&&!val('lc-banco')){ msg.innerHTML=ER('Escolha em qual conta o PIX caiu.'); return; }
+        manda('/api/saque',{valor:v,tipo:t,banco:t==='pix'?val('lc-banco'):''},r=>'Saque lançado: entrada R$ '+fmt(r.total)+' e sangria R$ '+fmt(r.sangria)+' da gaveta. Você ganhou R$ '+fmt(r.ganho)+'.',['gaveta','dias','saque'])
           .then(()=>{ g('lc-prev').hidden=true; });
       });
     }
@@ -2629,11 +2718,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       p.innerHTML='<p class="note" style="margin:0 0 10px">O contrário do saque: o cliente te dá <b>dinheiro</b> e você manda <b>PIX</b> pra ele.</p><div class="lc-form">'+
         '<label>Recebi em dinheiro (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '<label>Mandei no PIX (R$)<input id="lc-env" type="number" step="0.01" min="0" inputmode="decimal" placeholder="igual ao recebido"></label>'+
+        '<label>Mandei o PIX de qual conta<select id="lc-banco">'+opts([['Itaú','Itaú'],['Nubank','Nubank']],'escolha o banco…')+'</select></label>'+
         '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label></div>'+rodape('Lançar troca');
       g('lc-go').addEventListener('click',()=>{
         const rec=num('lc-valor'), env=num('lc-env'), msg=g('lc-msg');
         if(!(rec>0)){ msg.innerHTML=ER('Digite quanto recebeu em dinheiro.'); return; }
-        manda('/api/troca-pix',{recebido:rec, enviado:isNaN(env)?rec:env, data:val('lc-data')||hojeL},
+        if(!val('lc-banco')){ msg.innerHTML=ER('Escolha de qual conta saiu o PIX.'); return; }
+        manda('/api/troca-pix',{recebido:rec, enviado:isNaN(env)?rec:env, data:val('lc-data')||hojeL, banco:val('lc-banco')},
               r=>'Troca lançada: entraram R$ '+fmt(r.recebido)+' na gaveta e saíram R$ '+fmt(r.enviado)+' no PIX'+(r.ganho>0?' · lucro R$ '+fmt(r.ganho):'')+'.',['gaveta','dias']);
       });
     }
@@ -2641,7 +2732,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       p.innerHTML='<p class="note" style="margin:0 0 10px">Dinheiro que entra e <b>não é venda</b>: não vai pro faturamento.</p><div class="lc-form">'+
         '<label>O que é<select id="lc-tipo">'+opts([['aporte','Aporte do sócio'],['emprestimo','Empréstimo'],['rendimento','Rendimento do banco'],['outra','Outra entrada']],'escolha…')+'</select></label>'+
         '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
-        '<label>Onde entrou<select id="lc-onde">'+opts([['Caixa','Caixa (gaveta)'],['PIX','Conta do banco'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa']],'escolha…')+'</select></label>'+
+        '<label>Onde entrou<select id="lc-onde">'+opts([['Caixa','Caixa (gaveta)'],['PIX Itaú','Conta do Itaú'],['PIX Nubank','Conta do Nubank'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa']],'escolha…')+'</select></label>'+
         '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label>'+
         '<label class="lg">Descrição (opcional)<input id="lc-desc" placeholder="ex.: Victor colocou pra pagar a Ambev"></label></div>'+rodape('Lançar entrada');
       g('lc-go').addEventListener('click',()=>{
@@ -2650,8 +2741,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         if(!(v>0)){ msg.innerHTML=ER('Digite o valor.'); return; }
         if(!o){ msg.innerHTML=ER('Escolha onde o dinheiro entrou.'); return; }
         manda('/api/entrada',{tipo:t, valor:v, onde:o, data:val('lc-data')||hojeL, descricao:val('lc-desc')},
-              r=>esc(r.tipo)+' de R$ '+fmt(r.valor)+' lançado'+({Caixa:' na gaveta (o fechamento já conta)',PIX:' na conta do banco',Dinheiro:' na reserva',Sobra:' na sobra de caixa'}[o]||'')+'.',
-              {Caixa:['gaveta','dias'],PIX:[],Dinheiro:['reserva'],Sobra:['sobra']}[o]);
+              r=>esc(r.tipo)+' de R$ '+fmt(r.valor)+' lançado'+({Caixa:' na gaveta (o fechamento já conta)','PIX Itaú':' na conta do Itaú','PIX Nubank':' na conta do Nubank',Dinheiro:' na reserva',Sobra:' na sobra de caixa'}[o]||'')+'.',
+              {Caixa:['gaveta','dias'],Dinheiro:['reserva'],Sobra:['sobra']}[o]||[]);
       });
     }
 
@@ -2758,7 +2849,24 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           lanc.map(x=>'<div class="lc-row"><div><div class="q">'+esc(x.quem)+' <span class="v">R$ '+fmt(x.valor)+'</span></div><div class="m">'+dbr(x.data)+' · lançado como: '+esc(x.match.desc)+' ('+esc(x.match.forma)+', '+dbr(x.match.data)+')</div></div></div>').join('')+'</details>';
       }
       if(nIgn) h+='<p class="note" style="margin-top:10px"><button class="lc-btn ghost mini" id="ex-desig" type="button">Mostrar as '+nIgn+' ignoradas de novo</button></p>';
+      // saldo do banco no fim do extrato: é o que entra no "Como está a loja"
+      h+='<div class="lc-sec">🏦 Saldo do '+esc(NB)+' no fim do extrato</div>'+(d._saldoOk
+        ? '<p class="note" style="color:var(--good)">✅ '+d._saldoOk+'</p>'
+        : '<div class="lc-row"><div class="m" style="flex:1 1 220px">'+(d.saldo?'Li do arquivo. Confira com o app do banco e guarde.':'O arquivo não traz o saldo: digite o que aparece no app do banco.')+'</div>'+
+          '<div class="a"><label class="m" style="display:inline-flex;gap:4px;align-items:center">R$<input id="ex-saldo" type="number" step="0.01" inputmode="decimal" style="width:110px" value="'+(d.saldo?d.saldo.valor:'')+'"></label>'+
+          '<label class="m" style="display:inline-flex;gap:4px;align-items:center">dia<input id="ex-saldo-data" type="date" value="'+esc((d.saldo&&d.saldo.data)||d.ate)+'" max="'+hojeL+'"></label>'+
+          '<button class="lc-btn good mini" type="button" id="ex-saldo-ok">Guardar saldo</button></div></div>');
       box.innerHTML=h;
+      const bs=g('ex-saldo-ok');
+      if(bs) bs.addEventListener('click',()=>{
+        const t=g('ex-saldo').value, v=parseFloat(t), dt=g('ex-saldo-data').value||d.ate;
+        if(t===''||isNaN(v)){ toast('❌ digite o saldo (pode ser 0)'); return; }
+        trava(bs,'…');
+        post('/api/saldo-banco',{banco:NB, valor:v, data:dt, origem:'extrato'}).then(res=>{
+          if(res.ok){ d._saldoOk='Saldo do '+NB+' guardado: R$ '+fmt(res.saldo)+' em '+dbr(res.data)+'. Extrato da semana conferido.'; pintaExtrato(d); recarrega(['loja']); }
+          else { solta(bs); toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(bs); toast('❌ sem conexão'); });
+      });
       const pega=b=>sai.find(x=>x.id===b.closest('.lc-row').dataset.id);
       const fim=(b,html)=>{ b.closest('.a').innerHTML=html; };
       box.querySelectorAll('.ex-ign').forEach(b=>b.addEventListener('click',()=>{ const s=ignLoad(); s.add(pega(b).id); ignSave(s); pintaExtrato(d); }));
@@ -2766,12 +2874,12 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       box.querySelectorAll('.ex-ehmerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=true; pintaExtrato(d); }));
       box.querySelectorAll('.ex-naomerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=false; pintaExtrato(d); }));
       box.querySelectorAll('.ex-naoe').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); x.status='falta'; x.match=null; pintaExtrato(d); }));
-      box.querySelectorAll('.ex-gc').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); abreGerarCompra({data:x.data, forma:'PIX', quem:x.quem}); }));
+      box.querySelectorAll('.ex-gc').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); abreGerarCompra({data:x.data, forma:'PIX '+NB, quem:x.quem}); }));
       box.querySelectorAll('.ex-lanc').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b), cat=b.closest('.a').querySelector('.ex-cat').value;
         if(!cat){ toast('❌ escolha a categoria dessa linha'); return; }
         trava(b,'…');
-        post('/api/gasto',{categoria:cat, valor:x.valor, forma:'PIX', data:x.data, descricao:x.quem+' · extrato '+NB+' #ext:'+x.id}).then(res=>{
+        post('/api/gasto',{categoria:cat, valor:x.valor, forma:'PIX '+NB, data:x.data, descricao:x.quem+' · extrato '+NB+' #ext:'+x.id}).then(res=>{
           if(res.ok){ x.status='lancado'; x.match={desc:cat+' · '+x.quem, forma:'PIX', data:x.data}; fim(b,'<span style="color:var(--good);font-weight:700">✅ lançado em '+esc(cat)+'</span>'); recarrega(['gasto']); }
           else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
         }).catch(()=>{ solta(b); toast('❌ sem resposta: leia o extrato de novo antes de repetir'); });
@@ -2780,7 +2888,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         const x=pega(b);
         if(!confirm('Lançar R$ '+fmt(x.valor)+' como compra de mercadoria SEM itens?\n\nEntra no gasto do mês e no resultado, mas o ESTOQUE não muda. Se você tem a lista do que veio, prefira "Lançar no Gerar compra".')) return;
         trava(b,'…');
-        post('/api/gasto',{mercadoria:true, categoria:'Outros', valor:x.valor, forma:'PIX', data:x.data,
+        post('/api/gasto',{mercadoria:true, categoria:'Outros', valor:x.valor, forma:'PIX '+NB, data:x.data,
                            descricao:'Compra de '+x.quem+' — sem nota, extrato '+NB+' #ext:'+x.id}).then(res=>{
           if(res.ok){ x.status='lancado'; x.match={desc:'Compra de '+x.quem, forma:'PIX', data:x.data}; fim(b,'<span style="color:var(--good);font-weight:700">✅ lançado como mercadoria (sem estoque)</span>'); recarrega(['gasto']); }
           else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
@@ -2788,8 +2896,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }));
       box.querySelectorAll('.ex-baixa').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b); trava(b,'…');
-        post('/api/baixa',{id:x.match.id, forma:'PIX', valor:x.valor, data:x.data}).then(res=>{
-          if(res.ok){ x.status='lancado'; fim(b,'<span style="color:var(--good);font-weight:700">✅ baixa dada: pago no PIX dia '+dbr(x.data)+'</span>'); recarrega(['mapa','gasto']); }
+        post('/api/baixa',{id:x.match.id, forma:'PIX '+NB, valor:x.valor, data:x.data}).then(res=>{
+          if(res.ok){ x.status='lancado'; fim(b,'<span style="color:var(--good);font-weight:700">✅ baixa dada: pago no PIX '+esc(NB)+' dia '+dbr(x.data)+'</span>'); recarrega(['mapa','gasto']); }
           else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
         }).catch(()=>{ solta(b); toast('❌ sem resposta: confira no mapa antes de repetir'); });
       }));
@@ -2883,11 +2991,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   }
   vigiaGraficos();
 
-  loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo();
+  loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin'); vigiaGraficos();
-      Promise.all([loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados ✓'); }); });
   }
 })();
