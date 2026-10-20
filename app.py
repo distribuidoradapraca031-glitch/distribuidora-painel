@@ -857,7 +857,8 @@ def _nota_conta(p):
     desc = (p.get("descricao") or "")
     if desc.startswith(PREV_TAG):
         return _prev_nota(desc)
-    return re.sub(r"\[provisao\]|\[PREV\]", "", _sem_cat(desc), flags=re.I).strip()
+    # #ext:xxxxxxxx = marca da linha do extrato do banco (só serve pra não lançar duas vezes)
+    return re.sub(r"\[provisao\]|\[PREV\]|\s*#ext:[0-9a-f]{8}", "", _sem_cat(desc), flags=re.I).strip()
 
 def _ultimo_dia_mes(d):
     """'AAAA-MM-DD' do último dia do mês da data d ('AAAA-MM-...')."""
@@ -888,6 +889,9 @@ def api_baixa():
     """Dá baixa (liquida) uma conta a pagar existente."""
     body = request.get_json(force=True, silent=True) or {}
     pid = str(body.get("id") or "").strip()
+    # dia em que saiu o dinheiro: vem do extrato do banco (a conta foi paga lá atrás);
+    # pagando pelo mapa é hoje mesmo
+    dia = (body.get("data") or _hoje())[:10]
     forma = body.get("forma") or "Caixa"
     valor_real = _num(body.get("valor"))  # valor de fato pago (pode ter juros / ser variável)
     if not pid:
@@ -916,16 +920,16 @@ def api_baixa():
         "data_competencia": (p.get("data_competencia") or _hoje())[:10],
         "fornecedor_id": p.get("fornecedor_id") or "",
         "liquidado": "1",
-        "data_liquidacao": _hoje(),
+        "data_liquidacao": dia,
         "conta_bancaria_id": pot["conta"],
         "forma_pagamento_id": pot["forma"],
     }
     try:
         gcapi.put(f"/pagamentos/{pid}", payload)
         if forma == "Dinheiro":
-            _reserva_saida(payload["valor"], payload["descricao"] or "Conta", _hoje())
+            _reserva_saida(payload["valor"], payload["descricao"] or "Conta", dia)
         elif forma == "Sobra":
-            _sobra_saida(payload["valor"], payload["descricao"] or "Conta", _hoje())
+            _sobra_saida(payload["valor"], payload["descricao"] or "Conta", dia)
         # demais formas da mesma conta: um lançamento por parte, já liquidado
         for parte in partes[1:]:
             f2 = parte.get("forma") or "Caixa"
@@ -938,13 +942,14 @@ def api_baixa():
                 "data_vencimento": payload["data_vencimento"],
                 "data_competencia": payload["data_competencia"],
                 "fornecedor_id": payload["fornecedor_id"],
-                "liquidado": "1", "data_liquidacao": _hoje(),
+                "liquidado": "1", "data_liquidacao": dia,
                 "conta_bancaria_id": pot2["conta"], "forma_pagamento_id": pot2["forma"]})
             if f2 == "Dinheiro":
-                _reserva_saida(v2, desc2, _hoje())
+                _reserva_saida(v2, desc2, dia)
             elif f2 == "Sobra":
-                _sobra_saida(v2, desc2, _hoje())
-        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva", "sobra", "mapa")
+                _sobra_saida(v2, desc2, dia)
+        _invalida("pagar", "resumo", "previsoes", "gastos_mes", "reserva", "sobra", "mapa",
+                  "lancamentos_" + _hoje()[:7])
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
@@ -961,12 +966,19 @@ def api_gasto():
     body = request.get_json(force=True, silent=True) or {}
     cat = body.get("categoria") or "Outros"
     valor = _num(body.get("valor"))
-    forma = body.get("forma") or "Caixa"
+    forma = body.get("forma") or ""
     data = (body.get("data") or _hoje())[:10]
     nota = (body.get("descricao") or "").strip() or cat
+    quem = (body.get("quem") or "").strip()
+    if quem and quem.upper() not in nota.upper():
+        nota = f"{nota} — pago a {quem}"
     if valor <= 0:
         return jsonify({"ok": False, "erro": "valor inválido"}), 400
-    plano = CATS.get(cat, CATS["Outros"])
+    # mercadoria achada no extrato e lançada só pelo valor (sem itens): começa com
+    # "Compra de" e vai no plano Compras, sem etiqueta de categoria — é assim que o mês e
+    # o quadro de lucros reconhecem mercadoria (ver _eh_mercadoria).
+    mercadoria = bool(body.get("mercadoria"))
+    plano = CATS["Outros"] if mercadoria else _plano_cat(cat)
 
     partes = [x for x in (body.get("partes") or []) if _num(x.get("valor")) > 0]
     if len(partes) > 3:
@@ -976,20 +988,68 @@ def api_gasto():
         if abs(soma - round(valor, 2)) > 0.02:
             return jsonify({"ok": False, "erro": f"as formas somam R$ {soma:.2f} e o gasto é "
                                                  f"R$ {valor:.2f} — ajuste os valores"}), 400
+        if any((x.get("forma") or "") not in POTES and x.get("forma") != "Boleto" for x in partes):
+            return jsonify({"ok": False, "erro": "escolha de onde saiu cada parte"}), 400
     else:
+        # o dono pediu: a forma NUNCA vem marcada sozinha. Sem forma, não grava — antes
+        # o padrão era "Caixa" e um gasto do PIX tirava dinheiro da gaveta sem ninguém ver.
+        if forma not in POTES and forma != "Boleto":
+            return jsonify({"ok": False, "erro": "escolha de onde saiu o dinheiro"}), 400
         partes = [{"forma": forma, "valor": valor}]
 
-    def _corpo(f, v, texto):
-        d = _marca_rp(f"[cat:{cat}] {texto}", f)
+    # conta que AINDA NÃO FOI PAGA (Boleto) pode repetir (mesmo valor toda semana/mês) ou
+    # ser parcelada (o valor dividido). Uma conta a pagar por vencimento, igual o dono
+    # lançaria uma por uma. Só quando ele escolhe — nada é pré-carregado sozinho.
+    modo = (body.get("modo") or "uma").strip().lower()
+    vezes = int(_num(body.get("vezes")) or 1)
+    freq = (body.get("freq") or "mensal").strip().lower()
+    serie = None
+    if modo in ("repete", "parcela") and vezes > 1:
+        if len(partes) != 1 or partes[0]["forma"] != "Boleto":
+            return jsonify({"ok": False, "erro": "repetir e parcelar é só pra conta que "
+                                                 "ainda não foi paga"}), 400
+        if vezes > (52 if freq == "semanal" else 24):
+            return jsonify({"ok": False, "erro": "vezes demais — no máximo 24 meses ou 52 semanas"}), 400
+        serie = _serie_vencimentos(data, vezes, freq if modo == "repete" else "mensal")
+        if modo == "parcela":
+            base = int(round(valor * 100)) // vezes / 100
+            vals = [base] * (vezes - 1) + [round(valor - base * (vezes - 1), 2)]
+            rot = [f"parcela {i}/{vezes}" for i in range(1, vezes + 1)]
+        else:
+            vals = [round(valor, 2)] * vezes
+            rot = [f"{i} de {vezes}" for i in range(1, vezes + 1)]
+        serie = list(zip(serie, vals, rot))
+
+    def _corpo(f, v, texto, dt=None):
+        dt = dt or data
+        d = texto if mercadoria else f"[cat:{cat}] {texto}"
+        d = _marca_rp(d, f)
         if f == "Boleto":      # não pago: vira conta a pagar (boleto em aberto)
-            return {"descricao": d[:180], "valor": f"{v:.2f}", "data_vencimento": data,
-                    "data_competencia": data, "liquidado": "0", "plano_contas_id": plano,
+            return {"descricao": d[:180], "valor": f"{v:.2f}", "data_vencimento": dt,
+                    "data_competencia": dt, "liquidado": "0", "plano_contas_id": plano,
                     "forma_pagamento_id": BOLETO_FORMA_ID}
         pot = POTES.get(f, POTES["Caixa"])
-        return {"descricao": d[:180], "valor": f"{v:.2f}", "data_vencimento": data,
-                "data_competencia": data, "data_liquidacao": data, "liquidado": "1",
+        return {"descricao": d[:180], "valor": f"{v:.2f}", "data_vencimento": dt,
+                "data_competencia": dt, "data_liquidacao": dt, "liquidado": "1",
                 "plano_contas_id": plano, "conta_bancaria_id": pot["conta"],
                 "forma_pagamento_id": pot["forma"]}
+
+    if serie:
+        # uma por uma, SEM repetir em caso de erro (repetir duplica no GestãoClick):
+        # se cair no meio, devolvo quais já entraram pro dono não lançar de novo.
+        ids, feitas = [], []
+        try:
+            for dt, v, r_ in serie:
+                r = gcapi.post("/pagamentos", _corpo("Boleto", v, f"{nota} ({r_})", dt))
+                d = r.get("data") or {}
+                ids.append(d.get("id") if isinstance(d, dict) else None)
+                feitas.append({"venc": dt, "valor": v})
+            _invalida("pagar", "previsoes", "mapa", "ultima_atualizacao", "lancamentos_" + _hoje()[:7])
+            return jsonify({"ok": True, "ids": ids, "contas": feitas})
+        except Exception as e:
+            _invalida("pagar", "previsoes", "mapa", "lancamentos_" + _hoje()[:7])
+            return jsonify({"ok": False, "erro": str(e)[:200], "contas": feitas,
+                            "parcial": True}), 502
 
     ids, lancados = [], []
     try:
@@ -1007,11 +1067,576 @@ def api_gasto():
                 _sobra_saida(v, texto, data)
         _invalida("pagar", "resumo", "reserva", "sobra", "gastos_mes", "mapa",
                   "hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
-                  "fechamentos_12", "fechamentos_31")
+                  "fechamentos_12", "fechamentos_31", "lancamentos_" + _hoje()[:7])
         return jsonify({"ok": True, "id": ids[0] if ids else None, "ids": ids,
                         "partes": lancados})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200], "lancados": lancados}), 502
+
+# ---- CENTRAL DE LANÇAMENTOS (botão "+ Lançar", em todas as abas) ----
+# Antes eram 12 formulários espalhados em 4 abas. Em 20/10/2026 o dono comprou a
+# planilha "Meu Caixa Organizado" e pediu um lugar só pra lançar tudo, como a central
+# dela: Saída · Entrada · Mover dinheiro · Conferir extrato. Os formulários antigos
+# saíram das abas. As gravações continuam as mesmas rotas de sempre (gasto, baixa,
+# saque, troca, fiado, reserva, sobra) — a central só junta as portas.
+CENTRAL_GRUPOS = [
+    ("Pessoas", ["PH Motoca", "Biel (Gabriel)", "Retirada do sócio (Victor)",
+                 "Igor (pró-labore / retirada)", "Vigia", "INSS s/ pró-labore",
+                 "Motoboy / entrega"]),
+    ("Contas da loja", ["Aluguel (IPTU)", "Energia (CEMIG)", "Água (COPASA)",
+                        "Internet / telefone", "Contabilidade (Werdeiros)", "Anota AI",
+                        "Seguro do carro"]),
+    ("Impostos e banco", ["DAS (Simples)", "Parcelamento Simples (PARCSN)",
+                          "Taxas / alvará (PBH)", "Tarifa do banco"]),
+    ("Dia a dia", ["Sacolas / gelo / copos", "Lanche", "Almoço", "Padaria", "Papelaria",
+                   "Combustível", "Limpeza / higiene", "Descartáveis (copo/saco)",
+                   "Manutenção / conserto", "Reparo da loja", "Outros"]),
+]
+CATS_EXTRA = {"Tarifa do banco": "33015677"}   # plano "Despesas bancárias"
+
+def _plano_cat(cat):
+    """Plano de contas do GestãoClick de uma categoria do painel. Antes só valiam as
+    categorias do gasto do dia a dia: "Energia (CEMIG)" lançada como gasto ia pro plano
+    Compras. O que manda no painel continua sendo a etiqueta [cat:]."""
+    return CATS.get(cat) or _PREV_PLANO.get(cat) or CATS_EXTRA.get(cat) or CATS["Outros"]
+
+# palavra no texto -> categoria SUGERIDA. É só sugestão: o dono confirma, e a categoria
+# que ele escolhe é a que vale (ver o [cat:] lá em cima). Da mais longa pra mais curta.
+SUGESTAO_PALAVRAS = [
+    ("CEMIG", "Energia (CEMIG)"), ("ENERGIA", "Energia (CEMIG)"), ("CONTA DE LUZ", "Energia (CEMIG)"),
+    ("COPASA", "Água (COPASA)"), ("CONTA DE AGUA", "Água (COPASA)"),
+    ("ALUGUEL", "Aluguel (IPTU)"), ("IMOBILIARIA", "Aluguel (IPTU)"), ("IPTU", "Aluguel (IPTU)"),
+    ("WERDEIROS", "Contabilidade (Werdeiros)"), ("CONTABIL", "Contabilidade (Werdeiros)"),
+    ("CONTADOR", "Contabilidade (Werdeiros)"),
+    ("ANOTA", "Anota AI"),
+    ("PARCSN", "Parcelamento Simples (PARCSN)"), ("PARCELAMENTO SIMPLES", "Parcelamento Simples (PARCSN)"),
+    ("SIMPLES NACIONAL", "DAS (Simples)"), ("RECEITA FEDERAL", "DAS (Simples)"),
+    ("DARF", "DAS (Simples)"), ("DAS ", "DAS (Simples)"),
+    ("PREFEITURA", "Taxas / alvará (PBH)"), ("PBH", "Taxas / alvará (PBH)"),
+    ("ALVARA", "Taxas / alvará (PBH)"), ("FISCALIZACAO", "Taxas / alvará (PBH)"),
+    ("TARIFA", "Tarifa do banco"), ("CESTA DE SERVICOS", "Tarifa do banco"),
+    ("PACOTE DE SERVICOS", "Tarifa do banco"), ("TAR ", "Tarifa do banco"),
+    ("MANUTENCAO DE CONTA", "Tarifa do banco"), ("IOF", "Tarifa do banco"),
+    ("INTERNET", "Internet / telefone"), ("TELECOM", "Internet / telefone"),
+    ("VIVO", "Internet / telefone"), ("CLARO", "Internet / telefone"), ("TIM ", "Internet / telefone"),
+    ("INSS", "INSS s/ pró-labore"), ("VIGIA", "Vigia"), ("SEGURANCA", "Vigia"),
+    ("SEGURO", "Seguro do carro"),
+    ("POSTO", "Combustível"), ("COMBUSTIVEL", "Combustível"), ("GASOLINA", "Combustível"),
+    ("SHELL", "Combustível"), ("IPIRANGA", "Combustível"), ("PETROBRAS", "Combustível"),
+    ("PADARIA", "Padaria"), ("PANIFICADORA", "Padaria"),
+    ("LANCHE", "Lanche"), ("ALMOCO", "Almoço"), ("MARMITA", "Almoço"),
+    ("PAPELARIA", "Papelaria"),
+    ("SACOLA", "Sacolas / gelo / copos"), ("GELO", "Sacolas / gelo / copos"),
+    ("COPO", "Descartáveis (copo/saco)"), ("DESCARTAVE", "Descartáveis (copo/saco)"),
+    ("LIMPEZA", "Limpeza / higiene"),
+    ("CONSERTO", "Manutenção / conserto"), ("MANUTENCAO", "Manutenção / conserto"),
+    ("REPARO", "Reparo da loja"),
+    ("MOTOCA", "PH Motoca"), ("MOTOBOY", "Motoboy / entrega"),
+    ("BIEL", "Biel (Gabriel)"), ("GABRIEL", "Biel (Gabriel)"),
+    ("IGOR", "Igor (pró-labore / retirada)"),
+    ("LUCCHESI", "Retirada do sócio (Victor)"),
+]
+SUGESTAO_PALAVRAS.sort(key=lambda x: -len(x[0]))
+
+def _ext_norm(s):
+    """Maiúsculo, sem acento e com espaço simples (pra comparar texto de banco)."""
+    import unicodedata
+    s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode()
+    return re.sub(r"\s+", " ", s.upper()).strip()
+
+def _sugere_por_palavra(texto):
+    t = " " + _ext_norm(texto) + " "
+    for kw, cat in SUGESTAO_PALAVRAS:
+        if kw in t:
+            return cat
+    return None
+
+def _serie_vencimentos(inicio, vezes, freq):
+    """Datas de vencimento a partir da primeira: toda semana, a cada 15 dias ou todo mês
+    (no mesmo dia; dia 31 vira o último dia dos meses curtos)."""
+    d0 = datetime.date.fromisoformat(inicio[:10])
+    out = []
+    for i in range(vezes):
+        if freq == "semanal":
+            d = d0 + datetime.timedelta(days=7 * i)
+        elif freq == "quinzenal":
+            d = d0 + datetime.timedelta(days=14 * i)
+        else:
+            m = d0.month - 1 + i
+            y, m = d0.year + m // 12, m % 12 + 1
+            d = datetime.date(y, m, min(d0.day, calendar.monthrange(y, m)[1]))
+        out.append(d.isoformat())
+    return out
+
+@app.route("/api/lancar-config")
+@login_required
+def api_lancar_config():
+    """O que a central precisa pra montar os formulários: as categorias por grupo e as
+    palavras que sugerem categoria enquanto o dono digita."""
+    return jsonify({"grupos": [{"grupo": g, "cats": c} for g, c in CENTRAL_GRUPOS],
+                    "palavras": SUGESTAO_PALAVRAS})
+
+# ---- OUTRA ENTRADA (aporte, empréstimo, rendimento...) ----
+# Dinheiro que entra e NÃO é venda: não pode ir pro faturamento. Na gaveta vira uma
+# entrada avulsa (o fechamento conta com ela, igual troca de PIX e fiado); no banco, um
+# recebimento na conta; na reserva/sobra, um depósito só do painel.
+ENTRADA_TIPOS = {"aporte": "Aporte do sócio", "emprestimo": "Empréstimo",
+                 "rendimento": "Rendimento do banco", "outra": "Outra entrada"}
+PLANO_APLICACOES = "33015690"     # "Aplicações financeiras" (crédito)
+
+@app.route("/api/entrada", methods=["POST"])
+@login_required
+def api_entrada():
+    body = request.get_json(force=True, silent=True) or {}
+    tipo = (body.get("tipo") or "outra").strip().lower()
+    rot = ENTRADA_TIPOS.get(tipo, ENTRADA_TIPOS["outra"])
+    valor = round(_num(body.get("valor")), 2)
+    onde = (body.get("onde") or "").strip()
+    data = (body.get("data") or _hoje())[:10]
+    nota = (body.get("descricao") or "").strip()
+    if valor <= 0:
+        return jsonify({"ok": False, "erro": "informe o valor que entrou"}), 400
+    if onde not in ("Caixa", "PIX", "Dinheiro", "Sobra"):
+        return jsonify({"ok": False, "erro": "escolha onde o dinheiro entrou"}), 400
+    texto = rot + (f" — {nota}" if nota else "")
+    plano = PLANO_APLICACOES if tipo == "rendimento" else PLANO_AJUSTE_C
+    try:
+        if onde in ("Caixa", "PIX"):
+            pot = POTES[onde]
+            r = gcapi.post("/recebimentos", {
+                "descricao": f"ENTRADA AVULSA — {texto}"[:180], "valor": f"{valor:.2f}",
+                "data_vencimento": data, "data_competencia": data, "data_liquidacao": data,
+                "liquidado": "1", "plano_contas_id": plano,
+                "conta_bancaria_id": pot["conta"], "forma_pagamento_id": pot["forma"]})
+        else:
+            tag = RES_DEP_TAG if onde == "Dinheiro" else SOB_DEP_TAG
+            r = gcapi.post("/pagamentos", {
+                "descricao": f"{tag} guardei — {texto}"[:180], "valor": f"{valor:.2f}",
+                "data_vencimento": data, "data_competencia": data, "liquidado": "0",
+                "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+        d = r.get("data") or {}
+        _invalida("resumo", "hoje", "fech_hoje", "fech_" + data, "fechamentos_7",
+                  "fechamentos_12", "fechamentos_31", "entradas_" + data, "reserva", "sobra",
+                  "pagar", "mapa", "lancamentos_" + _hoje()[:7])
+        return jsonify({"ok": True, "valor": valor, "onde": onde, "tipo": rot,
+                        "id": d.get("id") if isinstance(d, dict) else None})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+# ---- CONFERIR EXTRATO (Itaú e Nubank) ----
+# O dono baixa o extrato no app do banco (arquivo OFX ou planilha CSV) e sobe aqui. Eu
+# leio as SAÍDAS e separo: o que já está lançado, o que é uma conta aberta no mapa (é só
+# dar baixa) e o que falta lançar, com a categoria sugerida. As ENTRADAS do banco são
+# venda no PIX/maquininha, que já entram pelas vendas — lançar de novo dobraria o
+# faturamento, então só conto. Nada é gravado aqui: cada linha só entra quando o dono
+# confirma. O GestãoClick tem UMA conta bancária, então Itaú e Nubank caem nela; o nome
+# do banco vai escrito no lançamento.
+# Ideia tirada da planilha: sugerir pelo histórico antes da palavra-chave e marcar
+# repetido por data + valor. O marcador #ext:xxxxxxxx no lançamento evita lançar a mesma
+# linha duas vezes quando o extrato é lido de novo.
+BANCOS_EXTRATO = {"itau": "Itaú", "nubank": "Nubank"}
+EXT_MARCA_RE = re.compile(r"\s*#ext:([0-9a-f]{8})")
+_EXT_PREFIXOS = re.compile(
+    r"^(PIX (TRANSF(ERENCIA)?|ENVIADO|ENVIADA|ENV|QRS|QR CODE|QR|PAGTO|PAGAMENTO)|"
+    r"TRANSFERENCIA (ENVIADA|ENV)( PELO PIX)?|TRANSF(ERENCIA)?( ENVIADA)?|SISPAG( PIX| TED| DOC)?|"
+    r"PAG(TO|AMENTO)?( DE)? (BOLETO|TIT(ULO)?|CONTA|FATURA)( EFETUADO)?|INT PAG TIT( BANCO)?|"
+    r"DEB(ITO)? AUT(OMATICO)?|DA|COMPRA (NO )?(DEBITO|CARTAO)|COMPRA|RSHOP|TED|DOC|TEF)\b[\s\-:]*")
+_EXT_SOCIETARIO = re.compile(r"\b(LTDA|EIRELI|ME|EPP|S ?A|S/A|SA|CIA|COMERCIO|COM|IND|INDUSTRIA|"
+                             r"DISTRIBUIDORA|DISTRIB|DIST|DE|DA|DO|DAS|DOS|E|BEBIDAS)\b")
+# fornecedores grandes que nem sempre estão com o nome igual no cadastro
+_EXT_MARCAS_MERCADORIA = ("AMBEV", "HEINEKEN", "SOUZA CRUZ", "PHILIP MORRIS", "SPAL",
+                          "COCA COLA", "PEPSICO", "BAT BRASIL", "CERVEJARIA")
+
+def _ext_valor(s):
+    """'-1.234,56' / '-1234.56' / '1.234,56-' / 'R$ 50,00' → número com sinal."""
+    bruto = str(s or "").strip()
+    t = re.sub(r"[^\d,.\-]", "", bruto)
+    if not re.search(r"\d", t):
+        return None
+    neg = t.startswith("-") or t.endswith("-") or bruto.startswith("(")
+    t = t.strip("-")
+    if "," in t and "." in t:
+        t = t.replace(".", "").replace(",", ".") if t.rfind(",") > t.rfind(".") else t.replace(",", "")
+    elif "," in t:
+        t = t.replace(",", ".")
+    elif t.count(".") > 1:
+        t = t.replace(".", "")
+    try:
+        v = float(t)
+    except ValueError:
+        return None
+    return -v if neg else v
+
+def _ext_data(s):
+    """Data em AAAA-MM-DD a partir de 20261020(…), 20/10/2026, 20/10/26 ou 2026-10-20."""
+    t = str(s or "").strip()
+    m = re.match(r"^(\d{4})-?(\d{2})-?(\d{2})", t)
+    if m:
+        y, mo, d = m.groups()
+    else:
+        m = re.match(r"^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})", t)
+        if not m:
+            return None
+        d, mo, y = m.groups()
+        if len(y) == 2:
+            y = "20" + y
+    try:
+        return datetime.date(int(y), int(mo), int(d)).isoformat()
+    except ValueError:
+        return None
+
+def _ext_ofx(txt):
+    """Lançamentos de um OFX (o formato que Itaú e Nubank exportam). Aceita o OFX
+    antigo, sem fechar as tags, e o novo, em XML."""
+    linhas = []
+    blocos = re.split(r"<STMTTRN>", txt, flags=re.I)[1:]
+    for b in blocos:
+        b = re.split(r"</STMTTRN>|</BANKTRANLIST>", b, flags=re.I)[0]
+        def tag(n):
+            m = re.search(r"<" + n + r">([^<\r\n]*)", b, flags=re.I)
+            return (m.group(1).strip() if m else "").replace("&amp;", "&")
+        data, valor = _ext_data(tag("DTPOSTED")), _ext_valor(tag("TRNAMT"))
+        if not data or valor is None:
+            continue
+        memo = " - ".join(x for x in (tag("NAME"), tag("MEMO")) if x) or tag("PAYEE")
+        linhas.append({"data": data, "valor": valor, "memo": memo,
+                       "fitid": tag("FITID") or tag("CHECKNUM")})
+    return linhas
+
+def _ext_csv(txt):
+    """Lançamentos de uma planilha CSV: acha a linha de cabeçalho (data / descrição /
+    valor, com os nomes que os bancos usam) e lê dali pra baixo."""
+    import csv, io
+    primeira = next((l for l in txt.splitlines() if l.strip()), "")
+    sep = ";" if primeira.count(";") >= primeira.count(",") else ","
+    rows = list(csv.reader(io.StringIO(txt), delimiter=sep))
+    NOMES = {"data": ("DATA", "DATE", "DATA LANCAMENTO", "DATA DO LANCAMENTO", "DT"),
+             "desc": ("DESCRICAO", "HISTORICO", "LANCAMENTO", "LANCAMENTOS", "TITLE",
+                      "DETALHES", "DESCRICAO DO LANCAMENTO", "ESTABELECIMENTO"),
+             "valor": ("VALOR", "AMOUNT", "VALOR (R$)", "VALOR R$", "VALOR(R$)")}
+    col, ini = None, 0
+    for i, r in enumerate(rows[:15]):
+        cab = [_ext_norm(c) for c in r]
+        achou = {k: next((j for j, c in enumerate(cab) if c in v), None) for k, v in NOMES.items()}
+        if None not in achou.values():
+            col, ini = achou, i + 1
+            break
+    if col is None:                                   # sem cabeçalho: data, descrição, valor
+        col = {"data": 0, "desc": 1, "valor": 2}
+    linhas = []
+    for i, r in enumerate(rows[ini:]):
+        if len(r) <= max(col.values()):
+            continue
+        data, valor = _ext_data(r[col["data"]]), _ext_valor(r[col["valor"]])
+        memo = r[col["desc"]].strip()
+        if not data or valor is None or "SALDO" in _ext_norm(memo)[:20]:
+            continue
+        linhas.append({"data": data, "valor": valor, "memo": memo, "fitid": ""})
+    return linhas
+
+def _ext_quem(memo):
+    """Quem recebeu, a partir do texto do banco. Nubank escreve "Transferência enviada
+    pelo Pix - FULANO - •••.123.456-•• - BANCO"; Itaú escreve "PIX TRANSF FULANO 20/10"."""
+    partes = [p.strip() for p in str(memo or "").split(" - ") if p.strip()]
+    if len(partes) > 1:
+        cab = _ext_norm(partes[0])
+        if re.match(r"^(TRANSFERENCIA|PIX|PAGAMENTO|COMPRA|DEBITO|BOLETO|TED|DOC)", cab):
+            partes = partes[1:]
+        nome = partes[0]
+    else:
+        nome = partes[0] if partes else ""
+    n = _ext_norm(nome)
+    for _ in range(2):
+        n = _EXT_PREFIXOS.sub("", n).strip()
+    n = re.sub(r"\s*\d{2}/\d{2}(/\d{2,4})?\s*$", "", n)            # data no fim (Itaú)
+    n = re.sub(r"[*•.\-]*\d{3}[.\-*•]\d{3}[.\-*•]?\d{0,3}[\-*•]*\d{0,2}", "", n)   # CPF mascarado
+    n = re.sub(r"\s+", " ", n).strip(" -*•.")
+    if not re.search(r"[A-Z]{3}", n):          # sobrou só número ("INT PAG TIT BANCO 341")
+        return _ext_norm(memo)[:60]
+    return n
+
+def _ext_nucleo(nome):
+    """Nome sem LTDA/COMERCIO/DE/DA..., pra comparar fornecedor com o texto do banco."""
+    return re.sub(r"\s+", " ", _EXT_SOCIETARIO.sub(" ", _ext_norm(nome))).strip()
+
+def _ext_fornecedores():
+    def build():
+        return [_ext_nucleo(f.get("nome") or f.get("razao_social") or "")
+                for f in gcapi.get_all("/fornecedores")]
+    return [n for n in cached("ext_fornecedores", 3600, build) if len(n) >= 5]
+
+@app.route("/api/extrato/ler", methods=["POST"])
+@login_required
+def api_extrato_ler():
+    import hashlib
+    body = request.get_json(force=True, silent=True) or {}
+    banco = (body.get("banco") or "").strip().lower()
+    txt = body.get("arquivo") or ""
+    if banco not in BANCOS_EXTRATO:
+        return jsonify({"ok": False, "erro": "escolha o banco do extrato"}), 400
+    if len(txt) < 20:
+        return jsonify({"ok": False, "erro": "o arquivo veio vazio"}), 400
+    if len(txt) > 3_000_000:
+        return jsonify({"ok": False, "erro": "arquivo grande demais — baixe um mês por vez"}), 400
+    txt = txt.lstrip("﻿")
+    linhas = _ext_ofx(txt) if re.search(r"<STMTTRN>", txt, re.I) else _ext_csv(txt)
+    if not linhas:
+        return jsonify({"ok": False, "erro": "não achei lançamento nenhum nesse arquivo. "
+                        "No app do banco, exporte o extrato em OFX (ou CSV)."}), 400
+    nome_banco = BANCOS_EXTRATO[banco]
+    for i, l in enumerate(linhas):
+        chave = f"{banco}|{l['fitid'] or ''}|{l['data']}|{l['valor']:.2f}|{_ext_norm(l['memo'])}|{'' if l['fitid'] else i}"
+        l["id"] = hashlib.sha1(chave.encode()).hexdigest()[:8]
+        l["quem"] = _ext_quem(l["memo"])
+    saidas = [l for l in linhas if l["valor"] < 0]
+    entradas = [l for l in linhas if l["valor"] > 0]
+    de, ate = min(l["data"] for l in linhas), max(l["data"] for l in linhas)
+
+    pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"})
+    marcas = {}
+    for p in pgs:
+        m = EXT_MARCA_RE.search(p.get("descricao") or "")
+        if m:
+            marcas[m.group(1)] = p
+    DINHEIRO = {"6055919", GUARDADO_FORMA_ID, RP_FORMA_ID}
+    def _dt(p, aberto):
+        return ((p.get("data_vencimento") if aberto else
+                 (p.get("data_liquidacao") or p.get("data_vencimento"))) or "")[:10]
+    cand = {"lancado": [], "aberta": [], "parecido": []}
+    for p in pgs:
+        d = p.get("descricao") or ""
+        if _eh_interno(d) or "[PROVISAO]" in d.upper():
+            continue
+        if (p.get("nome_plano_conta") or "") == "Ajuste de caixa":
+            continue
+        aberto = str(p.get("liquidado")) != "1"
+        forma = str(p.get("forma_pagamento_id") or "")
+        if aberto:
+            grupo = "aberta"
+        elif forma not in DINHEIRO or d.upper().startswith("SANGRIA BANCO"):
+            grupo = "lancado"           # saiu do banco: PIX, boleto, cartão, saque do banco
+        elif d.upper().startswith("SANGRIA"):
+            continue                    # dinheiro da gaveta indo pro cofre: não passa no banco
+        else:
+            grupo = "parecido"          # pago em dinheiro com o mesmo valor: pode ser engano
+        cand[grupo].append({"p": p, "data": _dt(p, aberto),
+                            "valor": round(_num(p.get("valor_total")) or _num(p.get("valor")), 2)})
+    usados = set()
+    TOL = {"lancado": 3, "aberta": 12, "parecido": 1}
+    def _acha(l, grupo):
+        v = round(-l["valor"], 2)
+        d0 = datetime.date.fromisoformat(l["data"])
+        melhor = None
+        for c in cand[grupo]:
+            pid = str(c["p"].get("id"))
+            if pid in usados or abs(c["valor"] - v) > 0.01 or not c["data"]:
+                continue
+            try:
+                dd = abs((datetime.date.fromisoformat(c["data"]) - d0).days)
+            except ValueError:
+                continue
+            if dd <= TOL[grupo] and (melhor is None or dd < melhor[0]):
+                melhor = (dd, c["p"])
+        if melhor:
+            usados.add(str(melhor[1].get("id")))
+            return melhor[1]
+        return None
+
+    # sugestão pelo histórico: o que o dono já lançou pra esse mesmo nome
+    hist = []
+    for p in pgs:
+        if str(p.get("liquidado")) != "1":
+            continue
+        d = p.get("descricao") or ""
+        if _eh_interno(d) or d.upper().startswith("SANGRIA"):
+            continue
+        texto = _ext_norm(_sem_cat(d) + " " + (p.get("nome_fornecedor") or ""))
+        cat = "Mercadoria" if _eh_mercadoria(d) else (_cat_marcada(d) or _categoria_conta(p))
+        if cat:
+            hist.append((p.get("data_liquidacao") or "", texto, cat))
+    hist.sort(reverse=True)
+    forns = _ext_fornecedores()
+
+    def _resumo_p(p):
+        return {"id": p.get("id"), "desc": EXT_MARCA_RE.sub("", _nota_conta(p)) or p.get("nome_plano_conta") or "—",
+                "data": ((p.get("data_liquidacao") or p.get("data_vencimento")) or "")[:10],
+                "venc": (p.get("data_vencimento") or "")[:10],
+                "valor": round(_num(p.get("valor_total")) or _num(p.get("valor")), 2),
+                "forma": _rotulo_forma(p), "fornecedor": p.get("nome_fornecedor") or "",
+                "cat": "Mercadoria" if _eh_mercadoria(p.get("descricao")) else (_categoria_conta(p) or "")}
+
+    out = []
+    # primeiro quem tem marca exata, depois o resto em ordem de data
+    for l in sorted(saidas, key=lambda x: (x["id"] not in marcas, x["data"])):
+        q = l["quem"]
+        qn = _ext_nucleo(q)
+        item = {"id": l["id"], "data": l["data"], "valor": round(-l["valor"], 2),
+                "memo": l["memo"][:140], "quem": q[:80], "status": "falta",
+                "sugestao": None, "por": None, "mercadoria": False, "ignorar": None}
+        p = marcas.get(l["id"])
+        if p is not None:
+            usados.add(str(p.get("id")))
+            item.update(status="lancado", match=_resumo_p(p))
+            out.append(item); continue
+        memo_n = _ext_norm(l["memo"])
+        if "DISTRIBUIDORA DA PRACA" in memo_n or re.search(r"\b(APLICACAO|RESGATE|APLIC)\b", memo_n):
+            item["ignorar"] = ("dinheiro indo pra aplicação do banco" if "APLIC" in memo_n
+                               else "transferência entre as contas da loja")
+        for grupo in ("lancado", "aberta", "parecido"):
+            p = _acha(l, grupo)
+            if p is not None:
+                item.update(status=grupo, match=_resumo_p(p))
+                break
+        if item["status"] in ("falta", "parecido"):
+            qnorm = _ext_norm(q)
+            if len(qnorm) >= 4:
+                for _, texto, cat in hist:
+                    if qnorm in texto:
+                        item["sugestao"], item["por"] = cat, "historico"
+                        break
+            if item["sugestao"] == "Mercadoria" or any(
+                    m in memo_n for m in _EXT_MARCAS_MERCADORIA) or (
+                    len(qn) >= 5 and any(f in qn or qn in f for f in forns)):
+                item["mercadoria"] = True
+                if item["sugestao"] == "Mercadoria":
+                    item["sugestao"], item["por"] = None, None
+            if not item["sugestao"] and not item["mercadoria"]:
+                cat = _sugere_por_palavra(l["memo"])
+                if cat:
+                    item["sugestao"], item["por"] = cat, "palavra"
+        out.append(item)
+    out.sort(key=lambda x: x["data"])
+    cont = {k: sum(1 for x in out if x["status"] == k) for k in ("lancado", "aberta", "parecido", "falta")}
+    return jsonify({"ok": True, "banco": banco, "nome_banco": nome_banco, "de": de, "ate": ate,
+                    "saidas": out, "contagem": cont,
+                    "total_saidas": round(sum(x["valor"] for x in out), 2),
+                    "entradas": {"n": len(entradas), "total": round(sum(l["valor"] for l in entradas), 2)}})
+
+# ---- MEUS LANÇAMENTOS (tudo que foi lançado no mês, num lugar só) ----
+_LANC_SO_PAINEL = (RES_DEP_TAG, RES_OUT_TAG, SOB_DEP_TAG, SOB_OUT_TAG)
+
+@app.route("/api/lancamentos")
+@login_required
+def api_lancamentos():
+    """Lista do mês, pela data em que foi LANÇADO (o que o dono fez no mês): saídas,
+    contas a pagar, do bolso, movimentos de reserva/sobra e entradas avulsas. Fica de
+    fora o automático: venda (cada venda do balcão gera um recebimento), acerto do
+    fechamento e a sangria que acompanha um movimento."""
+    mes = (request.args.get("mes") or _hoje()[:7])[:7]
+    def build():
+        y, m = int(mes[:4]), int(mes[5:7])
+        fim = f"{mes}-{calendar.monthrange(y, m)[1]:02d}"
+        def _quando(r):
+            return (r.get("cadastrado_em") or r.get("data_competencia") or "")[:10]
+        itens = []
+        for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+            d = p.get("descricao") or ""
+            du = d.upper()
+            if _quando(p)[:7] != mes:
+                continue
+            if (p.get("nome_plano_conta") or "") == "Ajuste de caixa" or du.startswith("TROCA PIX"):
+                continue
+            if du.startswith("SANGRIA") and not du.startswith("SANGRIA SAQUE"):
+                continue
+            if d.startswith(GELO_USO_TAG) or "[PROVISAO]" in du:
+                continue
+            aberto = str(p.get("liquidado")) != "1"
+            v = round(_num(p.get("valor_total")) or _num(p.get("valor")), 2)
+            base = {"id": p.get("id"), "lancado": _quando(p), "valor": v,
+                    "forma": _rotulo_forma(p), "pode_excluir": False}
+            if d.startswith(_LANC_SO_PAINEL):
+                pos = d.startswith((RES_DEP_TAG, SOB_DEP_TAG))
+                onde = "Reserva" if d.startswith((RES_DEP_TAG, RES_OUT_TAG)) else "Sobra de caixa"
+                tag = next(t for t in _LANC_SO_PAINEL if d.startswith(t))
+                itens.append(dict(base, tipo="Movimento", cat=onde, forma="—",
+                                  data=(p.get("data_competencia") or "")[:10],
+                                  desc=("entrou · " if pos else "saiu · ") + (_sem_tag(d, tag) or ""),
+                                  sinal=1 if pos else -1))
+                continue
+            if du.startswith("SANGRIA SAQUE"):
+                itens.append(dict(base, tipo="Entrada", cat="Saque", sinal=0,
+                                  data=(p.get("data_liquidacao") or "")[:10],
+                                  desc=d[len("SANGRIA "):][:120]))
+                continue
+            if d.startswith(RP_TAG):
+                itens.append(dict(base, tipo="Saída", cat="Do meu bolso", sinal=-1, pode_excluir=True,
+                                  data=(p.get("data_competencia") or "")[:10],
+                                  desc=EXT_MARCA_RE.sub("", _rp_nota(_sem_cat(d)))))
+                continue
+            merc = _eh_mercadoria(d)
+            itens.append(dict(base, tipo="A pagar" if aberto else "Saída",
+                              cat="Mercadoria" if merc else (
+                                  (_categoria_conta(p) or _cat_resumo(p)) if aberto else _cat_resumo(p)),
+                              data=(p.get("data_vencimento") if aberto else p.get("data_liquidacao")
+                                    or p.get("data_vencimento") or "")[:10],
+                              desc=EXT_MARCA_RE.sub("", _nota_conta(p)) or p.get("nome_plano_conta") or "—",
+                              sinal=-1,
+                              # compra de nota mexe no estoque: apaga pela aba Estoque
+                              pode_excluir=not d.upper().startswith("COMPRA DE")))
+        for r in gcapi.get_all("/recebimentos", {"data_inicio": f"{mes}-01", "data_fim": fim}):
+            d = r.get("descricao") or ""
+            if not any(d.upper().startswith(t) for t in ENTRADA_TAGS) or _quando(r)[:7] != mes:
+                continue
+            itens.append({"id": r.get("id"), "lancado": _quando(r), "tipo": "Entrada",
+                          "cat": next(t for t in ENTRADA_TAGS if d.upper().startswith(t)).capitalize(),
+                          "data": (r.get("data_liquidacao") or r.get("data_vencimento") or "")[:10],
+                          "desc": d[:140], "valor": round(_num(r.get("valor_total")) or _num(r.get("valor")), 2),
+                          "forma": _rotulo_forma(r), "sinal": 1, "pode_excluir": False})
+        itens.sort(key=lambda x: (x["lancado"], x["data"], str(x["id"])), reverse=True)
+        return {"mes": mes, "itens": itens, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("lancamentos_" + mes, 60, build))
+
+@app.route("/api/excluir-lancamento", methods=["POST"])
+@login_required
+def api_excluir_lancamento():
+    """Apaga um gasto/conta da lista "Meus lançamentos". Se ele saiu da reserva ou da
+    sobra, apaga junto o desconto que ficou lá — senão o saldo guardado ficava menor à toa."""
+    body = request.get_json(force=True, silent=True) or {}
+    pid = str(body.get("id") or "").strip()
+    if not pid:
+        return jsonify({"ok": False, "erro": "sem id"}), 400
+    try:
+        cur = gcapi.get(f"/pagamentos/{pid}").get("data") or {}
+        if isinstance(cur, list):
+            cur = cur[0] if cur else {}
+        cur = cur.get("Pagamento", cur) if isinstance(cur, dict) else {}
+        d = cur.get("descricao") or ""
+        if d.upper().startswith(("COMPRA DE", "SANGRIA")) or d.startswith(_LANC_SO_PAINEL):
+            return jsonify({"ok": False, "erro": "esse não se apaga por aqui (compra apaga na "
+                            "aba Estoque; movimento de reserva/sobra no quadro dela)"}), 400
+        par = None
+        if str(cur.get("forma_pagamento_id")) == GUARDADO_FORMA_ID and str(cur.get("liquidado")) == "1":
+            alvo_v = round(_num(cur.get("valor_total")) or _num(cur.get("valor")), 2)
+            alvo_d = (cur.get("data_liquidacao") or cur.get("data_competencia") or "")[:10]
+            alvos = {f"{RES_OUT_TAG} {_sem_cat(d)}"[:180], f"{SOB_OUT_TAG} {_sem_cat(d)}"[:180]}
+            achados = [p for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                                                 "data_fim": "2027-12-31"})
+                       if (p.get("descricao") or "") in alvos
+                       and abs((_num(p.get("valor_total")) or _num(p.get("valor"))) - alvo_v) < 0.01
+                       and (p.get("data_competencia") or "")[:10] == alvo_d]
+            par = achados[0] if len(achados) == 1 else None
+        # mesma sequência da rota de excluir conta: desmarca o pago (corpo inteiro) e apaga
+        if str(cur.get("liquidado")) == "1":
+            gcapi.put(f"/pagamentos/{pid}", {
+                "descricao": d, "valor": cur.get("valor") or cur.get("valor_total") or "0",
+                "plano_contas_id": cur.get("plano_contas_id") or "",
+                "data_vencimento": (cur.get("data_vencimento") or _hoje())[:10],
+                "data_competencia": (cur.get("data_competencia") or _hoje())[:10],
+                "fornecedor_id": cur.get("fornecedor_id") or "", "liquidado": "0"})
+        gcapi.delete(f"/pagamentos/{pid}")
+        junto = None
+        if par is not None:
+            try:
+                gcapi.delete(f"/pagamentos/{par.get('id')}")
+                junto = "reserva" if (par.get("descricao") or "").startswith(RES_OUT_TAG) else "sobra"
+            except Exception:
+                junto = None
+        _invalida("pagar", "previsoes", "resumo", "gastos_mes", "recurso_proprio", "reserva",
+                  "sobra", "mapa", "hoje", "fech_hoje", "fechamentos_7", "fechamentos_12",
+                  "fechamentos_31", "lancamentos_" + (body.get("mes") or _hoje()[:7]))
+        return jsonify({"ok": True, "devolvido": junto})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
 @app.route("/api/catalogo")
 @login_required
@@ -2239,7 +2864,7 @@ def _saque_pid(valor):
 # São recebimentos com a marca na descrição — o fechamento soma eles junto com as vendas.
 # (não dá pra somar recebimento em dinheiro em geral: cada venda do balcão já gera um,
 # e o fechamento contaria a mesma venda duas vezes.)
-ENTRADA_TAGS = ("PAGAMENTO DE CONTA", "TROCA PIX", "REFORÇO DE CAIXA")
+ENTRADA_TAGS = ("PAGAMENTO DE CONTA", "TROCA PIX", "REFORÇO DE CAIXA", "ENTRADA AVULSA")
 PLANO_AJUSTE_C = "33015692"       # "Ajuste de caixa" (crédito) — troca de PIX não é receita
 PLANO_VENDA_BALCAO = "33015685"   # o fiado já foi venda; o dinheiro entra como venda no balcão
 

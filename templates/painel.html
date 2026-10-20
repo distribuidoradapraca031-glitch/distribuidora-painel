@@ -125,6 +125,79 @@ a{color:var(--accent)}
 .linkx:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 th.g,td.g{background:var(--accent-soft)}
 :root[data-theme=dark] th.g,:root[data-theme=dark] td.g{background:var(--accent-soft)}
+
+/* ---- central de lançamentos (botão + Lançar, em todas as abas) ---- */
+body{padding-bottom:84px}
+.lc-fab{position:fixed;right:18px;bottom:18px;z-index:30;font:inherit;font-size:1rem;font-weight:700;border:0;
+  background:var(--accent);color:var(--surface);padding:13px 22px;border-radius:999px;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,.28);display:inline-flex;align-items:center;gap:8px}
+.lc-fab:hover{filter:brightness(1.06)}
+.lc-fab:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.lc-overlay{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;
+  justify-content:center;padding:4vh 12px;overflow-y:auto}
+.lc-box{background:var(--surface);color:var(--ink);border-radius:16px;width:min(780px,100%);
+  box-shadow:0 20px 60px rgba(0,0,0,.35);padding:18px 20px 22px}
+.lc-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+.lc-tit{font-size:1.08rem;font-weight:700}
+.lc-sub{font-size:.78rem;color:var(--muted)}
+.lc-x{margin-left:auto;font:inherit;font-size:1rem;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:8px;padding:5px 11px;cursor:pointer}
+.lc-voltar{font:inherit;font-size:.8rem;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.lc-x:focus-visible,.lc-voltar:focus-visible,.lc-big:focus-visible,.lc-tile:focus-visible,.lc-seg button:focus-visible,
+.lc-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lc-bigs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lc-big{font:inherit;text-align:left;border:0;border-radius:12px;padding:18px;color:#fff;cursor:pointer;
+  display:flex;gap:14px;align-items:center}
+.lc-big:hover,.lc-tile:hover{filter:brightness(1.05)}
+.lc-big .ic{width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;
+  justify-content:center;font-size:1.3rem;font-weight:700;flex:none}
+.lc-big b{display:block;font-size:1.12rem}
+.lc-big .s{font-size:.8rem;opacity:.92}
+.lc-big.saida{background:#B3403A}
+.lc-big.entrada{background:#2E7D4F}
+.lc-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.lc-tile{font:inherit;text-align:left;border:1px solid var(--line);background:var(--surface2);color:var(--ink);
+  border-radius:12px;padding:14px;cursor:pointer;font-size:1.1rem}
+.lc-tile b{display:block;font-size:.92rem;margin-top:4px}
+.lc-tile span{display:block;font-size:.75rem;color:var(--muted);margin-top:2px}
+@media(max-width:600px){.lc-bigs,.lc-tiles{grid-template-columns:1fr}.lc-box{padding:14px 14px 18px}}
+.lc-seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.lc-seg button{font:inherit;font-size:.82rem;font-weight:600;border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);padding:7px 12px;border-radius:999px;cursor:pointer}
+.lc-seg button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.lc-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.lc-form label{display:flex;flex-direction:column;gap:4px;font-size:.74rem;color:var(--muted)}
+.lc-form label.lg{grid-column:1/-1}
+.lc-form input,.lc-form select,.lc-in{font:inherit;font-size:.92rem;padding:8px 10px;border:1px solid var(--line);
+  border-radius:8px;background:var(--surface);color:var(--ink);width:100%;font-variant-numeric:tabular-nums}
+.lc-form input:focus-visible,.lc-form select:focus-visible,.lc-in:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lc-chk{display:flex;gap:8px;align-items:center;font-size:.84rem;margin-top:12px;cursor:pointer}
+.lc-chk input{width:auto;margin:0}
+.lc-btn{font:inherit;font-size:.9rem;font-weight:700;border:0;background:var(--accent);color:var(--surface);
+  padding:10px 16px;border-radius:9px;cursor:pointer}
+.lc-btn.good{background:var(--good)}
+.lc-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.lc-btn.mini{font-size:.76rem;padding:6px 10px;border-radius:7px}
+.lc-btn:disabled{opacity:.55;cursor:wait}
+.lc-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.lc-msg{font-size:.88rem;font-weight:600;margin-top:10px;line-height:1.45}
+.lc-sug{font:inherit;display:inline-flex;align-self:flex-start;gap:6px;align-items:center;font-size:.76rem;background:var(--accent-soft);
+  color:var(--accent);border-radius:999px;padding:3px 10px;cursor:pointer;border:0;margin-top:2px}
+.lc-prev{font-size:.82rem;color:var(--ink);background:var(--surface2);border-radius:8px;padding:9px 12px;margin-top:12px;line-height:1.5}
+.lc-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.lc-row .q{font-weight:600;font-size:.88rem}
+.lc-row .m{font-size:.72rem;color:var(--muted);margin-top:2px;word-break:break-word}
+.lc-row .v{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.lc-row .a{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.lc-row select,.lc-row input{font:inherit;font-size:.8rem;padding:5px 7px;border:1px solid var(--line);border-radius:7px;
+  background:var(--surface);color:var(--ink);max-width:100%}
+.lc-sec{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);font-weight:700;margin:18px 0 2px}
+.lc-aviso{font-size:.76rem;color:var(--warn);margin-top:3px}
+body.lc-aberto{overflow:hidden}
+.lc-box .note{font-size:.8rem;color:var(--muted);margin:4px 0 0}
+.toast{bottom:86px;z-index:50}   /* acima do botão + Lançar e da janela da central */
+.lc-atalho{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -161,36 +234,16 @@ th.g,td.g{background:var(--accent-soft)}
   <div class="eyebrow">Caixa · dinheiro reserva</div>
   <h2>💰 Dinheiro reserva</h2>
   <div id="reserva-saldo-box" style="margin:8px 0"></div>
-  <p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Toda vez que você paga uma compra, gasto ou conta escolhendo a fonte <strong>Dinheiro reserva</strong>, eu <strong>desconto daqui sozinho</strong>. Se o dinheiro veio do outro monte, escolha <strong>Da sobra de caixa</strong> em "de onde veio": eu tiro de lá e ponho aqui, sem mexer no caixa do dia.</p>
-  <div class="fbox" style="margin-top:8px">
-    <strong style="font-size:.9rem">➕ Guardar na reserva (sobra do dia)</strong>
+  <p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Quando você paga alguma coisa escolhendo <strong>Dinheiro reserva</strong>, eu desconto daqui sozinho.</p>
+  <div class="lc-atalho" style="margin-top:8px"><button class="lc-btn mini" data-lc="mover" type="button">🔁 Guardar ou tirar dinheiro daqui</button><span class="note" style="margin:0">pelo botão <b>＋ Lançar → Mover dinheiro</b></span></div>
+  <div class="fbox" style="margin-top:10px">
+    <strong style="font-size:.9rem">🧮 Contei o cofre</strong>
     <div class="fform" style="margin-top:6px">
-      <label>Guardei (R$)<input type="number" step="0.01" inputmode="decimal" id="res-valor" placeholder="0,00" style="width:120px"></label>
-      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="res-desc" placeholder="ex.: sobra do dia" style="width:100%"></label>
+      <label>Total contado (R$)<input type="number" step="0.01" inputmode="decimal" id="res-valor" placeholder="0,00" style="width:140px"></label>
       <label>Data<input type="date" id="res-data"></label>
-      <label style="flex:1 1 220px">De onde veio esse dinheiro
-        <select id="res-origem" style="width:100%">
-          <option value="caixa">Do caixa (gaveta) desse dia</option>
-          <option value="sobra">Da sobra de caixa (passei pra cá)</option>
-          <option value="banco">Saquei do banco</option>
-          <option value="nenhum">Já estava fora do caixa</option>
-        </select>
-      </label>
-      <button id="res-add">Guardar</button>
-      <button id="res-set" class="ghost" title="use depois de contar o cofre: deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
+      <button id="res-set" title="deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
     </div>
     <div class="fres" id="res-msg"></div>
-  </div>
-  <div class="fbox" style="margin-top:8px">
-    <strong style="font-size:.9rem">➖ Tirar da reserva e pôr no caixa</strong>
-    <p class="note" style="margin-top:2px">Pro <strong>troco quebrado</strong> que sobra da compra e volta pra gaveta (R$ 6, R$ 7...). Eu desconto da reserva e lanço a entrada no <strong>caixa do dia</strong> — o fechamento já conta com esse dinheiro.</p>
-    <div class="fform" style="margin-top:6px">
-      <label>Voltou pro caixa (R$)<input type="number" step="0.01" inputmode="decimal" id="res-tirar-valor" placeholder="0,00" style="width:140px"></label>
-      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="res-tirar-desc" placeholder="ex.: troco da compra" style="width:100%"></label>
-      <label>Data<input type="date" id="res-tirar-data"></label>
-      <button id="res-tirar">Pôr no caixa</button>
-    </div>
-    <div class="fres" id="res-tirar-msg"></div>
   </div>
   <div class="tblwrap" id="tbl-reserva" style="margin-top:10px"></div>
 </section>
@@ -199,93 +252,32 @@ th.g,td.g{background:var(--accent-soft)}
   <div class="eyebrow">Caixa · sobra de caixa</div>
   <h2>💵 Sobra de caixa</h2>
   <div id="sobra-saldo-box" style="margin:8px 0"></div>
-  <p class="note">O <strong>outro monte de dinheiro</strong> que você guarda — separado da reserva. É o que você usa pra pagar as <strong>contas menores</strong> do dia a dia. Também fica <strong>fora da gaveta</strong> (não conta no fechamento). Quando você paga escolhendo a fonte <strong>Sobra de caixa</strong>, eu <strong>desconto daqui sozinho</strong>.</p>
-  <div class="fbox" style="margin-top:8px">
-    <strong style="font-size:.9rem">➕ Guardar na sobra de caixa</strong>
+  <p class="note">O <strong>outro monte de dinheiro</strong> que você guarda, separado da reserva, pra pagar as <strong>contas menores</strong> do dia a dia. Também fica <strong>fora da gaveta</strong>. Quando você paga escolhendo <strong>Sobra de caixa</strong>, eu desconto daqui sozinho.</p>
+  <div class="lc-atalho" style="margin-top:8px"><button class="lc-btn mini" data-lc="mover" type="button">🔁 Guardar ou tirar dinheiro daqui</button><span class="note" style="margin:0">pelo botão <b>＋ Lançar → Mover dinheiro</b></span></div>
+  <div class="fbox" style="margin-top:10px">
+    <strong style="font-size:.9rem">🧮 Contei a sobra</strong>
     <div class="fform" style="margin-top:6px">
-      <label>Guardei (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-valor" placeholder="0,00" style="width:120px"></label>
-      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="sob-desc" placeholder="ex.: sobra da semana" style="width:100%"></label>
+      <label>Total contado (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-valor" placeholder="0,00" style="width:140px"></label>
       <label>Data<input type="date" id="sob-data"></label>
-      <label style="flex:1 1 220px">De onde veio esse dinheiro
-        <select id="sob-origem" style="width:100%">
-          <option value="caixa">Do caixa (gaveta) desse dia</option>
-          <option value="reserva">Do dinheiro reserva (passei pra cá)</option>
-          <option value="banco">Saquei do banco</option>
-          <option value="nenhum">Já estava fora do caixa</option>
-        </select>
-      </label>
-      <button id="sob-add">Guardar</button>
-      <button id="sob-set" class="ghost" title="use depois de contar o dinheiro: deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
+      <button id="sob-set" title="deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
     </div>
     <details style="margin-top:8px">
       <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar as notas da sobra</summary>
       <div style="margin-top:8px">
         <div id="sob-notas" class="dengrid"></div>
         <div id="sob-tot" style="margin-top:8px;font-size:.9rem;font-weight:700"></div>
-        <p class="note" style="margin-top:4px">Digite <strong>quantas notas</strong> de cada valor você tem. Eu somo e jogo no campo de cima — daí é só <strong>Já contei: é esse o total</strong>.</p>
+        <p class="note" style="margin-top:4px">Digite <strong>quantas notas</strong> de cada valor você tem. Eu somo e jogo no total contado; daí é só <strong>Já contei: é esse o total</strong>.</p>
       </div>
     </details>
     <div class="fres" id="sob-msg"></div>
-  </div>
-  <div class="fbox" style="margin-top:8px">
-    <strong style="font-size:.9rem">➖ Tirar da sobra e pôr no caixa</strong>
-    <p class="note" style="margin-top:2px">Mesma coisa da reserva: o dinheiro sai daqui e entra na <strong>gaveta do dia</strong>, contando no fechamento.</p>
-    <div class="fform" style="margin-top:6px">
-      <label>Voltou pro caixa (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-tirar-valor" placeholder="0,00" style="width:140px"></label>
-      <label style="flex:1 1 160px">Observação (opcional)<input type="text" id="sob-tirar-desc" placeholder="ex.: troco da compra" style="width:100%"></label>
-      <label>Data<input type="date" id="sob-tirar-data"></label>
-      <button id="sob-tirar">Pôr no caixa</button>
-    </div>
-    <div class="fres" id="sob-tirar-msg"></div>
   </div>
   <div class="tblwrap" id="tbl-sobra" style="margin-top:10px"></div>
 </section>
 
 <section class="card">
-  <div class="eyebrow">Caixa · saque (troca cartão/PIX → dinheiro)</div>
-  <h2>💸 Registrar saque</h2>
-  <p class="note">Digite quanto o cliente quer <strong>sacar</strong>. Os <strong>20%</strong> entram sozinhos (ele passa o valor + 20% no <strong>cartão</strong> ou manda no <strong>PIX</strong>). No cartão desconta a taxa da maquininha; no <strong>PIX não tem taxa</strong> (lucro cheio de 20%). Ao registrar, eu lanço a <strong>entrada</strong> (na conta e nos relatórios, com imposto) e a <strong>sangria</strong> do dinheiro (sai do caixa, então não falta no fechamento).</p>
-  <div class="fbox">
-    <div class="fform">
-      <label>Cliente quer sacar (R$)<input type="number" step="1" inputmode="numeric" id="sq-valor" placeholder="0"></label>
-      <label>Passou no<select id="sq-tipo"><option value="debito">Débito</option><option value="credito">Crédito</option><option value="pix">PIX</option></select></label>
-      <button id="sq-registrar">Registrar saque</button>
-    </div>
-    <div class="fres" id="sq-calc" style="color:var(--muted);font-weight:400"></div>
-    <div class="fres" id="sq-msg"></div>
-  </div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Caixa · troca de PIX (dinheiro → PIX)</div>
-  <h2>💱 Recebi dinheiro e mandei PIX</h2>
-  <p class="note">O <strong>contrário do saque</strong>: o cliente te entrega o <strong>dinheiro</strong> e você manda o <strong>PIX</strong> pra ele. Eu lanço a entrada do dinheiro na gaveta (passa a contar no fechamento do dia) e a saída do PIX da conta. Se você cobrar alguma coisa pela troca, é só mandar menos no PIX — a diferença fica registrada como seu lucro.</p>
-  <div class="fbox">
-    <div class="fform">
-      <label>Recebi em dinheiro (R$)<input type="number" step="0.01" inputmode="decimal" id="tp-recebido" placeholder="0,00"></label>
-      <label>Mandei no PIX (R$)<input type="number" step="0.01" inputmode="decimal" id="tp-enviado" placeholder="igual ao recebido"></label>
-      <label>Dia<input type="date" id="tp-data"></label>
-      <button id="tp-registrar">Registrar troca</button>
-    </div>
-    <div class="fres" id="tp-msg"></div>
-  </div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Caixa · pagamento de conta (fiado)</div>
-  <h2>🧾 Cliente pagando a conta</h2>
-  <p class="note">Pra quando o cliente do <strong>fiado</strong> vem pagar. A venda dele <strong>já está lançada</strong> no sistema, então aqui <strong>não entra venda nova</strong> (senão o faturamento contava duas vezes) — entra só o dinheiro, que passa a valer no fechamento do dia.</p>
-  <div class="fbox">
-    <div class="fform">
-      <label>Cliente<input type="text" id="pc-cliente" placeholder="nome (opcional)"></label>
-      <label>Valor recebido (R$)<input type="number" step="0.01" inputmode="decimal" id="pc-valor" placeholder="0,00"></label>
-      <label>Recebi em<select id="pc-forma"><option value="Caixa">Dinheiro (gaveta)</option><option value="PIX">PIX (conta)</option></select></label>
-      <label>Dia<input type="date" id="pc-data"></label>
-      <button id="pc-registrar">Registrar pagamento</button>
-    </div>
-    <div class="fres" id="pc-msg"></div>
-    <div id="pc-lista" style="margin-top:8px"></div>
-  </div>
+  <div class="eyebrow">Lançamentos · tudo num lugar só</div>
+  <div class="lc-atalho"><button class="lc-btn" data-lc="entrada" type="button">↑ Saque, troca de PIX, fiado</button><button class="lc-btn ghost" data-lc="saida" type="button">↓ Gasto ou conta</button>
+  <span class="note" style="margin:0">Tudo que antes ficava aqui agora está no botão <b>＋ Lançar</b>, no canto da tela, em qualquer aba.</span></div>
 </section>
 
 <section class="card" id="card-moedas">
@@ -589,61 +581,9 @@ th.g,td.g{background:var(--accent-soft)}
 </section>
 
 <section class="card">
-  <div class="eyebrow">Contas · lançar gasto</div>
-  <div class="fbox" style="margin-top:14px">
-    <strong style="font-size:.9rem">➕ Lançar um gasto na mão</strong>
-    <p class="note" style="margin-top:2px">Pra tudo que <strong>já foi pago</strong>: retirada e pró-labore, motoca, Biel, lanche, almoço, papelaria... Escolha a categoria, o valor e <strong>de onde saiu o dinheiro</strong> (Caixa = gaveta · Dinheiro = reserva · PIX = conta). Grava na hora e já soma no <strong>total gasto no mês</strong> logo abaixo. Se ainda <strong>não pagou</strong>, escolha <strong>Boleto</strong>: aí fica no mapa lá em cima como conta a pagar.</p>
-    <div class="fform">
-      <label style="flex:1 1 180px">Categoria
-        <select id="ex-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
-          <optgroup label="Toda semana (você paga e lança)">
-            <option>PH Motoca</option><option>Biel (Gabriel)</option>
-            <option>Retirada do sócio (Victor)</option><option>Igor (pró-labore / retirada)</option>
-            <option>Sacolas / gelo / copos</option>
-          </optgroup>
-          <optgroup label="Dia a dia">
-            <option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
-            <option>Combustível</option><option>Seguro do carro</option><option>Limpeza / higiene</option>
-            <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Reparo da loja</option><option>Água / luz / internet</option>
-            <option>Outros</option>
-          </optgroup>
-        </select>
-      </label>
-      <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="ex-desc" placeholder="ex.: pão + frios" style="width:100%"></label>
-      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="ex-valor" placeholder="0,00" style="width:110px"></label>
-      <label>Pagamento
-        <select id="ex-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:130px">
-          <option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="PIX">PIX</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
-        </select>
-      </label>
-      <label>Data<input type="date" id="ex-data"></label>
-      <button id="ex-add">Adicionar gasto</button>
-    </div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;margin-top:8px">
-      <input type="checkbox" id="ex-split" style="width:auto;margin:0">
-      Paguei esse gasto com <strong>duas formas</strong> (ex.: parte no PIX, parte do caixa)
-    </label>
-    <div id="ex-split-box" hidden style="margin-top:8px">
-      <div class="fform">
-        <label>1ª forma
-          <select id="ex-forma1" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:150px">
-            <option value="PIX">PIX</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
-          </select>
-        </label>
-        <label>R$<input type="number" step="0.01" inputmode="decimal" id="ex-valor1" placeholder="0,00" style="width:110px"></label>
-        <label>2ª forma
-          <select id="ex-forma2" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:150px">
-            <option value="Caixa">Caixa (gaveta)</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Boleto">Boleto</option><option value="Victor">Recurso próprio (Victor)</option>
-          </select>
-        </label>
-        <label>R$<input type="number" step="0.01" inputmode="decimal" id="ex-valor2" placeholder="0,00" style="width:110px"></label>
-      </div>
-      <div class="note" id="ex-split-msg" style="margin-top:4px">As duas partes têm que somar o valor do gasto.</div>
-    </div>
-    <div class="fres" id="ex-msg"></div>
-    <div class="tblwrap" id="tbl-ex"></div>
-    <div id="ex-out-box"></div>
-  </div>
+  <div class="eyebrow">Contas · lançar</div>
+  <div class="lc-atalho"><button class="lc-btn" data-lc="saida:pago" type="button">↓ Lançar gasto já pago</button><button class="lc-btn ghost" data-lc="saida:apagar" type="button">Conta a pagar (pode repetir ou parcelar)</button><button class="lc-btn ghost" data-lc="extrato" type="button">🏦 Conferir extrato</button></div>
+  <p class="note">Também pelo botão <b>＋ Lançar</b>, no canto da tela, em qualquer aba.</p>
 </section>
 <section class="card" id="card-gasto-mes">
   <div class="eyebrow">Fechamento do mês · o que já saiu</div>
@@ -668,26 +608,8 @@ th.g,td.g{background:var(--accent-soft)}
   <div id="rp-total-box" style="margin:8px 0"></div>
   <p class="note">Pagamentos que você fez com o <strong>seu dinheiro</strong>. Fica <strong>separado de propósito</strong>: NÃO entra no caixa, nem no banco, nem no "Total gasto no mês" da loja (aba 🧾 Contas) — é só pra você saber quanto colocou do bolso. <strong>Só no painel</strong> (não criei nada no GestãoClick).</p>
   <div class="tblwrap" id="tbl-rp" style="margin:8px 0"></div>
-  <div class="fbox" style="margin-top:10px">
-    <strong style="font-size:.9rem">➕ Lançar pagamento com recurso próprio</strong>
-    <p class="note" style="margin-top:2px">O que você pagou com seu dinheiro. Escolha a categoria, o valor e a data — ele entra aqui e vai somando, sem mexer no caixa da loja.</p>
-    <div class="fform">
-      <label style="flex:1 1 180px">Categoria
-        <select id="rp-cat" style="width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
-          <option>Mercadoria / fornecedor</option><option>Lanche</option><option>Almoço</option><option>Padaria</option><option>Papelaria</option>
-          <option>Combustível</option><option>Seguro do carro</option><option>Motoboy / entrega</option><option>Limpeza / higiene</option>
-          <option>Descartáveis (copo/saco)</option><option>Manutenção / conserto</option><option>Reparo da loja</option><option>Água / luz / internet</option>
-          <option>Retirada do sócio (Victor)</option><option>Igor (pró-labore / retirada)</option>
-          <option>Biel (Gabriel)</option><option>PH Motoca</option><option>Outros</option>
-        </select>
-      </label>
-      <label style="flex:1 1 160px">Descrição (opcional)<input type="text" id="rp-desc" placeholder="ex.: paguei a Ambev no meu PIX" style="width:100%"></label>
-      <label>Valor (R$)<input type="number" step="0.01" inputmode="decimal" id="rp-valor" placeholder="0,00" style="width:110px"></label>
-      <label>Data<input type="date" id="rp-data"></label>
-      <button id="rp-add">Adicionar</button>
-    </div>
-    <div class="fres" id="rp-msg"></div>
-  </div>
+  <div class="lc-atalho" style="margin-top:10px"><button class="lc-btn mini" data-lc="saida:pago" type="button">↓ Lançar pagamento do meu bolso</button>
+  <span class="note" style="margin:0">no <b>＋ Lançar → Saída</b>, escolha "Do meu bolso" em <b>de onde saiu</b>.</span></div>
 </section>
 
 </div><!-- /view-financeiro -->
@@ -729,6 +651,19 @@ th.g,td.g{background:var(--accent-soft)}
   <span class="stamp" id="d-notas-stamp"></span>
 </section>
 </div><!-- /view-delivery -->
+
+<!-- ============ CENTRAL DE LANÇAMENTOS (aparece em todas as abas) ============ -->
+<button id="lc-fab" class="lc-fab" aria-haspopup="dialog" title="Lançar saída, entrada, mover dinheiro ou conferir o extrato">＋ Lançar</button>
+<div id="lc" class="lc-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="lc-titulo">
+  <div class="lc-box">
+    <div class="lc-head">
+      <button class="lc-voltar" id="lc-voltar" hidden>← voltar</button>
+      <div><div class="lc-tit" id="lc-titulo">O que você quer lançar?</div><div class="lc-sub" id="lc-sub"></div></div>
+      <button class="lc-x" id="lc-fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div id="lc-body"></div>
+  </div>
+</div>
 
 <footer>
 Use os botões no topo (<strong>Loja · Acompanhamento · Estoque · Financeiro · Delivery</strong>) pra trocar de visão. <strong>Loja</strong> = balcão (GestãoClick); <strong>Delivery</strong> = relatório do Anota AI. Para atualizar os números: me peça "atualiza o painel" — ou mande o fechamento do dia / relatório do Anota / print novo do DDA, que eu regenero. Rotinas ativas, todas <strong>na nuvem</strong> (não dependem de computador ligado): pedidos do app de 10 em 10 min · NFC-e do delivery · baixa das garrafas dos copões · gráficos do dia. A <strong>entrada das notas de fornecedor continua manual</strong> — me mande os XMLs.
@@ -1457,46 +1392,6 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   render();
 })();
 
-// ---- GASTOS MANUAIS (contas a pagar) ----
-(function(){
-  const LS='distribuidora_gastos';
-  const load=()=>{try{return JSON.parse(localStorage.getItem(LS))||[]}catch(e){return[]}};
-  const save=a=>{try{localStorage.setItem(LS,JSON.stringify(a));return true}catch(e){return false}};
-  const catEl=document.getElementById('ex-cat'), descEl=document.getElementById('ex-desc'),
-        valEl=document.getElementById('ex-valor'), formaEl=document.getElementById('ex-forma'),
-        dataEl=document.getElementById('ex-data'), msg=document.getElementById('ex-msg');
-  dataEl.value=hoje;
-  function render(){
-    const arr=load().slice().sort((a,b)=>a.data<b.data?1:-1), box=document.getElementById('tbl-ex');
-    if(!arr.length){box.innerHTML='';document.getElementById('ex-out-box').innerHTML='';return;}
-    let tot=0;
-    box.innerHTML='<table><thead><tr><th>Dia</th><th>Categoria</th><th>Descrição</th><th class="num">Valor</th><th>Saiu de</th><th></th></tr></thead><tbody>'+
-      arr.map(x=>{tot+=x.valor;return '<tr><td>'+dbr(x.data)+'</td><td class="nome">'+x.cat+'</td><td class="nome" style="color:var(--muted)">'+(x.desc||'—')+'</td>'+
-        '<td class="num">R$ '+fmt(x.valor)+'</td><td style="color:var(--muted)">'+x.forma+'</td>'+
-        '<td><button class="linkx" data-id="'+x.id+'">✕</button></td></tr>';}).join('')+
-      '</tbody><tfoot><tr><td colspan="3">Total ('+arr.length+')</td><td class="num">R$ '+fmt(tot)+'</td><td colspan="2"></td></tr></tfoot></table>';
-    box.querySelectorAll('.linkx').forEach(b=>b.addEventListener('click',()=>{save(load().filter(x=>String(x.id)!==b.dataset.id));render();}));
-    const rb=document.getElementById('ex-out-box');
-    rb.innerHTML='<button class="btn-copy" id="ex-resumo-btn" style="margin-top:10px">📋 Gerar resumo dos gastos pra me mandar</button>';
-    document.getElementById('ex-resumo-btn').addEventListener('click',()=>{
-      const a=load().slice().sort((x,y)=>x.data<y.data?-1:1);
-      const L=['GASTOS PRA LANÇAR — '+dbr2(hoje),''];
-      let t=0; a.forEach(x=>{t+=x.valor;L.push('• '+dbr(x.data)+' · '+x.cat+(x.desc?(' ('+x.desc+')'):'')+' — R$ '+fmt(x.valor)+' · '+x.forma+' ('+potInfo(x.forma)+')');});
-      L.push('','Total: R$ '+fmt(t),'Lança como despesa no GestãoClick e baixa de cada lugar.');
-      copyBtn('ex-out-box', L.join('\n'));
-    });
-  }
-  document.getElementById('ex-add').addEventListener('click',()=>{
-    const v=parseFloat(valEl.value);
-    if(isNaN(v)||v<=0){msg.innerHTML='<span style="color:var(--crit)">Digite o valor do gasto.</span>';return;}
-    const arr=load(); arr.push({id:Date.now(),data:dataEl.value||hoje,cat:catEl.value,desc:descEl.value.trim(),valor:+v.toFixed(2),forma:formaEl.value});
-    const ok=save(arr); render();
-    valEl.value='';descEl.value='';
-    msg.innerHTML=ok?'<span style="color:var(--good)">Gasto anotado ✓</span>':'<span style="color:var(--warn)">Não consegui salvar neste navegador.</span>';
-  });
-  render();
-})();
-
 // ============ TOGGLE LOJA/DELIVERY + BOTÃO ATUALIZAR ============
 (function(){
   const VIEWS={loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',financeiro:'view-financeiro',delivery:'view-delivery'};
@@ -1886,68 +1781,6 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     window.cpSplitPinta=pinta;
   })();
 
-  /* ---------- Lancar gasto: AO VIVO ---------- */
-  (function(){
-    const chk=g('ex-split'), box=g('ex-split-box'), vTot=g('ex-valor');
-    if(!chk||!box) return;
-    const v1=g('ex-valor1'), v2=g('ex-valor2'), aviso=g('ex-split-msg');
-    // com a divisão ligada, o TOTAL é a soma das duas partes: o dono não digita duas vezes
-    function soma(){
-      if(!chk.checked) return;
-      const a=parseFloat(v1.value)||0, b=parseFloat(v2.value)||0;
-      vTot.value=(a+b)?(a+b).toFixed(2):'';
-      if(aviso) aviso.innerHTML=(a>0&&b>0)
-        ? 'Total do gasto: <b>R$ '+fmt(a+b)+'</b> (somei as duas formas).'
-        : 'Preencha as duas partes — eu somo e jogo no total sozinho.';
-    }
-    chk.addEventListener('change',()=>{
-      box.hidden=!chk.checked;
-      if(g('ex-forma')) g('ex-forma').disabled=chk.checked;
-      vTot.readOnly=chk.checked;
-      if(chk.checked){
-        // se já tinha um valor digitado, joga na 1ª parte pra ele só ajustar
-        if(!v1.value&&vTot.value) v1.value=vTot.value;
-        soma();
-      } else { vTot.readOnly=false; if(aviso) aviso.textContent='As duas partes têm que somar o valor do gasto.'; }
-    });
-    [v1,v2].forEach(el=>el&&el.addEventListener('input',soma));
-  })();
-  (function(){
-    const btn=g('ex-add'); if(!btn) return;
-    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
-    nb.addEventListener('click',()=>{
-      const msg=g('ex-msg'), dividido=g('ex-split')&&g('ex-split').checked;
-      let v=parseFloat(g('ex-valor').value), partes=null;
-      if(dividido){
-        const a=parseFloat(g('ex-valor1').value), b=parseFloat(g('ex-valor2').value);
-        if(isNaN(a)||a<=0||isNaN(b)||b<=0){
-          msg.innerHTML='<span style="color:var(--crit)">Preencha o valor das duas formas (ou desmarque a divisão).</span>'; return; }
-        partes=[{forma:g('ex-forma1').value, valor:+a.toFixed(2)},
-                {forma:g('ex-forma2').value, valor:+b.toFixed(2)}];
-        v=+(a+b).toFixed(2);                       // o total é a soma das partes
-        g('ex-valor').value=v.toFixed(2);
-      }
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor do gasto.</span>'; return; }
-      const payload={ categoria:g('ex-cat').value, descricao:g('ex-desc').value.trim(),
-        valor:v, forma:g('ex-forma').value, data:g('ex-data').value };
-      if(partes) payload.partes=partes;
-      nb.disabled=true; nb.textContent='gravando…';
-      post('/api/gasto',payload).then(res=>{
-        nb.disabled=false; nb.textContent='Adicionar gasto';
-        if(res.ok){
-          const det=(res.partes&&res.partes.length>1)
-            ? ' — '+res.partes.map(x=>'R$ '+fmt(x.valor)+' em '+x.forma).join(' + ')
-            : (payload.forma==='Boleto'?' (contas a pagar)':'');
-          msg.innerHTML='<span style="color:var(--good)">✅ Gasto lançado no sistema'+det+'.</span>';
-          g('ex-valor').value=''; g('ex-desc').value='';
-          if(g('ex-valor1')) g('ex-valor1').value=''; if(g('ex-valor2')) g('ex-valor2').value='';
-          loadResumo(true); loadMapa(true); loadGastosMes(true);
-          loadFechHoje(true); loadFechamentos(true); }
-        else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui lançar')+'</span>'; }
-      }).catch(()=>{ nb.disabled=false; nb.textContent='Adicionar gasto'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
-
   /* ---------- Inventario: AO VIVO ---------- */
   (function(){
     const ip=g('iv-prod'); if(!ip) return;
@@ -2057,31 +1890,6 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
-  /* ---------- Saque: AO VIVO (venda no cartão + sangria) ---------- */
-  (function(){
-    const vEl=g('sq-valor'), tEl=g('sq-tipo'), calc=g('sq-calc'), msg=g('sq-msg'), btn=g('sq-registrar');
-    if(!btn) return;
-    const FEE={debito:0.0085, credito:0.0314, pix:0};
-    function upd(){
-      const v=parseFloat(vEl.value);
-      if(isNaN(v)||v<=0){ calc.textContent=''; return; }
-      const total=v*1.2, taxa=total*FEE[tEl.value], ganho=v*0.2-taxa;
-      const pix=tEl.value==='pix';
-      calc.innerHTML='Cliente '+(pix?'manda <b>R$ '+fmt(total)+'</b> no PIX · <b>sem taxa</b>':'passa <b>R$ '+fmt(total)+'</b> no cartão · taxa da maquininha R$ '+fmt(taxa))+' · você <b style="color:var(--good)">ganha R$ '+fmt(ganho)+'</b> (dá R$ '+fmt(v)+' em dinheiro)';
-    }
-    vEl.addEventListener('input',upd); tEl.addEventListener('change',upd);
-    btn.addEventListener('click',()=>{
-      const v=parseFloat(vEl.value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto o cliente quer sacar.</span>'; return; }
-      btn.disabled=true; btn.textContent='gravando…';
-      post('/api/saque',{valor:v,tipo:tEl.value}).then(res=>{
-        btn.disabled=false; btn.textContent='Registrar saque';
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Saque lançado: entrada R$ '+fmt(res.total)+' ('+(tEl.value==='pix'?'PIX':'cartão')+') + sangria R$ '+fmt(res.sangria)+' do caixa. Você ganhou R$ '+fmt(res.ganho)+'.</span>'; vEl.value=''; calc.textContent=''; loadResumo(true); loadMapa(true); loadSaqueResumo(true); }
-        else { msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>'; }
-      }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar saque'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
-
   /* ---------- fundo de moedas da gaveta ---------- */
   function loadMoedas(f){ return fetch('/api/fundo-moedas'+qf(f)).then(r=>r.json()).then(d=>{
     const box=g('moedas-box'); if(!box) return;
@@ -2110,80 +1918,16 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     });
   })();
 
-  /* ---------- tirar do guardado e pôr na gaveta (o contrário da sangria) ---------- */
-  function ligaReforco(pref, fonte, recarrega){
-    const btn=g(pref+'-tirar'), msg=g(pref+'-tirar-msg'), dt=g(pref+'-tirar-data');
-    if(!btn) return;
-    if(dt && !dt.value) dt.value=hoje;
-    btn.addEventListener('click',()=>{
-      const v=parseFloat(g(pref+'-tirar-valor').value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto voltou pro caixa.</span>'; return; }
-      btn.disabled=true; btn.textContent='gravando…';
-      post('/api/reforco-caixa',{valor:v, fonte:fonte, descricao:g(pref+'-tirar-desc').value,
-                                 data:(dt&&dt.value)||hoje}).then(res=>{
-        btn.disabled=false; btn.textContent='Pôr no caixa';
-        if(res.ok){
-          msg.innerHTML='<span style="color:var(--good)">✅ R$ '+fmt(res.valor)+' saíram do guardado e entraram no caixa do dia'+
-            ' — sobrou R$ '+fmt(res.saldo)+' guardado.</span>';
-          g(pref+'-tirar-valor').value=''; g(pref+'-tirar-desc').value='';
-          recarrega(true); loadFechHoje(true); loadFechamentos(true); loadResumo(true);
-          if(window.loadEntradas) loadEntradas(true);
-        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
-      }).catch(()=>{ btn.disabled=false; btn.textContent='Pôr no caixa';
-                     msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  }
-  ligaReforco('res','reserva',(f)=>loadReserva(f));
-  ligaReforco('sob','sobra',(f)=>loadSobra(f));
-
-  /* ---------- troca de PIX: cliente dá dinheiro, loja manda PIX (o inverso do saque) ---------- */
-  (function(){
-    const btn=g('tp-registrar'), msg=g('tp-msg'); if(!btn) return;
-    if(g('tp-data')) g('tp-data').value=hoje;
-    btn.addEventListener('click',()=>{
-      const rec=parseFloat(g('tp-recebido').value), env=parseFloat(g('tp-enviado').value);
-      if(isNaN(rec)||rec<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto você recebeu em dinheiro.</span>'; return; }
-      btn.disabled=true; btn.textContent='gravando…';
-      post('/api/troca-pix',{recebido:rec, enviado:isNaN(env)?rec:env, data:g('tp-data').value||hoje}).then(res=>{
-        btn.disabled=false; btn.textContent='Registrar troca';
-        if(res.ok){
-          msg.innerHTML='<span style="color:var(--good)">✅ Troca lançada: entraram R$ '+fmt(res.recebido)+
-            ' na gaveta e saíram R$ '+fmt(res.enviado)+' no PIX'+(res.ganho>0?' · lucro R$ '+fmt(res.ganho):'')+'.</span>';
-          g('tp-recebido').value=''; g('tp-enviado').value='';
-          loadResumo(true); loadFechHoje(true); loadFechamentos(true); if(window.loadEntradas) loadEntradas(true);
-        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>';
-      }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar troca'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
-
-  /* ---------- pagamento de conta (fiado): entra o dinheiro, sem venda nova ---------- */
-  function loadEntradas(f){ return fetch('/api/entradas-hoje'+qf(f)).then(r=>r.json()).then(d=>{
-    const box=g('pc-lista'); if(!box) return;
+  /* Saque, troca de PIX, fiado e "tirar do guardado" saíram da aba Loja em 20/10/2026:
+     agora ficam na central (+ Lançar → Entrada / Mover dinheiro). */
+  function loadEntradas(f){ const box=g('pc-lista'); if(!box) return Promise.resolve();
+    return fetch('/api/entradas-hoje'+qf(f)).then(r=>r.json()).then(d=>{
     if(!(d.itens||[]).length){ box.innerHTML='<p class="note" style="margin:6px 0">Nenhuma entrada avulsa hoje.</p>'; return; }
     box.innerHTML='<div class="note" style="margin:6px 0">Hoje já entraram <b>R$ '+fmt(d.total)+'</b> fora as vendas:</div>'+
       '<div class="tblwrap"><table><tbody>'+(d.itens||[]).map(i=>
         '<tr><td class="nome">'+esc(i.desc)+'</td><td class="num">R$ '+fmt(i.valor)+'</td></tr>').join('')+
       '</tbody></table></div>';
   }).catch(()=>{}); }
-  (function(){
-    const btn=g('pc-registrar'), msg=g('pc-msg'); if(!btn) return;
-    if(g('pc-data')) g('pc-data').value=hoje;
-    btn.addEventListener('click',()=>{
-      const v=parseFloat(g('pc-valor').value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor recebido.</span>'; return; }
-      btn.disabled=true; btn.textContent='gravando…';
-      post('/api/pagamento-conta',{valor:v, cliente:g('pc-cliente').value.trim(),
-                                   forma:g('pc-forma').value, data:g('pc-data').value||hoje}).then(res=>{
-        btn.disabled=false; btn.textContent='Registrar pagamento';
-        if(res.ok){
-          msg.innerHTML='<span style="color:var(--good)">✅ R$ '+fmt(res.valor)+' de '+(esc(res.cliente)||'cliente')+
-            ' lançado'+(res.forma==='Caixa'?' na gaveta':' no PIX')+' — sem venda nova.</span>';
-          g('pc-valor').value=''; g('pc-cliente').value='';
-          loadResumo(true); loadFechHoje(true); loadFechamentos(true); loadEntradas(true);
-        } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'falhou')+'</span>';
-      }).catch(()=>{ btn.disabled=false; btn.textContent='Registrar pagamento'; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
 
   /* ---------- gastos do mês por categoria (topo do contas a pagar) ---------- */
   function loadGastosMes(f){ return fetch('/api/gastos-mes'+qf(f)).then(r=>r.json()).then(d=>{
@@ -2259,22 +2003,6 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
     }));
   }).catch(()=>{}); }
-  (function(){
-    const btn=g('rp-add'); if(!btn) return;
-    const rd=g('rp-data'); if(rd&&!rd.value) rd.value=hoje;
-    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
-    nb.addEventListener('click',()=>{
-      const msg=g('rp-msg'), v=parseFloat(g('rp-valor').value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
-      nb.disabled=true;
-      post('/api/recurso-proprio',{categoria:g('rp-cat').value, valor:v, descricao:g('rp-desc').value, data:g('rp-data').value||hoje}).then(res=>{
-        nb.disabled=false;
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Lançado R$ '+fmt(v)+' com recurso próprio (separado do caixa).</span>'; g('rp-valor').value=''; g('rp-desc').value=''; loadRecursoProprio(true); }
-        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
-      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
-
   /* ---------- Dinheiro reserva (sobras de caixa) ---------- */
   function loadReserva(f){ return fetch('/api/reserva'+qf(f)).then(r=>r.json()).then(d=>{
     const neg=d.saldo<0, mostra=neg?0:d.saldo;   // nunca mostra negativo
@@ -2301,6 +2029,9 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ erro de conexão'); });
     }));
   }).catch(()=>{}); }
+  // data de hoje no horário daqui (a conta em UTC vira o dia seguinte depois das 21h)
+  const HOJE_LOCAL=(()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); })();
+  ['res-data','sob-data'].forEach(id=>{ const el=g(id); if(el&&!el.value) el.value=HOJE_LOCAL; });
   (function(){
     const b=g('res-set'); if(!b) return;
     const nb=b.cloneNode(true); b.parentNode.replaceChild(nb,b);
@@ -2308,38 +2039,15 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const msg=g('res-msg'), v=parseFloat(g('res-valor').value);
       if(isNaN(v)||v<0){ msg.innerHTML='<span style="color:var(--crit)">Digite quanto você contou no cofre.</span>'; return; }
       nb.disabled=true;
-      post('/api/reserva',{ajustar_para:v, descricao:g('res-desc').value, data:g('res-data').value||hoje}).then(res=>{
+      post('/api/reserva',{ajustar_para:v, descricao:'', data:g('res-data').value||HOJE_LOCAL}).then(res=>{
         nb.disabled=false;
         if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Reserva ajustada para R$ '+fmt(res.saldo)+
             (res.delta?' (acerto de R$ '+fmt(Math.abs(res.delta))+(res.delta>0?' a mais':' a menos')+').':'.')+'</span>';
-          g('res-valor').value=''; g('res-desc').value=''; loadReserva(true); }
+          g('res-valor').value=''; loadReserva(true); }
         else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
       }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
   })();
-  (function(){
-    const btn=g('res-add'); if(!btn) return;
-    const rd=g('res-data'); if(rd&&!rd.value) rd.value=hoje;
-    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
-    nb.addEventListener('click',()=>{
-      const msg=g('res-msg'), v=parseFloat(g('res-valor').value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
-      nb.disabled=true;
-      const org=g('res-origem')?g('res-origem').value:'nenhum';
-      post('/api/reserva',{valor:v, descricao:g('res-desc').value, data:g('res-data').value||hoje, origem:org}).then(res=>{
-        nb.disabled=false;
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na reserva.'+
-            (res.origem==='caixa'?' Tirei do caixa do dia (sangria) — o fechamento já conta com isso.'
-             :res.origem==='banco'?' Lancei como saque do banco — saiu da conta, não do caixa.'
-             :res.origem==='sobra'?' Descontei da <b>sobra de caixa</b> — ela ficou com R$ '+fmt(res.saldo_origem||0)+'. Não mexe no fechamento.':'')+'</span>';
-          g('res-valor').value=''; g('res-desc').value=''; loadReserva(true);
-          if(res.origem==='sobra') loadSobra(true);
-          if(res.origem==='caixa'){ loadFechHoje(true); loadFechamentos(true); loadResumo(true); } }
-        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
-      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
-
   /* ---------- Sobra de caixa (o outro monte, separado da reserva) ---------- */
   function loadSobra(f){ return fetch('/api/sobra'+qf(f)).then(r=>r.json()).then(d=>{
     const neg=d.saldo<0, mostra=neg?0:d.saldo;   // nunca mostra negativo
@@ -2386,40 +2094,17 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const msg=g('sob-msg'), v=parseFloat(g('sob-valor').value);
       if(isNaN(v)||v<0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor contado.</span>'; return; }
       nb.disabled=true;
-      post('/api/sobra',{ajustar_para:v, descricao:g('sob-desc').value, data:g('sob-data').value||hoje}).then(res=>{
+      post('/api/sobra',{ajustar_para:v, descricao:'', data:g('sob-data').value||HOJE_LOCAL}).then(res=>{
         nb.disabled=false;
         if(res.ok){
           const d=res.delta||0;
           msg.innerHTML='<span style="color:var(--good)">✅ Saldo da sobra ajustado para R$ '+fmt(v)+
             (d? ' ('+(d>0?'+':'−')+'R$ '+fmt(Math.abs(d))+' de diferença)':' (já estava certo)')+'.</span>';
-          g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true);
+          g('sob-valor').value=''; loadSobra(true);
         } else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
       }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
     });
   })();
-  (function(){
-    const btn=g('sob-add'); if(!btn) return;
-    const sd=g('sob-data'); if(sd&&!sd.value) sd.value=hoje;
-    const nb=btn.cloneNode(true); btn.parentNode.replaceChild(nb,btn);
-    nb.addEventListener('click',()=>{
-      const msg=g('sob-msg'), v=parseFloat(g('sob-valor').value);
-      if(isNaN(v)||v<=0){ msg.innerHTML='<span style="color:var(--crit)">Digite o valor.</span>'; return; }
-      nb.disabled=true;
-      const org=g('sob-origem')?g('sob-origem').value:'nenhum';
-      post('/api/sobra',{valor:v, descricao:g('sob-desc').value, data:g('sob-data').value||hoje, origem:org}).then(res=>{
-        nb.disabled=false;
-        if(res.ok){ msg.innerHTML='<span style="color:var(--good)">✅ Guardado R$ '+fmt(v)+' na sobra de caixa.'+
-            (res.origem==='caixa'?' Tirei do caixa do dia (sangria) — o fechamento já conta com isso.'
-             :res.origem==='banco'?' Lancei como saque do banco — saiu da conta, não do caixa.'
-             :res.origem==='reserva'?' Descontei do <b>dinheiro reserva</b> — ele ficou com R$ '+fmt(res.saldo_origem||0)+'. Não mexe no fechamento.':'')+'</span>';
-          g('sob-valor').value=''; g('sob-desc').value=''; loadSobra(true);
-          if(res.origem==='reserva') loadReserva(true);
-          if(res.origem==='caixa'){ loadFechHoje(true); loadFechamentos(true); loadResumo(true); } }
-        else msg.innerHTML='<span style="color:var(--crit)">❌ '+(res.erro||'não consegui')+'</span>';
-      }).catch(()=>{ nb.disabled=false; msg.innerHTML='<span style="color:var(--crit)">❌ erro de conexão</span>'; });
-    });
-  })();
-
   /* ---------- MAPA: tudo que falta pagar, categoria x mês (aba Contas) ---------- */
   const PREV_POT=[['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['PIX','PIX'],['Victor','Recurso próprio (Victor)']];
   function loadMapa(f){ return fetch('/api/mapa'+qf(f)).then(r=>r.json()).then(d=>{
@@ -2602,6 +2287,544 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const fab=g('f-abertura'); if(fab) fab.addEventListener('input',()=>loadFechHoje(true));
     document.querySelectorAll('#gaveta-notas input, #gaveta-moedas input').forEach(inp=>
       inp.addEventListener('input',()=>setTimeout(()=>{ renderFechLive(); guardaContagem(); },0)));
+  })();
+
+  /* ================= CENTRAL DE LANÇAMENTOS (botão "+ Lançar", em todas as abas) =================
+     Um lugar só pra lançar tudo (pedido do dono em 20/10/2026, inspirado na planilha "Meu Caixa
+     Organizado"). As gravações são as rotas de sempre: gasto, baixa, saque, troca, fiado, reserva,
+     sobra. A FORMA DE PAGAMENTO NUNCA VEM MARCADA: o dono escolhe toda vez (pedido dele). */
+  (function(){
+    const lc=g('lc'), body=g('lc-body'), fab=g('lc-fab');
+    if(!lc||!body||!fab) return;
+    const tit=g('lc-titulo'), sub=g('lc-sub'), voltar=g('lc-voltar');
+    // data de HOJE no horário daqui (a conta em UTC virava "amanhã" depois das 21h)
+    const hojeL=(()=>{ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); })();
+    let CFG=null;
+    const cfg=()=>CFG?Promise.resolve(CFG):fetch('/api/lancar-config').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>(CFG=d));
+    const OK=t=>'<span style="color:var(--good)">✅ '+t+'</span>';
+    const ER=t=>'<span style="color:var(--crit)">❌ '+t+'</span>';
+    const num=id=>{ const el=g(id); const v=parseFloat(String(el?el.value:'').replace(',','.')); return isNaN(v)?NaN:+v.toFixed(2); };
+    const val=id=>{ const el=g(id); return el?String(el.value||'').trim():''; };
+    const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+    const FORMA_PAGO=[['PIX','PIX (conta do banco)'],['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],
+                      ['Sobra','Sobra de caixa'],['Victor','Do meu bolso (recurso próprio)']];
+    const ROT_FORMA=Object.fromEntries(FORMA_PAGO);
+    const opts=(arr,ph)=>'<option value="" selected disabled>'+esc(ph||'escolha…')+'</option>'+
+      arr.map(x=>'<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join('');
+    const selCats=id=>'<select id="'+id+'"><option value="" selected disabled>escolha a categoria…</option>'+
+      CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>';
+    function sugere(txt){ const t=' '+norm(txt)+' '; for(const [kw,cat] of (CFG.palavras||[])){ if(t.indexOf(kw)>=0) return cat; } return null; }
+    // depois de lançar, recarrega SÓ os quadros que aquele lançamento mexe, e de uma vez só
+    // (vários lançamentos seguidos viram uma recarga): cada quadro relê o sistema inteiro e,
+    // tudo junto, o GestãoClick chegou a recusar leitura no teste.
+    const QUADROS={mapa:loadMapa, gasto:loadGastosMes, gaveta:loadFechHoje, dias:loadFechamentos,
+                   reserva:loadReserva, sobra:loadSobra, bolso:loadRecursoProprio, saque:loadSaqueResumo};
+    let _fila=new Set(), _timer=null;
+    function recarrega(quais){
+      (quais||Object.keys(QUADROS)).forEach(k=>_fila.add(k));
+      clearTimeout(_timer);
+      _timer=setTimeout(()=>{ const f=[..._fila]; _fila=new Set(); f.forEach(k=>{ try{ QUADROS[k](true); }catch(e){} }); },1500);
+    }
+    // quais quadros cada forma de pagamento mexe
+    const DA_FORMA={PIX:[],Caixa:['gaveta','dias'],Dinheiro:['reserva'],Sobra:['sobra'],Victor:['bolso'],Boleto:['mapa']};
+    const porFormas=fs=>['gasto'].concat(...fs.map(f=>DA_FORMA[f]||[]));
+    function trava(b,txt){ b.disabled=true; b.dataset.t=b.textContent; b.textContent=txt||'gravando…';
+      const m=g('lc-msg'); if(m&&b.closest('#lc-body')&&!b.closest('.lc-row')) m.innerHTML='<span class="note">gravando no sistema…</span>'; }
+    function solta(b){ b.disabled=false; if(b.dataset.t) b.textContent=b.dataset.t; }
+    function serie(inicio,vezes,freq){         // mesma conta do servidor (pra mostrar antes de gravar)
+      const [y,m,d]=inicio.split('-').map(Number), out=[];
+      for(let i=0;i<vezes;i++){
+        let dt;
+        if(freq==='semanal'||freq==='quinzenal'){ dt=new Date(Date.UTC(y,m-1,d+i*(freq==='semanal'?7:14))); }
+        else { const mm=m-1+i, yy=y+Math.floor(mm/12), m2=mm%12, ult=new Date(Date.UTC(yy,m2+1,0)).getUTCDate();
+               dt=new Date(Date.UTC(yy,m2,Math.min(d,ult))); }
+        out.push(dt.toISOString().slice(0,10));
+      }
+      return out;
+    }
+
+    /* ---- navegação da janela ---- */
+    const TELAS={}; let pilha=[];
+    function cab(t,s){ tit.textContent=t; sub.textContent=s||''; }
+    function abre(tela,arg){ lc.hidden=false; document.body.classList.add('lc-aberto'); ir(tela||'inicio',arg,true); }
+    function fecha(){ lc.hidden=true; document.body.classList.remove('lc-aberto'); pilha=[]; body.innerHTML=''; fab.focus(); }
+    function ir(tela,arg,raiz){
+      if(raiz) pilha=[];
+      pilha.push([tela,arg]); voltar.hidden=pilha.length<2;
+      body.innerHTML='<p class="note">carregando…</p>';
+      cfg().then(()=>{ TELAS[tela](arg); const f=body.querySelector('button,select,input'); if(f&&tela==='inicio') f.focus(); })
+           .catch(()=>{ body.innerHTML='<p class="note">Não consegui falar com o sistema agora. Tente de novo em alguns segundos.</p>'; });
+    }
+    voltar.addEventListener('click',()=>{ pilha.pop(); const p=pilha.pop()||['inicio']; ir(p[0],p[1]); });
+    g('lc-fechar').addEventListener('click',fecha);
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!lc.hidden) fecha(); });
+    fab.addEventListener('click',()=>abre('inicio'));
+    document.querySelectorAll('[data-lc]').forEach(b=>b.addEventListener('click',()=>{ const [t,a]=b.dataset.lc.split(':'); abre(t,a); }));
+    window.abreLancar=abre;
+
+    function abas(op,on,fn){                     // botões redondos de escolher o tipo
+      body.innerHTML='<div class="lc-seg" role="tablist">'+op.map(o=>'<button role="tab" data-k="'+o[0]+'" class="'+(o[0]===on?'on':'')+'" aria-selected="'+(o[0]===on)+'">'+esc(o[1])+'</button>').join('')+
+        '</div><div id="lc-pane"></div>';
+      const pane=g('lc-pane');
+      body.querySelectorAll('.lc-seg button').forEach(b=>b.addEventListener('click',()=>{
+        body.querySelectorAll('.lc-seg button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
+        pilha[pilha.length-1][1]=b.dataset.k; fn(b.dataset.k,pane);
+      }));
+      fn(on,pane);
+    }
+
+    /* ---- início ---- */
+    TELAS.inicio=()=>{
+      cab('O que você quer lançar?','Tudo que entra e sai da loja, num lugar só');
+      body.innerHTML='<div class="lc-bigs">'+
+        '<button class="lc-big saida" data-t="saida"><span class="ic">↓</span><span><b>Saída</b><span class="s">dinheiro que saiu ou vai sair</span></span></button>'+
+        '<button class="lc-big entrada" data-t="entrada"><span class="ic">↑</span><span><b>Entrada</b><span class="s">dinheiro que entrou e não é venda</span></span></button></div>'+
+        '<div class="lc-tiles">'+
+        '<button class="lc-tile" data-t="mover">🔁<b>Mover dinheiro</b><span>entre gaveta, reserva, sobra e banco</span></button>'+
+        '<button class="lc-tile" data-t="extrato">🏦<b>Conferir extrato</b><span>Itaú ou Nubank: o que falta lançar</span></button>'+
+        '<button class="lc-tile" data-t="lista">📋<b>Meus lançamentos</b><span>tudo que foi lançado no mês</span></button></div>';
+      body.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.t)));
+    };
+
+    /* ---- SAÍDA ---- */
+    TELAS.saida=(aba)=>{
+      cab('Saída','dinheiro que saiu ou vai sair da loja');
+      abas([['pago','Já paguei'],['apagar','Ainda vou pagar'],['conta','Pagar conta já lançada'],['compra','Compra de mercadoria']],
+           aba||'pago',(k,p)=>({pago:painelPago,apagar:painelAPagar,conta:painelConta,compra:painelCompra})[k](p));
+    };
+    function ligaSugestao(){
+      const d=g('lc-desc'), q=g('lc-quem'), c=g('lc-cat'), box=g('lc-sug-box'); if(!d||!c||!box) return;
+      const upd=()=>{ const s=sugere(d.value+' '+(q?q.value:''));
+        box.innerHTML=(s&&c.value!==s)?'<button type="button" class="lc-sug">💡 parece <b>'+esc(s)+'</b> · usar essa categoria</button>':'';
+        const b=box.querySelector('button'); if(b) b.addEventListener('click',()=>{ c.value=s; box.innerHTML=''; }); };
+      d.addEventListener('input',upd); if(q) q.addEventListener('input',upd); c.addEventListener('change',upd);
+    }
+    function painelPago(p){
+      p.innerHTML='<div class="lc-form">'+
+        '<label>Categoria'+selCats('lc-cat')+'</label>'+
+        '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '<label>De onde saiu o dinheiro<select id="lc-forma">'+opts(FORMA_PAGO,'escolha de onde saiu…')+'</select></label>'+
+        '<label>Dia que pagou<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label>'+
+        '<label class="lg">Descrição (opcional)<input id="lc-desc" placeholder="ex.: pão + frios"><span id="lc-sug-box"></span></label>'+
+        '<label class="lg">Pago a quem (opcional)<input id="lc-quem" placeholder="nome da pessoa ou do fornecedor"></label>'+
+        '</div>'+
+        '<label class="lc-chk"><input type="checkbox" id="lc-split"> Paguei com <b>duas formas</b> (parte no PIX, parte da gaveta…)</label>'+
+        '<div id="lc-split-box" hidden><div class="lc-form" style="margin-top:8px">'+
+          '<label>1ª forma<select id="lc-f1">'+opts(FORMA_PAGO)+'</select></label><label>R$<input id="lc-v1" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+          '<label>2ª forma<select id="lc-f2">'+opts(FORMA_PAGO)+'</select></label><label>R$<input id="lc-v2" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '</div><div class="note" id="lc-split-msg" style="margin-top:4px">Eu somo as duas partes e uso como valor do gasto.</div></div>'+
+        '<div class="lc-acts"><button class="lc-btn" id="lc-go">Lançar saída</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div>';
+      ligaSugestao();
+      const chk=g('lc-split'), sb=g('lc-split-box'), vt=g('lc-valor');
+      const soma=()=>{ const a=num('lc-v1')||0, b=num('lc-v2')||0; vt.value=(a+b)?(a+b).toFixed(2):''; };
+      chk.addEventListener('change',()=>{ sb.hidden=!chk.checked; g('lc-forma').disabled=chk.checked; vt.readOnly=chk.checked;
+        if(chk.checked){ if(!g('lc-v1').value&&vt.value) g('lc-v1').value=vt.value; soma(); } });
+      ['lc-v1','lc-v2'].forEach(id=>g(id).addEventListener('input',soma));
+      g('lc-go').addEventListener('click',()=>{
+        const msg=g('lc-msg'), b=g('lc-go'), cat=val('lc-cat'), v=num('lc-valor'), dt=val('lc-data')||hojeL;
+        let partes=null, forma=val('lc-forma');
+        if(!cat){ msg.innerHTML=ER('Escolha a categoria.'); return; }
+        if(chk.checked){
+          const a=num('lc-v1'), c=num('lc-v2'), f1=val('lc-f1'), f2=val('lc-f2');
+          if(!f1||!f2){ msg.innerHTML=ER('Escolha de onde saiu cada parte.'); return; }
+          if(!(a>0)||!(c>0)){ msg.innerHTML=ER('Preencha o valor das duas partes (ou desmarque as duas formas).'); return; }
+          partes=[{forma:f1,valor:a},{forma:f2,valor:c}]; forma=f1;
+        } else if(!forma){ msg.innerHTML=ER('Escolha de onde saiu o dinheiro.'); return; }
+        if(!(v>0)){ msg.innerHTML=ER('Digite o valor.'); return; }
+        if(dt>hojeL){ msg.innerHTML=ER('Esse dia ainda não chegou. Se ainda vai pagar, use "Ainda vou pagar".'); return; }
+        const pl={categoria:cat, valor:v, forma, data:dt, descricao:val('lc-desc'), quem:val('lc-quem')};
+        if(partes) pl.partes=partes;
+        trava(b);
+        post('/api/gasto',pl).then(res=>{ solta(b);
+          if(res.ok){
+            const det=partes?partes.map(x=>'R$ '+fmt(x.valor)+' '+ROT_FORMA[x.forma]).join(' + '):ROT_FORMA[forma];
+            msg.innerHTML=OK('Saída lançada: <b>R$ '+fmt(v)+'</b> em '+esc(cat)+' · '+esc(det)+' · dia '+dbr(dt)+'.');
+            ['lc-valor','lc-desc','lc-quem','lc-v1','lc-v2'].forEach(id=>{ if(g(id)) g(id).value=''; });
+            recarrega(porFormas(partes?partes.map(x=>x.forma):[forma]));
+          } else msg.innerHTML=ER(esc(res.erro||'não consegui lançar'));
+        }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem conexão com o sistema. Nada foi gravado, tente de novo.'); });
+      });
+    }
+    function painelAPagar(p){
+      p.innerHTML='<div class="lc-form">'+
+        '<label>Categoria'+selCats('lc-cat')+'</label>'+
+        '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '<label>Vencimento<input id="lc-data" type="date" value="'+hojeL+'"></label>'+
+        '<label class="lg">Descrição (opcional)<input id="lc-desc" placeholder="ex.: conta de outubro"><span id="lc-sug-box"></span></label>'+
+        '<label class="lg">Pagar a quem (opcional)<input id="lc-quem" placeholder="nome da pessoa ou da empresa"></label></div>'+
+        '<div class="lc-sec">Como é essa conta</div>'+
+        '<div class="lc-seg" id="lc-modo">'+
+          '<button data-m="uma" class="on">Uma vez só</button><button data-m="repete">Repete com o mesmo valor</button><button data-m="parcela">Parcelada (divido o valor)</button></div>'+
+        '<div class="lc-form" id="lc-modo-campos" hidden>'+
+          '<label id="lc-freq-l">De quanto em quanto tempo<select id="lc-freq"><option value="mensal">Todo mês</option><option value="quinzenal">A cada 15 dias</option><option value="semanal">Toda semana</option></select></label>'+
+          '<label>Quantas vezes<input id="lc-vezes" type="number" min="2" max="52" step="1" inputmode="numeric" placeholder="ex.: 3"></label></div>'+
+        '<div class="lc-prev" id="lc-prev" hidden></div>'+
+        '<div class="lc-acts"><button class="lc-btn" id="lc-go">Lançar conta a pagar</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div>';
+      ligaSugestao();
+      let modo='uma';
+      const prev=()=>{
+        const box=g('lc-prev'), v=num('lc-valor'), dt=val('lc-data'), n=parseInt(val('lc-vezes'))||0;
+        g('lc-modo-campos').hidden=(modo==='uma'); g('lc-freq-l').hidden=(modo!=='repete');
+        if(modo==='uma'||!dt||n<2||!(v>0)){ box.hidden=true; return; }
+        const ds=serie(dt,n,modo==='repete'?val('lc-freq'):'mensal');
+        let vs=ds.map(()=>v);
+        if(modo==='parcela'){ const base=Math.floor(v*100/n)/100; vs=ds.map((_,i)=>i<n-1?base:+(v-base*(n-1)).toFixed(2)); }
+        const tot=vs.reduce((a,x)=>a+x,0);
+        box.hidden=false;
+        box.innerHTML='Vão entrar <b>'+n+' contas</b> no mapa, somando <b>R$ '+fmt(tot)+'</b>:<br>'+
+          ds.slice(0,8).map((d,i)=>dbr(d)+'/'+d.slice(2,4)+' · R$ '+fmt(vs[i])).join(' &nbsp;·&nbsp; ')+(n>8?' &nbsp;… e mais '+(n-8):'');
+      };
+      g('lc-modo').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+        modo=b.dataset.m; g('lc-modo').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); prev(); }));
+      ['lc-valor','lc-data','lc-vezes','lc-freq'].forEach(id=>g(id).addEventListener('input',prev));
+      g('lc-freq').addEventListener('change',prev);
+      g('lc-go').addEventListener('click',()=>{
+        const msg=g('lc-msg'), b=g('lc-go'), cat=val('lc-cat'), v=num('lc-valor'), dt=val('lc-data'), n=parseInt(val('lc-vezes'))||0;
+        if(!cat){ msg.innerHTML=ER('Escolha a categoria.'); return; }
+        if(!(v>0)){ msg.innerHTML=ER('Digite o valor.'); return; }
+        if(!dt){ msg.innerHTML=ER('Escolha o vencimento.'); return; }
+        if(modo!=='uma'&&n<2){ msg.innerHTML=ER('Diga quantas vezes (2 ou mais).'); return; }
+        const pl={categoria:cat, valor:v, forma:'Boleto', data:dt, descricao:val('lc-desc'), quem:val('lc-quem')};
+        if(modo!=='uma'){ pl.modo=modo; pl.vezes=n; pl.freq=val('lc-freq'); }
+        trava(b);
+        post('/api/gasto',pl).then(res=>{ solta(b);
+          if(res.ok){
+            const cs=res.contas||[];
+            msg.innerHTML=OK(cs.length>1
+              ? cs.length+' contas lançadas no mapa da aba Contas: de '+dbr(cs[0].venc)+' a '+dbr(cs[cs.length-1].venc)+'.'
+              : 'Conta de R$ '+fmt(v)+' lançada no mapa da aba Contas, vence '+dbr(dt)+'.');
+            ['lc-valor','lc-desc','lc-quem','lc-vezes'].forEach(id=>{ if(g(id)) g(id).value=''; }); prev(); recarrega(['mapa']);
+          } else if(res.parcial){
+            const cs=res.contas||[];
+            msg.innerHTML=ER('O sistema parou no meio. Entraram '+cs.length+' de '+n+(cs.length?' (até '+dbr(cs[cs.length-1].venc)+')':'')+
+              '. Não lance tudo de novo: lance só as que faltam. ('+esc(res.erro||'')+')'); recarrega(['mapa']);
+          } else msg.innerHTML=ER(esc(res.erro||'não consegui lançar'));
+        }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Antes de lançar de novo, confira no mapa da aba Contas se já entrou.'); });
+      });
+    }
+    function linhaPagar(it){                        // uma conta aberta, com "pago R$" + forma + paguei
+      return '<div class="lc-row" data-id="'+esc(it.id)+'"><div style="flex:1 1 240px;min-width:0"><div class="q">'+esc(it.cat)+(it.nota?' · '+esc(it.nota):'')+'</div>'+
+        '<div class="m">'+(it.venc?'<span'+(it.atrasado?' style="color:var(--crit);font-weight:700"':'')+'>vence '+dbr(it.venc)+(it.atrasado?' (atrasada)':'')+'</span>':'sem vencimento')+
+        (it.fornecedor?' · '+esc(it.fornecedor):'')+' · previsto R$ '+fmt(it.valor)+'</div></div>'+
+        '<div class="a"><label class="m" style="display:inline-flex;gap:4px;align-items:center">pago R$<input class="cp-v" type="number" step="0.01" inputmode="decimal" value="'+it.valor+'" style="width:92px"></label>'+
+        '<select class="cp-f">'+opts(FORMA_PAGO,'de onde saiu…')+'</select>'+
+        '<button class="lc-btn ghost mini cp-mais" type="button">+ 2ª forma</button>'+
+        '<span class="cp-p2" hidden><input class="cp-v2" type="number" step="0.01" inputmode="decimal" placeholder="R$" style="width:80px"> <select class="cp-f2">'+opts(FORMA_PAGO,'de onde…')+'</select></span>'+
+        '<button class="lc-btn good mini cp-pay" type="button">paguei</button></div></div>';
+    }
+    function ligaPagar(box){
+      box.querySelectorAll('.cp-mais').forEach(b=>b.addEventListener('click',()=>{
+        const p2=b.parentNode.querySelector('.cp-p2'); p2.hidden=!p2.hidden; b.textContent=p2.hidden?'+ 2ª forma':'– 2ª forma';
+        if(p2.hidden) p2.querySelector('.cp-v2').value=''; }));
+      box.querySelectorAll('.cp-pay').forEach(b=>b.addEventListener('click',()=>{
+        const row=b.closest('.lc-row'), a=row.querySelector('.a');
+        const v=parseFloat(a.querySelector('.cp-v').value)||0, f=a.querySelector('.cp-f').value;
+        const p2=a.querySelector('.cp-p2'), dois=!p2.hidden, v2=dois?(parseFloat(p2.querySelector('.cp-v2').value)||0):0, f2=dois?p2.querySelector('.cp-f2').value:'';
+        if(!(v>0)){ toast('❌ digite o valor pago'); return; }
+        if(!f){ toast('❌ escolha de onde saiu o dinheiro'); return; }
+        if(dois&&(!(v2>0)||!f2)){ toast('❌ preencha a 2ª forma (ou feche ela)'); return; }
+        const pl=dois?{id:row.dataset.id,partes:[{forma:f,valor:+v.toFixed(2)},{forma:f2,valor:+v2.toFixed(2)}]}:{id:row.dataset.id,forma:f,valor:+v.toFixed(2)};
+        trava(b,'…');
+        post('/api/baixa',pl).then(res=>{
+          if(res.ok){ a.innerHTML='<span style="color:var(--good);font-weight:700">✅ pago R$ '+fmt(v+v2)+' ('+esc(ROT_FORMA[f])+(dois?' + '+esc(ROT_FORMA[f2]):'')+')</span>'; recarrega(['mapa'].concat(porFormas(dois?[f,f2]:[f]))); }
+          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(b); toast('❌ sem conexão: confira no mapa antes de tentar de novo'); });
+      }));
+    }
+    function painelConta(p){
+      p.innerHTML='<input class="lc-in" id="lc-busca" placeholder="procure pelo nome, categoria ou valor…" aria-label="Procurar conta">'+
+        '<div id="lc-contas" style="margin-top:6px"><p class="note">carregando as contas em aberto…</p></div>';
+      fetch('/api/mapa?fresh=1').then(r=>r.json()).then(d=>{
+        const its=[]; (d.linhas||[]).forEach(L=>(L.itens||[]).forEach(it=>its.push(Object.assign({cat:L.cat},it))));
+        its.sort((a,b)=>(b.atrasado-a.atrasado)||String(a.venc||'9').localeCompare(String(b.venc||'9')));
+        const box=g('lc-contas'), bus=g('lc-busca');
+        const pinta=()=>{ const q=norm(bus.value);
+          const f=its.filter(it=>!q||norm(it.cat+' '+(it.nota||'')+' '+(it.fornecedor||'')+' '+fmt(it.valor)).indexOf(q)>=0);
+          box.innerHTML=f.length?f.slice(0,80).map(linhaPagar).join('')+(f.length>80?'<p class="note">… e mais '+(f.length-80)+'. Procure pelo nome pra achar.</p>':'')
+                                :'<p class="note">Nenhuma conta em aberto com esse nome.</p>';
+          ligaPagar(box); };
+        bus.addEventListener('input',pinta); pinta();
+      }).catch(()=>{ g('lc-contas').innerHTML='<p class="note">Não consegui ler as contas agora.</p>'; });
+    }
+    function abreGerarCompra(pre){
+      fecha(); const t=g('tab-estoque'); if(t) t.click();
+      setTimeout(()=>{
+        const sel=g('cp-forn');
+        if(pre){
+          if(pre.data&&g('cp-data')) g('cp-data').value=pre.data;
+          if(pre.forma&&g('cp-forma')) g('cp-forma').value=pre.forma;
+          if(pre.quem&&sel){ const q=norm(pre.quem);
+            const o=[...sel.options].find(o=>{ const w=norm(o.textContent).split(' ').filter(x=>x.length>=4); return w.length&&q.indexOf(w[0])>=0; });
+            if(o) sel.value=o.value; }
+        }
+        const sec=sel?sel.closest('section'):null; if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
+        if(pre) toast('Preenchi o dia'+(pre.forma?' e o pagamento':'')+'. Escolha os produtos e confira o fornecedor.');
+      },200);
+    }
+    function painelCompra(p){
+      p.innerHTML='<p class="note" style="font-size:.86rem">Compra de mercadoria mexe no <b>estoque</b>, então ela continua na tela <b>Gerar compra</b> (aba Estoque): lá você escolhe os produtos, as quantidades e de onde saiu o dinheiro. Nota fiscal de fornecedor continua comigo: é só me mandar os XMLs.</p>'+
+        '<div class="lc-acts"><button class="lc-btn" id="lc-gc">Abrir o Gerar compra</button></div>';
+      g('lc-gc').addEventListener('click',()=>abreGerarCompra(null));
+    }
+
+    /* ---- ENTRADA ---- */
+    TELAS.entrada=(aba)=>{
+      cab('Entrada','dinheiro que entrou e não é venda nova');
+      abas([['fiado','Fiado (cliente pagou)'],['saque','Saque'],['troca','Troca de PIX'],['outra','Outra entrada']],
+           aba||'fiado',(k,p)=>({fiado:painelFiado,saque:painelSaque,troca:painelTroca,outra:painelOutra})[k](p));
+    };
+    function rodape(btn){ return '<div class="lc-acts"><button class="lc-btn good" id="lc-go">'+btn+'</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div>'; }
+    function manda(url,pl,okfn,quais){
+      const b=g('lc-go'), msg=g('lc-msg'); trava(b);
+      return post(url,pl).then(res=>{ solta(b);
+        if(res.ok){ msg.innerHTML=OK(okfn(res)); body.querySelectorAll('input[type=number],input[type=text],input:not([type])').forEach(i=>{ if(!i.readOnly) i.value=''; }); recarrega(quais); }
+        else msg.innerHTML=ER(esc(res.erro||'não consegui lançar'));
+        return res;
+      }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Confira em Meus lançamentos antes de lançar de novo.'); });
+    }
+    function painelFiado(p){
+      p.innerHTML='<p class="note" style="margin:0 0 10px">A venda do fiado <b>já está lançada</b>: aqui entra só o dinheiro (não conta venda de novo).</p><div class="lc-form">'+
+        '<label>Cliente (opcional)<input id="lc-cli" placeholder="nome"></label>'+
+        '<label>Valor recebido (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '<label>Recebi em<select id="lc-forma">'+opts([['Caixa','Dinheiro (gaveta)'],['PIX','PIX (conta do banco)']],'escolha…')+'</select></label>'+
+        '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label></div>'+rodape('Lançar entrada');
+      g('lc-go').addEventListener('click',()=>{
+        const v=num('lc-valor'), f=val('lc-forma'), msg=g('lc-msg');
+        if(!(v>0)){ msg.innerHTML=ER('Digite o valor recebido.'); return; }
+        if(!f){ msg.innerHTML=ER('Escolha onde recebeu.'); return; }
+        manda('/api/pagamento-conta',{valor:v, cliente:val('lc-cli'), forma:f, data:val('lc-data')||hojeL},
+              r=>'R$ '+fmt(r.valor)+(r.cliente?' de '+esc(r.cliente):'')+' lançado '+(f==='Caixa'?'na gaveta (o fechamento já conta)':'no PIX')+', sem venda nova.',
+              f==='Caixa'?['gaveta','dias']:[]);
+      });
+    }
+    function painelSaque(p){
+      p.innerHTML='<p class="note" style="margin:0 0 10px">O cliente passa o valor <b>+ 20%</b> e leva o dinheiro da gaveta. Eu lanço a entrada e a sangria juntas, com a data de hoje.</p><div class="lc-form">'+
+        '<label>Cliente quer sacar (R$)<input id="lc-valor" type="number" step="1" min="0" inputmode="numeric" placeholder="0"></label>'+
+        '<label>Passou no<select id="lc-tipo">'+opts([['debito','Débito'],['credito','Crédito'],['pix','PIX']],'escolha…')+'</select></label></div>'+
+        '<div class="lc-prev" id="lc-prev" hidden></div>'+rodape('Lançar saque');
+      const FEE={debito:0.0085,credito:0.0314,pix:0};
+      const upd=()=>{ const v=num('lc-valor'), t=val('lc-tipo'), box=g('lc-prev');
+        if(!(v>0)||!t){ box.hidden=true; return; }
+        const tot=v*1.2, taxa=tot*FEE[t], ganho=v*0.2-taxa; box.hidden=false;
+        box.innerHTML='Cliente '+(t==='pix'?'manda <b>R$ '+fmt(tot)+'</b> no PIX (sem taxa)':'passa <b>R$ '+fmt(tot)+'</b> no cartão · taxa R$ '+fmt(taxa))+
+          ' · você dá <b>R$ '+fmt(v)+'</b> em dinheiro e <b style="color:var(--good)">ganha R$ '+fmt(ganho)+'</b>.'; };
+      g('lc-valor').addEventListener('input',upd); g('lc-tipo').addEventListener('change',upd);
+      g('lc-go').addEventListener('click',()=>{
+        const v=num('lc-valor'), t=val('lc-tipo'), msg=g('lc-msg');
+        if(!(v>0)){ msg.innerHTML=ER('Digite quanto o cliente quer sacar.'); return; }
+        if(!t){ msg.innerHTML=ER('Escolha onde ele passou.'); return; }
+        manda('/api/saque',{valor:v,tipo:t},r=>'Saque lançado: entrada R$ '+fmt(r.total)+' e sangria R$ '+fmt(r.sangria)+' da gaveta. Você ganhou R$ '+fmt(r.ganho)+'.',['gaveta','dias','saque'])
+          .then(()=>{ g('lc-prev').hidden=true; });
+      });
+    }
+    function painelTroca(p){
+      p.innerHTML='<p class="note" style="margin:0 0 10px">O contrário do saque: o cliente te dá <b>dinheiro</b> e você manda <b>PIX</b> pra ele.</p><div class="lc-form">'+
+        '<label>Recebi em dinheiro (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '<label>Mandei no PIX (R$)<input id="lc-env" type="number" step="0.01" min="0" inputmode="decimal" placeholder="igual ao recebido"></label>'+
+        '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label></div>'+rodape('Lançar troca');
+      g('lc-go').addEventListener('click',()=>{
+        const rec=num('lc-valor'), env=num('lc-env'), msg=g('lc-msg');
+        if(!(rec>0)){ msg.innerHTML=ER('Digite quanto recebeu em dinheiro.'); return; }
+        manda('/api/troca-pix',{recebido:rec, enviado:isNaN(env)?rec:env, data:val('lc-data')||hojeL},
+              r=>'Troca lançada: entraram R$ '+fmt(r.recebido)+' na gaveta e saíram R$ '+fmt(r.enviado)+' no PIX'+(r.ganho>0?' · lucro R$ '+fmt(r.ganho):'')+'.',['gaveta','dias']);
+      });
+    }
+    function painelOutra(p){
+      p.innerHTML='<p class="note" style="margin:0 0 10px">Dinheiro que entra e <b>não é venda</b>: não vai pro faturamento.</p><div class="lc-form">'+
+        '<label>O que é<select id="lc-tipo">'+opts([['aporte','Aporte do sócio'],['emprestimo','Empréstimo'],['rendimento','Rendimento do banco'],['outra','Outra entrada']],'escolha…')+'</select></label>'+
+        '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '<label>Onde entrou<select id="lc-onde">'+opts([['Caixa','Caixa (gaveta)'],['PIX','Conta do banco'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa']],'escolha…')+'</select></label>'+
+        '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label>'+
+        '<label class="lg">Descrição (opcional)<input id="lc-desc" placeholder="ex.: Victor colocou pra pagar a Ambev"></label></div>'+rodape('Lançar entrada');
+      g('lc-go').addEventListener('click',()=>{
+        const t=val('lc-tipo'), v=num('lc-valor'), o=val('lc-onde'), msg=g('lc-msg');
+        if(!t){ msg.innerHTML=ER('Escolha o que é essa entrada.'); return; }
+        if(!(v>0)){ msg.innerHTML=ER('Digite o valor.'); return; }
+        if(!o){ msg.innerHTML=ER('Escolha onde o dinheiro entrou.'); return; }
+        manda('/api/entrada',{tipo:t, valor:v, onde:o, data:val('lc-data')||hojeL, descricao:val('lc-desc')},
+              r=>esc(r.tipo)+' de R$ '+fmt(r.valor)+' lançado'+({Caixa:' na gaveta (o fechamento já conta)',PIX:' na conta do banco',Dinheiro:' na reserva',Sobra:' na sobra de caixa'}[o]||'')+'.',
+              {Caixa:['gaveta','dias'],PIX:[],Dinheiro:['reserva'],Sobra:['sobra']}[o]);
+      });
+    }
+
+    /* ---- MOVER DINHEIRO ---- */
+    TELAS.mover=()=>{
+      cab('Mover dinheiro','de um lugar pro outro (não é gasto nem entrada)');
+      const DE=[['caixa','Gaveta (caixa do dia)'],['reserva','Dinheiro reserva'],['sobra','Sobra de caixa'],['banco','Saquei do banco'],['nenhum','Já estava fora do caixa']];
+      const PARA=[['reserva','Dinheiro reserva'],['sobra','Sobra de caixa'],['caixa','Gaveta (caixa do dia)']];
+      body.innerHTML='<div class="lc-form">'+
+        '<label>Saiu de<select id="lc-de">'+opts(DE,'escolha…')+'</select></label>'+
+        '<label>Foi para<select id="lc-para">'+opts(PARA,'escolha…')+'</select></label>'+
+        '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+        '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label>'+
+        '<label class="lg">Observação (opcional)<input id="lc-desc" placeholder="ex.: notas altas do dia"></label></div>'+
+        '<div class="lc-prev" id="lc-prev">Escolha de onde saiu e pra onde foi.</div>'+
+        '<div class="lc-acts"><button class="lc-btn" id="lc-go">Mover</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div>'+
+        '<p class="note" style="margin-top:12px">Contou o cofre ou a sobra e o total não bate? Use <b>"Já contei: é esse o total"</b> no quadro dele, na aba Loja.</p>';
+      const NOME={caixa:'a gaveta',reserva:'a reserva',sobra:'a sobra de caixa',banco:'a conta do banco',nenhum:'fora do caixa'};
+      const explica=(de,pa)=>{
+        if(!de||!pa) return 'Escolha de onde saiu e pra onde foi.';
+        if(de===pa) return '⚠️ Saiu e entrou no mesmo lugar: escolha lugares diferentes.';
+        if(pa==='caixa'&&(de==='banco'||de==='nenhum')) return '⚠️ Dinheiro do banco ou de fora pra gaveta ainda não tem por aqui. Se é aporte, use Entrada → Outra entrada.';
+        if(de==='caixa') return 'Sai da <b>gaveta</b> (sangria) e entra n'+NOME[pa]+'. O fechamento do dia já conta com essa saída.';
+        if(pa==='caixa') return 'Sai d'+NOME[de]+' e entra na <b>gaveta do dia</b>. O fechamento passa a contar com esse dinheiro.';
+        if(de==='banco') return 'Sai da <b>conta do banco</b> (saque) e entra n'+NOME[pa]+'. Não mexe no fechamento.';
+        if(de==='nenhum') return 'Entra n'+NOME[pa]+'. Não mexe na gaveta nem no banco.';
+        return 'Só troca de monte: sai d'+NOME[de]+' e entra n'+NOME[pa]+'. Não mexe no fechamento.';
+      };
+      const upd=()=>{ g('lc-prev').innerHTML=explica(val('lc-de'),val('lc-para')); };
+      g('lc-de').addEventListener('change',upd); g('lc-para').addEventListener('change',upd);
+      g('lc-go').addEventListener('click',()=>{
+        const de=val('lc-de'), pa=val('lc-para'), v=num('lc-valor'), dt=val('lc-data')||hojeL, nota=val('lc-desc'), msg=g('lc-msg'), b=g('lc-go');
+        if(!de||!pa){ msg.innerHTML=ER('Escolha de onde saiu e pra onde foi.'); return; }
+        if(de===pa||(pa==='caixa'&&(de==='banco'||de==='nenhum'))){ msg.innerHTML=ER('Essa combinação não dá: veja o aviso acima.'); return; }
+        if(!(v>0)){ msg.innerHTML=ER('Digite o valor.'); return; }
+        let url, pl;
+        if(pa==='caixa'){ url='/api/reforco-caixa'; pl={valor:v, fonte:de, descricao:nota, data:dt}; }
+        else { url=pa==='reserva'?'/api/reserva':'/api/sobra'; pl={valor:v, descricao:nota, data:dt, origem:de}; }
+        trava(b);
+        post(url,pl).then(res=>{ solta(b);
+          if(res.ok){
+            msg.innerHTML=OK('R$ '+fmt(v)+' saíram d'+NOME[de]+' e entraram n'+NOME[pa]+'.'+(res.saldo!=null&&pa==='caixa'?' Ficou R$ '+fmt(res.saldo)+' guardado lá.':''));
+            g('lc-valor').value=''; g('lc-desc').value='';
+            recarrega([de,pa].map(x=>({caixa:'gaveta',reserva:'reserva',sobra:'sobra'})[x]).filter(Boolean).concat(de==='caixa'||pa==='caixa'?['dias']:[]));
+          } else msg.innerHTML=ER(esc(res.erro||'não consegui'));
+        }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Confira o saldo no quadro da reserva/sobra antes de repetir.'); });
+      });
+    };
+
+    /* ---- CONFERIR EXTRATO (Itaú / Nubank) ---- */
+    const IGN_KEY='lc_extrato_ignorados';
+    const ignLoad=()=>{ try{ return new Set(JSON.parse(localStorage.getItem(IGN_KEY))||[]); }catch(e){ return new Set(); } };
+    const ignSave=s=>{ try{ localStorage.setItem(IGN_KEY,JSON.stringify([...s].slice(-2000))); }catch(e){} };
+    TELAS.extrato=()=>{
+      cab('Conferir extrato','o que saiu do banco e ainda não está lançado');
+      body.innerHTML='<div class="lc-form">'+
+        '<label>Banco<select id="lc-banco">'+opts([['itau','Itaú'],['nubank','Nubank']],'escolha o banco…')+'</select></label>'+
+        '<label class="lg">Arquivo do extrato<input id="lc-arq" type="file" accept=".ofx,.OFX,.csv,.CSV,.txt"></label></div>'+
+        '<p class="note">No app do banco: <b>Extrato → exportar → formato OFX</b> (se não tiver OFX, CSV serve). Um mês por vez. <b>Nada é gravado agora</b>: eu só mostro, e cada linha entra quando você confirmar.</p>'+
+        '<div class="lc-acts"><button class="lc-btn" id="lc-ler">Ler extrato</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div><div id="lc-ext"></div>';
+      g('lc-ler').addEventListener('click',()=>{
+        const banco=val('lc-banco'), arq=(g('lc-arq').files||[])[0], msg=g('lc-msg'), b=g('lc-ler');
+        if(!banco){ msg.innerHTML=ER('Escolha o banco.'); return; }
+        if(!arq){ msg.innerHTML=ER('Escolha o arquivo do extrato.'); return; }
+        if(arq.size>3000000){ msg.innerHTML=ER('Arquivo grande demais: baixe um mês por vez.'); return; }
+        trava(b,'lendo…'); msg.innerHTML='';
+        arq.arrayBuffer().then(buf=>{
+          let txt; try{ txt=new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ txt=new TextDecoder('windows-1252').decode(buf); }
+          return post('/api/extrato/ler',{banco, arquivo:txt});
+        }).then(d=>{ solta(b); if(!d.ok){ msg.innerHTML=ER(esc(d.erro||'não consegui ler')); return; } pintaExtrato(d); })
+          .catch(()=>{ solta(b); msg.innerHTML=ER('Não consegui ler esse arquivo agora. Tente de novo.'); });
+      });
+    };
+    function pintaExtrato(d){
+      const box=g('lc-ext'), ign=ignLoad(), NB=d.nome_banco;
+      const cont=d.contagem||{}, sai=d.saidas||[];
+      const falta=sai.filter(x=>(x.status==='falta'||x.status==='parecido')&&!ign.has(x.id));
+      const nIgn=sai.filter(x=>(x.status==='falta'||x.status==='parecido')&&ign.has(x.id)).length;
+      const abertas=sai.filter(x=>x.status==='aberta'), lanc=sai.filter(x=>x.status==='lancado');
+      let h='<div class="lc-prev">Extrato do <b>'+esc(NB)+'</b> de '+dbr(d.de)+' a '+dbr(d.ate)+': <b>'+sai.length+' saídas</b> (R$ '+fmt(d.total_saidas)+').<br>'+
+        '✅ <b>'+lanc.length+'</b> já lançadas · 🧾 <b>'+abertas.length+'</b> contas abertas pra dar baixa · ⚠️ <b>'+falta.length+'</b> faltam lançar'+(nIgn?' · '+nIgn+' que você mandou ignorar':'')+'.<br>'+
+        '<span class="note" style="margin:0">Entraram também '+(d.entradas.n||0)+' créditos (R$ '+fmt(d.entradas.total||0)+'): são vendas no PIX e na maquininha, que já entram pelas vendas. Não lancei nada disso.</span></div>';
+      const linha=(x,acoes,extra)=>'<div class="lc-row" data-id="'+x.id+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
+        '<div class="m">'+dbr(x.data)+' · '+esc(x.memo)+'</div>'+(extra||'')+'</div><div class="a">'+acoes+'</div></div>';
+      const acoesFalta=x=>x.mercadoria
+        ? '<span class="m">parece <b>mercadoria</b></span><button class="lc-btn mini ex-gc" type="button">Lançar no Gerar compra</button>'+
+          '<button class="lc-btn ghost mini ex-merc" type="button" title="entra como compra de mercadoria, mas NÃO mexe no estoque">Só o valor (sem estoque)</button>'+
+          '<button class="lc-btn ghost mini ex-naomerc" type="button">Não é mercadoria</button><button class="lc-btn ghost mini ex-ign" type="button">Ignorar</button>'
+        : '<select class="ex-cat" aria-label="Categoria"><option value="" '+(x.sugestao?'':'selected')+' disabled>categoria…</option>'+
+            CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option'+(c===x.sugestao?' selected':'')+'>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>'+
+          (x.sugestao?'<span class="pill pA" title="'+(x.por==='historico'?'você já lançou esse nome assim antes':'pela palavra no texto do banco')+'">sugestão</span>':'')+
+          '<button class="lc-btn good mini ex-lanc" type="button">Lançar</button><button class="lc-btn ghost mini ex-ehmerc" type="button">É mercadoria</button><button class="lc-btn ghost mini ex-ign" type="button">Ignorar</button>';
+      const avisoFalta=x=>(x.ignorar?'<div class="lc-aviso">Parece '+esc(x.ignorar)+'. Se for, clique em Ignorar.</div>':'')+
+        (x.status==='parecido'&&x.match?'<div class="lc-aviso">Tem um lançamento em dinheiro de R$ '+fmt(x.match.valor)+' no dia '+dbr(x.match.data)+' ('+esc(x.match.desc)+'). Se for o mesmo, clique em Ignorar.</div>':'');
+      h+='<div class="lc-sec">⚠️ Faltam lançar ('+falta.length+')</div>';
+      h+=falta.length?falta.map(x=>linha(x,acoesFalta(x),avisoFalta(x))).join(''):'<p class="note">Nada faltando. Tudo que saiu do banco já está lançado. ✓</p>';
+      if(abertas.length){
+        h+='<div class="lc-sec">🧾 Contas abertas no mapa: é só dar baixa ('+abertas.length+')</div>';
+        h+=abertas.map(x=>linha(x,'<button class="lc-btn good mini ex-baixa" type="button">Dar baixa nessa conta</button><button class="lc-btn ghost mini ex-naoe" type="button">Não é essa</button>',
+          '<div class="m" style="color:var(--ink)">conta aberta: <b>'+esc((x.match.cat?x.match.cat+' · ':'')+x.match.desc)+'</b>'+(x.match.fornecedor?' · '+esc(x.match.fornecedor):'')+' · vence '+dbr(x.match.venc)+' · R$ '+fmt(x.match.valor)+'</div>')).join('');
+      }
+      if(lanc.length){
+        h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">✅ Já lançadas ('+lanc.length+')</summary>'+
+          lanc.map(x=>'<div class="lc-row"><div><div class="q">'+esc(x.quem)+' <span class="v">R$ '+fmt(x.valor)+'</span></div><div class="m">'+dbr(x.data)+' · lançado como: '+esc(x.match.desc)+' ('+esc(x.match.forma)+', '+dbr(x.match.data)+')</div></div></div>').join('')+'</details>';
+      }
+      if(nIgn) h+='<p class="note" style="margin-top:10px"><button class="lc-btn ghost mini" id="ex-desig" type="button">Mostrar as '+nIgn+' ignoradas de novo</button></p>';
+      box.innerHTML=h;
+      const pega=b=>sai.find(x=>x.id===b.closest('.lc-row').dataset.id);
+      const fim=(b,html)=>{ b.closest('.a').innerHTML=html; };
+      box.querySelectorAll('.ex-ign').forEach(b=>b.addEventListener('click',()=>{ const s=ignLoad(); s.add(pega(b).id); ignSave(s); pintaExtrato(d); }));
+      const desig=g('ex-desig'); if(desig) desig.addEventListener('click',()=>{ const s=ignLoad(); sai.forEach(x=>s.delete(x.id)); ignSave(s); pintaExtrato(d); });
+      box.querySelectorAll('.ex-ehmerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=true; pintaExtrato(d); }));
+      box.querySelectorAll('.ex-naomerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=false; pintaExtrato(d); }));
+      box.querySelectorAll('.ex-naoe').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); x.status='falta'; x.match=null; pintaExtrato(d); }));
+      box.querySelectorAll('.ex-gc').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); abreGerarCompra({data:x.data, forma:'PIX', quem:x.quem}); }));
+      box.querySelectorAll('.ex-lanc').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b), cat=b.closest('.a').querySelector('.ex-cat').value;
+        if(!cat){ toast('❌ escolha a categoria dessa linha'); return; }
+        trava(b,'…');
+        post('/api/gasto',{categoria:cat, valor:x.valor, forma:'PIX', data:x.data, descricao:x.quem+' · extrato '+NB+' #ext:'+x.id}).then(res=>{
+          if(res.ok){ x.status='lancado'; x.match={desc:cat+' · '+x.quem, forma:'PIX', data:x.data}; fim(b,'<span style="color:var(--good);font-weight:700">✅ lançado em '+esc(cat)+'</span>'); recarrega(['gasto']); }
+          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(b); toast('❌ sem resposta: leia o extrato de novo antes de repetir'); });
+      }));
+      box.querySelectorAll('.ex-merc').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b);
+        if(!confirm('Lançar R$ '+fmt(x.valor)+' como compra de mercadoria SEM itens?\n\nEntra no gasto do mês e no resultado, mas o ESTOQUE não muda. Se você tem a lista do que veio, prefira "Lançar no Gerar compra".')) return;
+        trava(b,'…');
+        post('/api/gasto',{mercadoria:true, categoria:'Outros', valor:x.valor, forma:'PIX', data:x.data,
+                           descricao:'Compra de '+x.quem+' — sem nota, extrato '+NB+' #ext:'+x.id}).then(res=>{
+          if(res.ok){ x.status='lancado'; x.match={desc:'Compra de '+x.quem, forma:'PIX', data:x.data}; fim(b,'<span style="color:var(--good);font-weight:700">✅ lançado como mercadoria (sem estoque)</span>'); recarrega(['gasto']); }
+          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(b); toast('❌ sem resposta: leia o extrato de novo antes de repetir'); });
+      }));
+      box.querySelectorAll('.ex-baixa').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b); trava(b,'…');
+        post('/api/baixa',{id:x.match.id, forma:'PIX', valor:x.valor, data:x.data}).then(res=>{
+          if(res.ok){ x.status='lancado'; fim(b,'<span style="color:var(--good);font-weight:700">✅ baixa dada: pago no PIX dia '+dbr(x.data)+'</span>'); recarrega(['mapa','gasto']); }
+          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(b); toast('❌ sem resposta: confira no mapa antes de repetir'); });
+      }));
+    }
+
+    /* ---- MEUS LANÇAMENTOS ---- */
+    TELAS.lista=(mesSel)=>{
+      cab('Meus lançamentos','tudo que foi lançado no mês, pela data em que foi lançado');
+      const ms=[0,1,2].map(i=>{ const [y,m]=hojeL.split('-').map(Number); const d=new Date(Date.UTC(y,m-1-i,1)); return d.toISOString().slice(0,7); });
+      const MN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      const mes=mesSel||ms[0];
+      abas(ms.map(m=>[m,MN[+m.slice(5,7)-1]]),mes,(m,p)=>listaMes(m,p));
+    };
+    function listaMes(mes,p,fresh){
+      p.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="lc-in" id="lc-busca" placeholder="procurar…" style="flex:1 1 200px" aria-label="Procurar lançamento">'+
+        '<select class="lc-in" id="lc-filtro" style="flex:0 0 auto;width:auto"><option value="">Tudo</option><option>Saída</option><option>A pagar</option><option>Entrada</option><option>Movimento</option></select></div>'+
+        '<div id="lc-lista"><p class="note">carregando os lançamentos de '+esc(mes)+'… (leva uns segundos)</p></div>';
+      fetch('/api/lancamentos?mes='+mes+(fresh?'&fresh=1':'')).then(r=>r.json()).then(d=>{
+        const box=g('lc-lista'), bus=g('lc-busca'), fil=g('lc-filtro'), its=d.itens||[];
+        const cor={Saída:'var(--crit)','A pagar':'var(--warn)',Entrada:'var(--good)',Movimento:'var(--muted)'};
+        const pinta=()=>{
+          const q=norm(bus.value), t=fil.value;
+          const f=its.filter(x=>(!t||x.tipo===t)&&(!q||norm(x.cat+' '+x.desc+' '+x.forma+' '+fmt(x.valor)).indexOf(q)>=0));
+          const tot=f.reduce((a,x)=>a+(x.tipo==='Saída'||x.tipo==='A pagar'?x.valor:0),0);
+          box.innerHTML='<p class="note" style="margin:8px 0">'+f.length+' lançamento(s)'+(tot?' · saídas e contas somam R$ '+fmt(tot):'')+'</p>'+
+            (f.length?'<div class="tblwrap" style="margin-top:4px"><table><thead><tr><th>Lançado</th><th>Dia</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Forma</th><th class="num">Valor</th><th></th></tr></thead><tbody>'+
+            f.slice(0,300).map(x=>'<tr><td>'+(x.lancado?dbr(x.lancado):'—')+'</td><td>'+(x.data?dbr(x.data):'—')+'</td>'+
+              '<td style="color:'+(cor[x.tipo]||'inherit')+';font-weight:600">'+esc(x.tipo)+'</td><td class="nome">'+esc(x.cat)+'</td>'+
+              '<td class="nome" style="color:var(--muted)">'+esc(x.desc)+'</td><td>'+esc(x.forma)+'</td><td class="num">R$ '+fmt(x.valor)+'</td>'+
+              '<td>'+(x.pode_excluir?'<button class="linkx lc-del" data-id="'+esc(x.id)+'" title="apagar esse lançamento" aria-label="apagar">✕</button>':'')+'</td></tr>').join('')+
+            '</tbody></table></div>'+(f.length>300?'<p class="note">Mostrando os 300 mais recentes. Use a busca pra achar o resto.</p>':''):'<p class="note">Nada por aqui.</p>');
+          box.querySelectorAll('.lc-del').forEach(b=>b.addEventListener('click',()=>{
+            if(!confirm('Apagar esse lançamento? Ele some do sistema e não tem volta.')) return;
+            b.disabled=true; b.textContent='…';
+            post('/api/excluir-lancamento',{id:b.dataset.id, mes}).then(res=>{
+              if(res.ok){ toast('🗑️ Apagado.'+(res.devolvido?' Devolvi o valor pra '+(res.devolvido==='reserva'?'reserva':'sobra de caixa')+'.':'')); recarrega(['mapa','gasto','gaveta','reserva','sobra','bolso']); listaMes(mes,p,true); }
+              else { b.disabled=false; b.textContent='✕'; toast('❌ '+(res.erro||'não consegui apagar')); }
+            }).catch(()=>{ b.disabled=false; b.textContent='✕'; toast('❌ sem conexão'); });
+          }));
+        };
+        bus.addEventListener('input',pinta); fil.addEventListener('change',pinta); pinta();
+      }).catch(()=>{ g('lc-lista').innerHTML='<p class="note">Não consegui ler os lançamentos agora.</p>'; });
+    }
   })();
 
   /* ---------- carregamento inicial + botao Atualizar (sem recarregar a pagina) ---------- */

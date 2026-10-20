@@ -351,6 +351,7 @@ DRE_DE_PARA = {
     "Taxas / alvará (PBH)":              "@impostos",
     # --- financeiro ---
     "Despesas bancárias":                "@financeiro",
+    "Tarifa do banco":                   "@financeiro",   # categoria nova da central (20/10)
     # --- mercadoria (vira o CMV, não é custo operacional) ---
     "Compras":                           "@mercadoria",
     # --- cada um na sua linha, a pedido do dono (antes iam todos pra "Outros") ---
