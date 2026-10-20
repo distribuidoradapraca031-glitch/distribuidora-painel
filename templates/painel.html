@@ -207,6 +207,21 @@ body.lc-aberto{overflow:hidden}
 .lc-row.ct-off .q{color:var(--muted)}
 .ct-ed{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;width:100%;margin-top:6px}
 .ct-ed label{display:flex;flex-direction:column;gap:3px;font-size:.72rem;color:var(--muted)}
+.lc-teto{font-size:.74rem;color:var(--muted);line-height:1.4}
+.lc-teto:empty{display:none}
+/* avisos do topo do Início e teto de gasto */
+.ini-avisos{border-color:var(--accent);margin:12px 0}
+.av-bloco{margin-top:12px}
+.av-tit{font-size:.88rem;font-weight:700;line-height:1.4}
+.av-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.84rem}
+.av-row:last-child{border-bottom:0}
+.av-row .d{font-weight:700;min-width:70px;flex:none}
+.av-row .q{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-row .v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.av-bar{height:6px;border-radius:4px;background:var(--surface2);overflow:hidden;margin-top:4px}
+.av-bar>div{height:100%;border-radius:4px}
+.gm-teto{font-size:.72rem;color:var(--muted);margin:4px 0 0 12px;max-width:320px;font-weight:400}
+.gm-teto b{white-space:nowrap}
 
 /* ---- INÍCIO (painel do dia) ---- */
 .ini-hero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -291,6 +306,7 @@ body.lc-aberto{overflow:hidden}
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="ini-mes" id="ini-mes">…</span>
     <button class="lc-btn" type="button" data-lc="inicio">＋ Lançar</button></div>
 </section>
+<section class="card ini-avisos" id="ini-avisos" hidden aria-live="polite"></section>
 <section class="ini-cards" id="ini-cards"><div class="ini-card"><div class="sub">carregando…</div></div></section>
 <section class="card">
   <div class="eyebrow">Movimentações do mês</div>
@@ -2096,11 +2112,19 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     if(g('gm-mes')) g('gm-mes').textContent=MN[parseInt((d.mes||'').slice(5,7),10)-1]||'';
     // lista os nomes fixos SEMPRE (zerados em cinza) e sobe conforme o dono paga
     // cada linha abre (setinha) o histórico do mês: dia, de onde saiu e quanto — igual ao mapa
+    // teto do mês (Minhas categorias): a linha mostra o das categorias que caem nela; numa
+    // linha que junta várias (Lanches) cada uma aparece com o nome dela
+    const tetoLinha=i=>(i.tetos||[]).map(t=>{
+      const cor=t.nivel==='passou'?'var(--crit)':(t.nivel==='perto'?'var(--warn)':'var(--good)');
+      const nome=((i.tetos.length>1)||t.cat!==i.cat)?esc(t.cat)+': ':'teto: ';
+      return '<div class="gm-teto">'+nome+'R$ '+fmt(t.gasto)+' de R$ '+fmt(t.teto)+' · <b style="color:'+cor+'">'+
+        (t.nivel==='passou'?'passou R$ '+fmt(t.gasto-t.teto):Math.round(t.pct)+'%')+'</b>'+
+        '<div class="av-bar"><div style="width:'+Math.min(100,t.pct)+'%;background:'+cor+'"></div></div></div>'; }).join('');
     let rows=(d.itens||[]).map((i,gi)=>{ const z=i.total<=0, L=i.lancamentos||[], has=L.length>0;
       let r='<tr class="gm-cat'+(has?' clic':'')+'" data-gi="'+gi+'"'+(has?' style="cursor:pointer"':'')+'>'+
         '<td class="nome"'+(z?' style="color:var(--muted)"':'')+'>'+
           (has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+
-          esc(i.cat)+(has?' <span style="color:var(--muted);font-size:.72rem">'+L.length+'</span>':'')+'</td>'+
+          esc(i.cat)+(has?' <span style="color:var(--muted);font-size:.72rem">'+L.length+'</span>':'')+tetoLinha(i)+'</td>'+
         '<td class="num"'+(z?' style="color:var(--muted)"':' style="font-weight:600"')+'>R$ '+fmt(i.total)+'</td></tr>';
       if(has) r+='<tr class="gm-det" data-gi="'+gi+'" hidden><td colspan="2" style="padding:0">'+
         '<div style="padding:6px 12px;background:var(--bg)">'+
@@ -2618,6 +2642,50 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     g('ini-ir-contas').addEventListener('click',()=>window.selAba&&window.selAba('contas'));
     g('ini-ir-loja').addEventListener('click',()=>{ window.selAba&&window.selAba('loja'); const cc=g('card-como'); if(cc) cc.scrollIntoView({behavior:'smooth'}); });
   }
+  /* avisos do topo (fase 2, 20/10/2026): contas que vencem em até 3 dias, as atrasadas e as
+     categorias perto do teto do mês (80%) ou acima dele. Só aparece quando tem o que avisar. */
+  function pintaAvisos(){
+    const c=INI.como, box=g('ini-avisos'); if(!box) return;
+    const a=c&&c.avisos;
+    const ven=(a&&a.vencendo)||[], atr=(a&&a.atrasadas)||[], tet=(a&&a.tetos)||[];
+    if(!ven.length&&!atr.length&&!tet.length){ box.hidden=true; box.innerHTML=''; return; }
+    const hoje=hojeBR(), [y,m,d]=hoje.split('-').map(Number);
+    const amanha=new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
+    const SEM=['dom','seg','ter','qua','qui','sex','sáb'];
+    const dia=x=>x===hoje?'hoje':(x===amanha?'amanhã':SEM[new Date(x+'T12:00:00Z').getUTCDay()]+' '+dbr(x));
+    const soma=L=>L.reduce((t,x)=>t+x.valor,0);
+    const linha=(x,rot,cor)=>'<div class="av-row"><span class="d"'+(cor?' style="color:'+cor+'"':'')+'>'+rot+'</span>'+
+      '<span class="q">'+esc(x.cat)+(x.nota&&x.nota!==x.cat?' <span style="color:var(--muted)">· '+esc(x.nota)+'</span>':'')+
+        (x.fornecedor?' <span style="color:var(--muted)">· '+esc(x.fornecedor)+'</span>':'')+'</span>'+
+      '<span class="v">R$ '+fmt(x.valor)+'</span></div>';
+    let h='<div class="eyebrow">Avisos</div>';
+    if(ven.length) h+='<div class="av-bloco"><div class="av-tit">📅 Vencem até '+dia(a.ate)+': '+ven.length+' conta'+(ven.length>1?'s':'')+', R$ '+fmt(soma(ven))+'</div>'+
+      ven.map(x=>linha(x,dia(x.venc),x.venc===hoje?'var(--warn)':'')).join('')+'</div>';
+    if(atr.length){
+      h+='<div class="av-bloco"><div class="av-tit" style="color:var(--crit)">⚠️ '+atr.length+' conta'+(atr.length>1?'s':'')+' atrasada'+(atr.length>1?'s':'')+', somando R$ '+fmt(a.total_atrasadas)+'</div>'+
+        atr.slice(0,3).map(x=>linha(x,'venceu '+dbr(x.venc),'var(--crit)')).join('');
+      if(atr.length>3) h+='<details><summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--accent);padding:6px 0">ver as outras '+(atr.length-3)+'</summary>'+
+        atr.slice(3).map(x=>linha(x,'venceu '+dbr(x.venc),'var(--crit)')).join('')+'</details>';
+      h+='</div>';
+    }
+    if(tet.length){
+      h+='<div class="av-bloco"><div class="av-tit">🎯 Teto do mês</div>'+tet.map(t=>{
+        const passou=t.nivel==='passou', cor=passou?'var(--crit)':'var(--warn)';
+        return '<div class="av-row" style="display:block"><div style="display:flex;justify-content:space-between;gap:10px">'+
+          '<span class="q" style="font-weight:600">'+esc(t.cat)+'</span><span class="v" style="color:'+cor+'">'+
+          (passou?'passou R$ '+fmt(t.gasto-t.teto):Math.round(t.pct)+'% do teto')+'</span></div>'+
+          '<div class="m" style="font-size:.74rem;color:var(--muted)">já saiu R$ '+fmt(t.gasto)+' de R$ '+fmt(t.teto)+'</div>'+
+          '<div class="av-bar"><div style="width:'+Math.min(100,t.pct)+'%;background:'+cor+'"></div></div></div>'; }).join('')+'</div>';
+    }
+    h+='<div class="lc-acts" style="margin-top:10px">'+((ven.length||atr.length)?'<button class="lc-btn mini" type="button" id="av-pagar">Pagar uma conta</button>'+
+      '<button class="lc-btn ghost mini" type="button" id="av-mapa">Abrir o mapa de contas</button>':'')+
+      (tet.length?'<button class="lc-btn ghost mini" type="button" id="av-cats">Ver os tetos</button>':'')+'</div>';
+    box.innerHTML=h; box.hidden=false;
+    const b1=g('av-pagar'), b2=g('av-mapa'), b3=g('av-cats');
+    if(b1) b1.addEventListener('click',()=>window.abreLancar&&window.abreLancar('saida','conta'));
+    if(b2) b2.addEventListener('click',()=>window.selAba&&window.selAba('contas'));
+    if(b3) b3.addEventListener('click',()=>window.abreLancar&&window.abreLancar('categorias'));
+  }
   function pintaGelo(gl){
     const box=g('ini-gelo'); if(!box) return;
     if(!gl){ box.innerHTML='<p class="note">Não consegui ler o crédito do gelo agora.</p>'; return; }
@@ -2644,7 +2712,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   function loadInicio(f){
     const q=qf(f);
     const p1=fetch('/api/inicio'+q).then(r=>r.json()).then(d=>{ INI.dados=d; pintaCards(); desenhaMov(); desenhaSobra(); }).catch(()=>{ const b=g('ini-cards'); if(b) b.innerHTML='<div class="ini-card"><div class="sub">Não consegui ler o mês agora. Clique em Atualizar daqui a pouco.</div></div>'; });
-    const p2=fetch('/api/como-esta'+q).then(r=>r.json()).then(c=>{ INI.como=c; pintaCards(); pintaContas(); }).catch(()=>{});
+    const p2=fetch('/api/como-esta'+q).then(r=>r.json()).then(c=>{ INI.como=c; pintaCards(); pintaContas(); pintaAvisos(); }).catch(()=>{});
     const p3=fetch('/api/gelo'+q).then(r=>r.ok?r.json():null).then(pintaGelo).catch(()=>pintaGelo(null));
     const p4=fetch('/api/lancamentos?mes='+hojeBR().slice(0,7)+(f?'&fresh=1':'')).then(r=>r.json()).then(pintaLanc).catch(()=>pintaLanc(null));
     return Promise.all([p1,p2,p3,p4]);
@@ -2678,6 +2746,27 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>';
     const linkNovaCat='<button type="button" class="lc-link" data-novacat>＋ não achou? criar categoria</button>';
     body.addEventListener('click',e=>{ const b=e.target.closest('[data-novacat]'); if(b){ e.preventDefault(); ir('categorias'); } });
+    // teto do mês da categoria (Minhas categorias): ao escolher, mostra quanto já saiu; na
+    // saída já paga, soma o valor digitado. Só avisa: nunca impede de lançar.
+    let TETOS=null;
+    const tetos=()=>TETOS?Promise.resolve(TETOS):fetch('/api/tetos').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>(TETOS=d));
+    function ligaTeto(pago){
+      const c=g('lc-cat'), dt=g('lc-data'), box=g('lc-teto');
+      const upd=()=>{ if(!c||!box) return; const cat=c.value; if(!cat){ box.innerHTML=''; return; }
+        tetos().then(d=>{ if(c.value!==cat) return;
+          const t=(d.itens||[]).find(x=>x.cat===cat);
+          if(!t||!t.teto){ box.innerHTML=''; return; }
+          const v=pago?(num('lc-valor')||0):0, doMes=!pago||!dt||String(dt.value||'').slice(0,7)===d.mes;
+          const novo=+(t.gasto+(doMes?v:0)).toFixed(2), pct=novo/t.teto*100, passou=novo>t.teto+0.004;
+          const cor=passou?'var(--crit)':(pct>=80?'var(--warn)':'var(--good)');
+          box.innerHTML='Teto do mês: <b>R$ '+fmt(t.teto)+'</b> · já saiu R$ '+fmt(t.gasto)+
+            (v>0&&doMes?' · com essa saída <b style="color:'+cor+'">R$ '+fmt(novo)+(passou?', passa R$ '+fmt(novo-t.teto):' ('+Math.round(pct)+'%)')+'</b>'
+                       :' <b style="color:'+cor+'">('+(passou?'passou R$ '+fmt(novo-t.teto):Math.round(pct)+'%')+')</b>');
+        }).catch(()=>{ box.innerHTML=''; }); };
+      if(c) c.addEventListener('change',upd);
+      if(pago){ const v=g('lc-valor'); if(v) v.addEventListener('input',upd); if(dt) dt.addEventListener('change',upd); }
+      return upd;
+    }
     function sugere(txt){ const t=' '+norm(txt)+' '; for(const [kw,cat] of (CFG.palavras||[])){ if(t.indexOf(kw)>=0) return cat; } return null; }
     // depois de lançar, recarrega SÓ os quadros que aquele lançamento mexe, e de uma vez só
     // (vários lançamentos seguidos viram uma recarga): cada quadro relê o sistema inteiro e,
@@ -2763,12 +2852,12 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const d=g('lc-desc'), q=g('lc-quem'), c=g('lc-cat'), box=g('lc-sug-box'); if(!d||!c||!box) return;
       const upd=()=>{ const s=sugere(d.value+' '+(q?q.value:''));
         box.innerHTML=(s&&c.value!==s)?'<button type="button" class="lc-sug">💡 parece <b>'+esc(s)+'</b> · usar essa categoria</button>':'';
-        const b=box.querySelector('button'); if(b) b.addEventListener('click',()=>{ c.value=s; box.innerHTML=''; }); };
+        const b=box.querySelector('button'); if(b) b.addEventListener('click',()=>{ c.value=s; box.innerHTML=''; c.dispatchEvent(new Event('change')); }); };
       d.addEventListener('input',upd); if(q) q.addEventListener('input',upd); c.addEventListener('change',upd);
     }
     function painelPago(p){
       p.innerHTML='<div class="lc-form">'+
-        '<label>Categoria'+selCats('lc-cat')+linkNovaCat+'</label>'+
+        '<label>Categoria'+selCats('lc-cat')+'<span class="lc-teto" id="lc-teto" aria-live="polite"></span>'+linkNovaCat+'</label>'+
         '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '<label>De onde saiu o dinheiro<select id="lc-forma">'+opts(FORMA_PAGO,'escolha de onde saiu…')+'</select></label>'+
         '<label>Dia que pagou<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label>'+
@@ -2781,9 +2870,9 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           '<label>2ª forma<select id="lc-f2">'+opts(FORMA_PAGO)+'</select></label><label>R$<input id="lc-v2" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '</div><div class="note" id="lc-split-msg" style="margin-top:4px">Eu somo as duas partes e uso como valor do gasto.</div></div>'+
         '<div class="lc-acts"><button class="lc-btn" id="lc-go">Lançar saída</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div>';
-      ligaSugestao();
+      ligaSugestao(); const tetoUpd=ligaTeto(true);
       const chk=g('lc-split'), sb=g('lc-split-box'), vt=g('lc-valor');
-      const soma=()=>{ const a=num('lc-v1')||0, b=num('lc-v2')||0; vt.value=(a+b)?(a+b).toFixed(2):''; };
+      const soma=()=>{ const a=num('lc-v1')||0, b=num('lc-v2')||0; vt.value=(a+b)?(a+b).toFixed(2):''; tetoUpd(); };
       chk.addEventListener('change',()=>{ sb.hidden=!chk.checked; g('lc-forma').disabled=chk.checked; vt.readOnly=chk.checked;
         if(chk.checked){ if(!g('lc-v1').value&&vt.value) g('lc-v1').value=vt.value; soma(); } });
       ['lc-v1','lc-v2'].forEach(id=>g(id).addEventListener('input',soma));
@@ -2808,13 +2897,14 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
             msg.innerHTML=OK('Saída lançada: <b>R$ '+fmt(v)+'</b> em '+esc(cat)+' · '+esc(det)+' · dia '+dbr(dt)+'.');
             ['lc-valor','lc-desc','lc-quem','lc-v1','lc-v2'].forEach(id=>{ if(g(id)) g(id).value=''; });
             recarrega(porFormas(partes?partes.map(x=>x.forma):[forma]));
+            TETOS=null; tetoUpd();          // o teto já conta essa saída
           } else msg.innerHTML=ER(esc(res.erro||'não consegui lançar'));
         }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem conexão com o sistema. Nada foi gravado, tente de novo.'); });
       });
     }
     function painelAPagar(p){
       p.innerHTML='<div class="lc-form">'+
-        '<label>Categoria'+selCats('lc-cat')+linkNovaCat+'</label>'+
+        '<label>Categoria'+selCats('lc-cat')+'<span class="lc-teto" id="lc-teto" aria-live="polite"></span>'+linkNovaCat+'</label>'+
         '<label>Valor (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '<label>Vencimento<input id="lc-data" type="date" value="'+hojeL+'"></label>'+
         '<label class="lg">Descrição (opcional)<input id="lc-desc" placeholder="ex.: conta de outubro"><span id="lc-sug-box"></span></label>'+
@@ -2827,7 +2917,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           '<label>Quantas vezes<input id="lc-vezes" type="number" min="2" max="52" step="1" inputmode="numeric" placeholder="ex.: 3"></label></div>'+
         '<div class="lc-prev" id="lc-prev" hidden></div>'+
         '<div class="lc-acts"><button class="lc-btn" id="lc-go">Lançar conta a pagar</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div>';
-      ligaSugestao();
+      ligaSugestao(); ligaTeto(false);
       let modo='uma';
       const prev=()=>{
         const box=g('lc-prev'), v=num('lc-valor'), dt=val('lc-data'), n=parseInt(val('lc-vezes'))||0;
@@ -3192,12 +3282,14 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const optL=sel=>d.linhas.map(o=>'<option value="'+esc(o.v)+'"'+(o.v===sel?' selected':'')+'>'+esc(o.rotulo)+'</option>').join('');
       const linha=x=>'<div class="lc-row'+(x.ativa?'':' ct-off')+'" data-k="'+esc(x.chave)+'"><div style="flex:1 1 240px;min-width:0">'+
         '<div class="q">'+esc(x.nome)+(x.ativa?'':' <span class="m">(escondida)</span>')+'</div>'+
-        '<div class="m">quadro de lucros: '+esc(x.linha_rotulo)+((x.antes||[]).length?' · antes se chamava '+esc(x.antes.join(', ')):'')+'</div></div>'+
+        '<div class="m">quadro de lucros: '+esc(x.linha_rotulo)+((x.antes||[]).length?' · antes se chamava '+esc(x.antes.join(', ')):'')+'</div>'+
+        '<div class="m ct-g" data-k="'+esc(x.chave)+'">'+(x.teto?'teto do mês: <b style="color:var(--ink)">R$ '+fmt(x.teto)+'</b>':'')+'</div></div>'+
         '<div class="a"><button class="lc-btn ghost mini ct-edit" type="button">Editar</button></div></div>';
       let h=(d.aviso?'<div class="lc-aviso">'+esc(d.aviso)+'</div>':'')+
         '<div class="lc-sec">➕ Nova categoria</div><div class="lc-form">'+
           '<label>Nome<input id="ct-nome" maxlength="40" placeholder="ex.: Gás de cozinha" autocomplete="off"></label>'+
           '<label>Grupo<select id="ct-grupo">'+optG('')+'</select></label>'+
+          '<label>Teto do mês (R$, se quiser)<input id="ct-teto" type="number" step="0.01" min="0" inputmode="decimal" placeholder="sem teto"></label>'+
           '<label class="lg">No quadro de lucros<select id="ct-linha">'+optL('*')+'</select></label></div>'+
         '<div class="lc-acts"><button class="lc-btn" id="ct-criar" type="button">Criar categoria</button></div>'+
         '<div class="lc-msg" id="lc-msg" aria-live="polite">'+(msgOk?OK(msgOk):'')+'</div>';
@@ -3211,15 +3303,25 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       h+='<p class="note" style="margin-top:14px">Renomear não mexe nos lançamentos: os antigos passam a aparecer com o nome novo. '+
          'No quadro de lucros, a mudança aparece na próxima atualização dos números (de manhã, ou no botão Atualizar).</p>';
       body.innerHTML=h;
-      const recarregaTudo=(txt)=>{ CFG=null; recarrega(['mapa','gasto']);
+      // quanto saiu em cada categoria neste mês e no passado: ajuda a decidir o teto
+      const MESN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      const nomeMes=k=>MESN[parseInt(String(k||'').slice(5,7),10)-1]||'';
+      tetos().then(td=>{ (td.itens||[]).forEach(t=>{
+        const el=body.querySelector('.ct-g[data-k="'+CSS.escape(t.chave)+'"]'); if(!el) return;
+        const cor=t.nivel==='passou'?'var(--crit)':(t.nivel==='perto'?'var(--warn)':'var(--good)');
+        el.innerHTML=(t.teto?'teto do mês: <b style="color:var(--ink)">R$ '+fmt(t.teto)+'</b> · ':'')+
+          nomeMes(td.mes)+' até agora: R$ '+fmt(t.gasto)+(t.teto?' <b style="color:'+cor+'">('+(t.nivel==='passou'?'passou R$ '+fmt(t.gasto-t.teto):Math.round(t.pct)+'%')+')</b>':'')+
+          ' · '+nomeMes(td.mes_ant)+': R$ '+fmt(t.gasto_ant||0); }); }).catch(()=>{});
+      const recarregaTudo=(txt)=>{ CFG=null; TETOS=null; recarrega(['mapa','gasto']);
         fetch('/api/categorias').then(r=>r.json()).then(nd=>pintaCats(nd,txt)).catch(()=>TELAS.categorias()); };
       g('ct-criar').addEventListener('click',()=>{
-        const b=g('ct-criar'), msg=g('lc-msg'), nome=val('ct-nome'), grupo=val('ct-grupo'), lin=val('ct-linha');
+        const b=g('ct-criar'), msg=g('lc-msg'), nome=val('ct-nome'), grupo=val('ct-grupo'), lin=val('ct-linha'), teto=num('ct-teto');
         if(!nome){ msg.innerHTML=ER('Digite o nome da categoria.'); return; }
         if(!grupo){ msg.innerHTML=ER('Escolha o grupo.'); return; }
+        if(teto<0){ msg.innerHTML=ER('O teto não pode ser negativo.'); return; }
         trava(b,'criando…');
-        post('/api/categorias',{acao:'criar', nome, grupo, linha:lin}).then(res=>{ solta(b);
-          if(res.ok) recarregaTudo('Categoria "'+res.nome+'" criada em '+grupo+'. Ela já aparece pra escolher na hora de lançar.');
+        post('/api/categorias',{acao:'criar', nome, grupo, linha:lin, teto:teto>0?teto:''}).then(res=>{ solta(b);
+          if(res.ok) recarregaTudo('Categoria "'+res.nome+'" criada em '+grupo+(teto>0?', com teto de R$ '+fmt(teto)+' por mês':'')+'. Ela já aparece pra escolher na hora de lançar.');
           else msg.innerHTML=ER(esc(res.erro||'não consegui criar'));
         }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Recarregue a tela antes de tentar de novo.'); });
       });
@@ -3227,7 +3329,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         const row=b.closest('.lc-row'), x=d.itens.find(i=>i.chave===row.dataset.k); if(!x) return;
         row.innerHTML='<div class="ct-ed">'+
           '<label>Nome<input class="ct-n" maxlength="40" value="'+esc(x.nome)+'" autocomplete="off"></label>'+
-          '<label>Grupo<select class="ct-g">'+optG(x.grupo)+'</select></label>'+
+          '<label>Grupo<select class="ct-gr">'+optG(x.grupo)+'</select></label>'+
+          '<label>Teto do mês (R$)<input class="ct-t" type="number" step="0.01" min="0" inputmode="decimal" value="'+(x.teto||'')+'" placeholder="sem teto"></label>'+
           '<label style="grid-column:1/-1">No quadro de lucros<select class="ct-l">'+optL(x.linha)+'</select></label></div>'+
           '<label class="lc-chk" style="margin-top:6px"><input type="checkbox" class="ct-h"'+(x.ativa?'':' checked')+'> Esconder: não aparece mais pra escolher na hora de lançar</label>'+
           '<div class="lc-acts" style="margin-top:8px"><button class="lc-btn good mini ct-ok" type="button">Salvar</button>'+
@@ -3236,14 +3339,17 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         row.querySelector('.ct-no').addEventListener('click',()=>pintaCats(d));
         row.querySelector('.ct-ok').addEventListener('click',()=>{
           const ok=row.querySelector('.ct-ok'), m=row.querySelector('.ct-msg');
-          const nome=row.querySelector('.ct-n').value.trim(), grupo=row.querySelector('.ct-g').value, lin=row.querySelector('.ct-l').value, ativa=!row.querySelector('.ct-h').checked;
+          const nome=row.querySelector('.ct-n').value.trim(), grupo=row.querySelector('.ct-gr').value, lin=row.querySelector('.ct-l').value, ativa=!row.querySelector('.ct-h').checked;
+          const tt=parseFloat(String(row.querySelector('.ct-t').value||'').replace(',','.')), teto=isNaN(tt)?0:+tt.toFixed(2);
           if(!nome){ m.innerHTML=ER('Digite o nome.'); return; }
+          if(teto<0){ m.innerHTML=ER('O teto não pode ser negativo.'); return; }
           trava(ok,'salvando…');
-          post('/api/categorias',{acao:'editar', chave:x.chave, nome, grupo, linha:lin, ativa}).then(res=>{ solta(ok);
+          post('/api/categorias',{acao:'editar', chave:x.chave, nome, grupo, linha:lin, ativa, teto:teto>0?teto:''}).then(res=>{ solta(ok);
             if(!res.ok){ m.innerHTML=ER(esc(res.erro||'não consegui salvar')); return; }
             const ren=nome!==x.nome, partes=[];
             if(ren) partes.push('"'+x.nome+'" agora se chama "'+res.nome+'" (os lançamentos antigos vêm junto)');
             if(grupo!==x.grupo) partes.push('foi pro grupo '+grupo);
+            if(Math.abs(teto-(x.teto||0))>0.004) partes.push(teto>0?'teto de R$ '+fmt(teto)+' por mês':'ficou sem teto');
             if(lin!==x.linha) partes.push('muda de linha no quadro de lucros na próxima atualização');
             if(ativa!==x.ativa) partes.push(ativa?'voltou a aparecer pra escolher':'escondida dos formulários');
             recarregaTudo(partes.length?(ren?'':'"'+res.nome+'": ')+partes.join(', ')+'.':'Nada mudou.');

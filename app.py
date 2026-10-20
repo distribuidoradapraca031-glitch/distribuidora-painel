@@ -773,15 +773,21 @@ def _sobra_apaga_saida(codigo):
 # "[cat:<categoria>]" no começo da descrição e leio isso primeiro; a observação fica só
 # como texto, e o painel tira a etiqueta antes de mostrar.
 CAT_TAG_RE = re.compile(r"^\[cat:([^\]]+)\]\s*")
+# conta paga do bolso do Victor ganha "[RP] " NA FRENTE da etiqueta (ver _marca_rp): sem
+# ler essa forma, o almoço pago do bolso caía em "Gastos adicionais" e fora do teto
+CAT_TAG_RP_RE = re.compile(r"^(\[RP\]\s*)\[cat:([^\]]+)\]\s*")
 
 def _cat_marcada(desc):
     """Categoria da etiqueta, pela CHAVE fixa: o [cat:nome velho] de antes de o dono
     renomear cai na mesma categoria do nome novo (ver Minhas categorias)."""
     m = CAT_TAG_RE.match(desc or "")
-    return _cat_chave(m.group(1).strip()) if m else None
+    if m:
+        return _cat_chave(m.group(1).strip())
+    m = CAT_TAG_RP_RE.match(desc or "")
+    return _cat_chave(m.group(2).strip()) if m else None
 
 def _sem_cat(desc):
-    return CAT_TAG_RE.sub("", desc or "").strip()
+    return CAT_TAG_RP_RE.sub(r"\1", CAT_TAG_RE.sub("", desc or "")).strip()
 
 # categoria do formulário -> linha do resumo "gastos do mês"
 CAT_RESUMO = {
@@ -1251,6 +1257,7 @@ def _categ_monta(cfg):
         return {"chave": chave, "nome": m.get("n") or chave, "grupo": g, "linha": l,
                 "plano": plano or PLANO_DA_LINHA.get(l) or CATS["Outros"],
                 "ativa": not m.get("off"), "nova": nova,
+                "teto": round(_num(m.get("t")), 2) or None,     # teto do mês, em R$
                 "antigos": [a for a in (m.get("a") or []) + CATEG_APELIDOS.get(chave, [])
                             if _norm_cat(a) != _norm_cat(m.get("n") or chave)]}
     fab = []
@@ -1401,6 +1408,11 @@ def api_categorias():
     nome = re.sub(r"\s+", " ", str(body.get("nome") or "")).strip()
     grupo = (body.get("grupo") or "").strip()
     linha = (body.get("linha") or "").strip()
+    # teto do mês: em branco ou zero = sem teto; sem o campo (tela antiga) = não mexe
+    tem_teto = "teto" in body
+    teto = round(_num(body.get("teto")), 2) if tem_teto and str(body.get("teto")).strip() else 0.0
+    if teto < 0 or teto > 1000000:
+        return jsonify({"ok": False, "erro": "teto inválido"}), 400
     linhas_ok = {o["v"] for o in _categ_linhas_opcoes()}
     try:
         cfg = _categ_cfg(fresh=True)
@@ -1418,6 +1430,8 @@ def api_categorias():
             return jsonify({"ok": False, "erro": erro}), 400
         chave = nome
         cats[chave] = {"novo": 1, "g": grupo, "l": linha}
+        if teto:
+            cats[chave]["t"] = teto
     elif acao == "editar":
         it = next((x for x in _categ_lista() if x["chave"] == body.get("chave")), None)
         if not it:
@@ -1435,6 +1449,11 @@ def api_categorias():
         m["n"] = nome
         m["g"], m["l"] = grupo, linha
         m["off"] = 0 if body.get("ativa", True) else 1
+        if tem_teto:
+            if teto:
+                m["t"] = teto
+            else:
+                m.pop("t", None)
         # tira do registro o que voltou a ser igual ao de fábrica (mantém o guardado pequeno)
         if m.get("n") == chave:
             m.pop("n")
@@ -1775,7 +1794,7 @@ def api_como_esta():
         total = round(sum(l["valor"] or 0 for l in lugares), 2)
         # contas em aberto (as mesmas do mapa da aba Contas)
         d0 = datetime.date.fromisoformat(hoje)
-        contas = []
+        contas, abertas = [], []
         for p in pgs:
             if str(p.get("liquidado")) == "1":
                 continue
@@ -1783,7 +1802,10 @@ def api_como_esta():
             if _eh_interno(d) or "[PROVISAO]" in d.upper():
                 continue
             venc = (p.get("data_vencimento") or hoje)[:10]
-            contas.append((venc, round(_num(p.get("valor_total")) or _num(p.get("valor")), 2)))
+            v = round(_num(p.get("valor_total")) or _num(p.get("valor")), 2)
+            contas.append((venc, v))
+            if p.get("data_vencimento"):
+                abertas.append((venc, v, p))
         contas.sort()
         def ate(dias):
             lim = (d0 + datetime.timedelta(days=dias)).isoformat()
@@ -1798,7 +1820,25 @@ def api_como_esta():
                 break
             cobre_ate = max(venc, hoje)
         horizonte = (d0 + datetime.timedelta(days=90)).isoformat()
-        return {"hoje": hoje, "lugares": lugares, "total": total,
+        # avisos do topo do Início (fase 2): o que vence em até 3 dias, o atrasado e as
+        # categorias perto do teto ou acima dele
+        lim3 = (d0 + datetime.timedelta(days=3)).isoformat()
+        def _aviso(venc, v, p):
+            cat = _categoria_conta(p)
+            return {"id": p.get("id"), "venc": venc, "valor": v,
+                    "cat": _cat_nome(cat) if cat else MERCADORIA_CAT,
+                    "nota": _nota_conta(p) or p.get("nome_plano_conta") or "",
+                    "fornecedor": p.get("nome_fornecedor") or ""}
+        atrasadas = sorted((x for x in abertas if x[0] < hoje), key=lambda x: (x[0], -x[1]))
+        vencendo = sorted((x for x in abertas if hoje <= x[0] <= lim3), key=lambda x: (x[0], -x[1]))
+        avisos = {"ate": lim3,
+                  "vencendo": [_aviso(*x) for x in vencendo],
+                  "atrasadas": [_aviso(*x) for x in atrasadas],
+                  "total_atrasadas": round(sum(x[1] for x in atrasadas), 2),
+                  "tetos": sorted((t for t in _tetos(_gasto_por_cat(pgs, hoje[:7]))
+                                   if t.get("nivel") in ("perto", "passou")),
+                                  key=lambda t: -t["pct"])}
+        return {"hoje": hoje, "lugares": lugares, "total": total, "avisos": avisos,
                 "atrasado": atrasado, "d30": ate(30), "d60": ate(60), "d90": ate(90),
                 "falta_em": falta_em, "cobre_ate": cobre_ate,
                 "sobra_90": round(total - ate(90), 2),
@@ -3418,67 +3458,134 @@ def _rotulo_forma(p):
             r = f"PIX {b}"
     return r
 
+def _no_gasto_do_mes(p, mes):
+    """O valor do lançamento, se ele entra no "Total gasto no mês" de `mes`; senão None.
+    A mesma régua vale pro teto de cada categoria (os dois têm que bater)."""
+    if str(p.get("liquidado")) != "1":
+        return None       # só o que já saiu da conta (pago)
+    if (p.get("data_liquidacao") or "")[:7] != mes:
+        return None       # pago dentro deste mês
+    desc = (p.get("descricao") or "").strip()
+    if desc.upper().startswith("SANGRIA"):
+        return None       # saque e dinheiro guardado: troca de lugar, não é gasto
+    if (p.get("nome_plano_conta") or "") == "Ajuste de caixa":
+        return None       # acerto de gaveta (quebra) não é gasto
+    return _num(p.get("valor_total")) or _num(p.get("valor"))
+
+def _gasto_por_cat(pgs, mes):
+    """Quanto já saiu no mês em cada categoria (pela chave), fora a mercadoria."""
+    out = defaultdict(float)
+    for p in pgs:
+        v = _no_gasto_do_mes(p, mes)
+        if v is None or _eh_mercadoria(p.get("descricao")):
+            continue
+        ch = _cat_marcada(p.get("descricao")) or _categoria_conta(p)
+        if ch:
+            out[ch] += v
+    return out
+
+def _mes_anterior(mes):
+    y, m = int(mes[:4]), int(mes[5:7])
+    return f"{y - (m == 1):04d}-{(m - 2) % 12 + 1:02d}"
+
+# ---- TETO DE GASTO (fase 2, 20/10/2026) ----
+# O dono põe um teto por mês em cada categoria (Minhas categorias). O painel mostra quanto
+# já foi: perto = 80% do teto, passou = acima. Só avisa, nunca trava o lançamento.
+TETO_PERTO = 80
+
+def _tetos(por_cat, por_cat_ant=None):
+    """Cada categoria com o que já saiu no mês e, se tiver teto, o nível: ok/perto/passou."""
+    out = []
+    for it in _categ_lista():
+        g = round(por_cat.get(it["chave"], 0.0), 2)
+        d = {"chave": it["chave"], "cat": it["nome"], "teto": it["teto"], "gasto": g,
+             "ativa": it["ativa"]}
+        if por_cat_ant is not None:
+            d["gasto_ant"] = round(por_cat_ant.get(it["chave"], 0.0), 2)
+        if it["teto"]:
+            d["pct"] = round(g / it["teto"] * 100, 1)
+            d["nivel"] = ("passou" if g > it["teto"] + 0.004
+                          else "perto" if d["pct"] >= TETO_PERTO else "ok")
+        out.append(d)
+    return out
+
+def _gastos_mes_build():
+    """O que JÁ SAIU no mês, ITEMIZADO pelos nomes do dono (os fixos sempre listados,
+    começam zerados e sobem conforme ele lança) + mercadoria (compras) + TOTAL GERAL.
+    Fora: ajuste de caixa (quebra) e sangria. Cada linha leva o teto das categorias
+    que caem nela."""
+    pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                        "data_fim": "2027-12-31"})
+    mes = _hoje()[:7]
+    buckets = {k: 0.0 for k in RESUMO_FIXOS}   # nomes fixos sempre aparecem
+    extras, compras = {}, 0.0
+    lanc = {}       # cada linha guarda os lançamentos do mês (histórico com a setinha)
+    for p in pgs:
+        val = _no_gasto_do_mes(p, mes)
+        if val is None:
+            continue
+        desc = (p.get("descricao") or "").strip()
+        if _eh_mercadoria(desc):
+            compras += val  # mercadoria: soma só no total geral
+            continue
+        cat = _cat_resumo(p)
+        if cat in buckets:
+            buckets[cat] += val
+        else:
+            extras[cat] = extras.get(cat, 0.0) + val
+        nota = _nota_conta(p)
+        # a descrição que é só o nome da linha (o de hoje ou um antigo) não é nota. Numa
+        # linha que junta várias (Lanches = lanche + almoço + padaria) o nome da própria
+        # categoria fica, com o nome de hoje: é ele que diz o que foi.
+        propria = _cat_marcada(desc)
+        if _norm_cat(nota) in _nomes_cat(cat):
+            nota = ""
+        elif propria and _norm_cat(nota) in _nomes_cat(propria):
+            nota = _cat_nome(propria)
+        lanc.setdefault(cat, []).append({
+            "id": p.get("id"), "data": (p.get("data_liquidacao") or "")[:10],
+            "valor": round(val, 2), "forma": _rotulo_forma(p), "nota": nota})
+    for L in lanc.values():
+        L.sort(key=lambda x: (x["data"], str(x["id"])), reverse=True)   # mais recente primeiro
+    # teto: a linha mostra o das categorias que caem nela (Lanches = lanche, almoço e padaria)
+    tetos = _tetos(_gasto_por_cat(pgs, mes), _gasto_por_cat(pgs, _mes_anterior(mes)))
+    da_linha = defaultdict(list)
+    for t in tetos:
+        if t["teto"]:
+            da_linha[CAT_RESUMO.get(t["chave"], t["chave"])].append(t)
+    for k in da_linha:            # categoria com teto aparece mesmo zerada: ele está de olho
+        if k not in buckets and k not in extras:
+            extras[k] = 0.0
+    def _escondida(k):        # linha fixa de categoria que o dono escondeu, zerada, sai
+        it = _cat_item(k)
+        return bool(it and not it["ativa"] and not buckets[k] and not da_linha.get(k))
+    # "cat" = o nome que o dono deu pra categoria em Minhas categorias
+    itens = [{"cat": _cat_nome(k), "total": round(buckets[k], 2), "fixo": True,
+              "lancamentos": lanc.get(k, []), "tetos": da_linha.get(k, [])}
+             for k in RESUMO_FIXOS if not _escondida(k)]
+    itens += sorted([{"cat": _cat_nome(k), "total": round(v, 2), "fixo": False,
+                      "lancamentos": lanc.get(k, []), "tetos": da_linha.get(k, [])}
+                     for k, v in extras.items()], key=lambda x: -x["total"])
+    total = round(sum(buckets.values()) + sum(extras.values()), 2)
+    return {"itens": itens, "total": total,
+            "compras": round(compras, 2),
+            "total_geral": round(total + compras, 2), "mes": mes,
+            "mes_ant": _mes_anterior(mes), "tetos": tetos,
+            "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+
 @app.route("/api/gastos-mes")
 @login_required
 def api_gastos_mes():
-    """Resumo do topo do Financeiro: o que JÁ SAIU no mês, ITEMIZADO pelos nomes do
-    dono (sempre listados, começam zerados e sobem conforme ele lança) + mercadoria
-    (compras) + TOTAL GERAL. Fora: ajuste de caixa (quebra) e sangria de saque."""
-    def build():
-        pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
-                                            "data_fim": "2027-12-31"})
-        mes = _hoje()[:7]
-        buckets = {k: 0.0 for k in RESUMO_FIXOS}   # nomes fixos sempre aparecem
-        extras, compras = {}, 0.0
-        lanc = {}       # cada linha guarda os lançamentos do mês (histórico com a setinha)
-        for p in pgs:
-            if str(p.get("liquidado")) != "1":
-                continue  # só o que já saiu da conta (pago)
-            if (p.get("data_liquidacao") or "")[:7] != mes:
-                continue  # pago dentro deste mês
-            desc = (p.get("descricao") or "").strip()
-            if desc.upper().startswith("SANGRIA"):
-                continue  # saque e dinheiro guardado: troca de lugar, não é gasto
-            if (p.get("nome_plano_conta") or "") == "Ajuste de caixa":
-                continue  # acerto de gaveta (quebra) não é gasto
-            val = _num(p.get("valor_total")) or _num(p.get("valor"))
-            if _eh_mercadoria(desc):
-                compras += val  # mercadoria: soma só no total geral
-                continue
-            cat = _cat_resumo(p)
-            if cat in buckets:
-                buckets[cat] += val
-            else:
-                extras[cat] = extras.get(cat, 0.0) + val
-            nota = _nota_conta(p)
-            # a descrição que é só o nome da linha (o de hoje ou um antigo) não é nota. Numa
-            # linha que junta várias (Lanches = lanche + almoço + padaria) o nome da própria
-            # categoria fica, com o nome de hoje: é ele que diz o que foi.
-            propria = _cat_marcada(desc)
-            if _norm_cat(nota) in _nomes_cat(cat):
-                nota = ""
-            elif propria and _norm_cat(nota) in _nomes_cat(propria):
-                nota = _cat_nome(propria)
-            lanc.setdefault(cat, []).append({
-                "id": p.get("id"), "data": (p.get("data_liquidacao") or "")[:10],
-                "valor": round(val, 2), "forma": _rotulo_forma(p), "nota": nota})
-        for L in lanc.values():
-            L.sort(key=lambda x: (x["data"], str(x["id"])), reverse=True)   # mais recente primeiro
-        def _escondida(k):        # linha fixa de categoria que o dono escondeu, zerada, sai
-            it = _cat_item(k)
-            return bool(it and not it["ativa"] and not buckets[k])
-        # "cat" = o nome que o dono deu pra categoria em Minhas categorias
-        itens = [{"cat": _cat_nome(k), "total": round(buckets[k], 2), "fixo": True,
-                  "lancamentos": lanc.get(k, [])} for k in RESUMO_FIXOS if not _escondida(k)]
-        itens += sorted([{"cat": _cat_nome(k), "total": round(v, 2), "fixo": False,
-                          "lancamentos": lanc.get(k, [])}
-                         for k, v in extras.items()], key=lambda x: -x["total"])
-        total = round(sum(buckets.values()) + sum(extras.values()), 2)
-        return {"itens": itens, "total": total,
-                "compras": round(compras, 2),
-                "total_geral": round(total + compras, 2), "mes": mes,
-                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
-    return jsonify(cached("gastos_mes", 60, build))
+    """Resumo "Total gasto no mês" (aba Contas)."""
+    return jsonify(cached("gastos_mes", 60, _gastos_mes_build))
+
+@app.route("/api/tetos")
+@login_required
+def api_tetos():
+    """Quanto já saiu no mês em cada categoria e o teto dela: a Saída mostra ao escolher
+    a categoria e Minhas categorias mostra pra ajudar a decidir o teto."""
+    d = cached("gastos_mes", 60, _gastos_mes_build)
+    return jsonify({"mes": d["mes"], "mes_ant": d.get("mes_ant"), "itens": d.get("tetos") or []})
 
 def _saque_pid(valor):
     """Acha o produto SAQUE {valor}; se não existir (valor novo), cria."""
