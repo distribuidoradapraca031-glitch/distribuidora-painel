@@ -292,8 +292,19 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
          for p in pagamentos if str(p.get("liquidado")) != "1"),
         key=lambda x: x["venc"] or "9999")
 
+    # ---------- vendas por dia, SEM saque (tela Início: entradas × saídas) ----------
+    # Saque é troca de cartão por dinheiro, não é venda. Guarda o mês passado inteiro e
+    # o atual, pra comparar "até o mesmo dia" do mês anterior.
+    ini_ant = date(TODAY.year - (TODAY.month == 1), (TODAY.month - 2) % 12 + 1, 1)
+    vendas_dia = defaultdict(float)
+    for v in ativas:
+        dt = (v.get("data") or "")[:10]
+        if dt and dt >= YMD(ini_ant) and not _venda_eh_saque(v):
+            vendas_dia[dt] += num(v.get("valor_total"))
+
     novo = dict(old)
-    novo.update({"gerado_em": YMD(TODAY), "kpis": kpis, "mes_atual": mes_atual,
+    novo.update({"vendas_dia": {d: round(x, 2) for d, x in sorted(vendas_dia.items())},
+                 "gerado_em": YMD(TODAY), "kpis": kpis, "mes_atual": mes_atual,
                  "meses": meses, "dia_mes": dia_mes, "serie_fat": dia_mes,
                  "entradas": entradas, "conta": conta, "fechamentos": fechamentos,
                  "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar,

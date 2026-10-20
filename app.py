@@ -1321,6 +1321,94 @@ def api_saldo_banco():
         return {"bancos": _saldos_bancos(pgs), "extrato": _ultimo_extrato(pgs), "hoje": _hoje()}
     return jsonify(cached("saldos_bancos", 60, build))
 
+# ---- INÍCIO (o painel do dia, inspirado no "Meu Caixa Organizado", 20/10/2026) ----
+# Entradas × saídas do mês, dia a dia, contra o mesmo período do mês passado.
+#  · ENTRADAS = vendas (balcão + delivery), sem saque. Os dias que já passaram vêm da foto
+#    diária dos gráficos (buscar 2 meses de venda ao vivo leva ~1 min); o que a foto ainda
+#    não tem (hoje, ou dias de quando ela não atualizou) é buscado ao vivo.
+#  · SAÍDAS = o que já foi PAGO, pela data do pagamento (despesa + mercadoria), as mesmas
+#    regras do "Total gasto no mês": fica de fora sangria, acerto de caixa, troca de PIX,
+#    o que saiu do bolso do Victor e os registros só do painel (o gelo entregue já foi
+#    pago no crédito de R$ 300 do mês: só o pagamento do freezer conta como saída).
+def _vendas_dia_ao_vivo(de, ate):
+    out = defaultdict(float)
+    for tipo in ("vendas_balcao", "produto"):
+        for v in gcapi.get_all("/vendas", {"tipo": tipo, "data_inicio": de, "data_fim": ate}):
+            if "cancel" in (v.get("nome_situacao") or "").lower():
+                continue
+            if tipo == "produto" and "ANOTA AI" not in (v.get("observacoes") or "").upper():
+                continue                           # venda "produto" que não é do app (saque etc.)
+            if any((((w.get("produto", w) or {}).get("nome_produto")) or "").upper().startswith("SAQUE")
+                   for w in (v.get("produtos") or [])):
+                continue
+            dt = (v.get("data") or "")[:10]
+            if dt:
+                out[dt] += _num(v.get("valor_total"))
+    return out
+
+@app.route("/api/inicio")
+@login_required
+def api_inicio():
+    def build():
+        import json as _json
+        hoje = _hoje()
+        d0 = datetime.date.fromisoformat(hoje)
+        mes = hoje[:7]
+        ant_ult = d0.replace(day=1) - datetime.timedelta(days=1)
+        mes_ant = ant_ult.isoformat()[:7]
+        try:
+            snap = _json.loads(_painel_data_atual().replace("\\u003c", "<"))
+        except Exception:
+            snap = {}
+        vd = dict(snap.get("vendas_dia") or {})
+        foto = (snap.get("gerado_em") or "")[:10]
+        if not vd:      # foto antiga, sem o campo novo: usa o dia a dia do mês (inclui saque)
+            vd = {x["data"]: x["fat"] for x in (snap.get("dia_mes") or []) if x.get("data")}
+        # o que a foto não cobre: do dia da foto até hoje (a foto é da manhã, sem o dia todo)
+        ini_vivo = max(foto or hoje, f"{mes_ant}-01")
+        if (d0 - datetime.date.fromisoformat(ini_vivo)).days > 10:
+            ini_vivo = (d0 - datetime.timedelta(days=10)).isoformat()   # nunca mais que 10 dias ao vivo
+        vivo = _vendas_dia_ao_vivo(ini_vivo, hoje)
+        for d in list(vd):
+            if d >= ini_vivo:
+                vd.pop(d)
+        vd.update(vivo)
+        ant_tem_dias = any(k[:7] == mes_ant for k in vd)
+
+        saidas = defaultdict(float)
+        for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+            if str(p.get("liquidado")) != "1":
+                continue
+            d = (p.get("descricao") or "").strip()
+            du = d.upper()
+            if du.startswith(("SANGRIA", "TROCA PIX")) or _eh_interno(d) or "[PROVISAO]" in du:
+                continue
+            if (p.get("nome_plano_conta") or "") == "Ajuste de caixa":
+                continue
+            dl = (p.get("data_liquidacao") or "")[:10]
+            if dl[:7] in (mes, mes_ant) and dl <= hoje:
+                saidas[dl] += _num(p.get("valor_total")) or _num(p.get("valor"))
+
+        def serie(m, ate_dia):
+            y, mm = int(m[:4]), int(m[5:7])
+            n = min(calendar.monthrange(y, mm)[1], ate_dia)
+            return [{"data": f"{m}-{i:02d}", "entradas": round(vd.get(f"{m}-{i:02d}", 0.0), 2),
+                     "saidas": round(saidas.get(f"{m}-{i:02d}", 0.0), 2)} for i in range(1, n + 1)]
+        cur = serie(mes, d0.day)
+        ant_todo = serie(mes_ant, 31)
+        ant_mesmo = ant_todo[:d0.day]
+        tot = lambda L, k: round(sum(x[k] for x in L), 2)
+        resumo = lambda L: {"entradas": tot(L, "entradas"), "saidas": tot(L, "saidas"),
+                            "sobrou": round(tot(L, "entradas") - tot(L, "saidas"), 2)}
+        return {"hoje": hoje, "mes": mes, "mes_ant": mes_ant, "dias": cur,
+                "atual": resumo(cur), "ant_mesmo_periodo": resumo(ant_mesmo) if ant_tem_dias else None,
+                "ant_mes_inteiro": resumo(ant_todo) if ant_tem_dias else None,
+                "ant_total_vendas": next((x.get("fat") for x in (snap.get("meses") or [])
+                                          if x.get("mes") == mes_ant), None),
+                "foto": foto, "ao_vivo_desde": ini_vivo,
+                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("inicio", 120, build))
+
 # ---- COMO ESTÁ A LOJA (topo da aba Loja) ----
 # Ideia da planilha (fase 2, 20/10/2026): o dinheiro de hoje somando todos os lugares,
 # até quando ele paga as contas já lançadas, o que vence em 30/60/90 dias. Conta só o que
@@ -2420,6 +2508,14 @@ def _gelo_produtos():
     out.sort(key=lambda x: _num(re.search(r"\d+", x["nome"]).group()))
     return out
 
+def _gelo_produtos_seguro():
+    """A lista de produtos do GestãoClick às vezes cai (20/10/2026 ficou a manhã fora);
+    o crédito do gelo não depende dela, então o quadro continua de pé sem a lista."""
+    try:
+        return _gelo_produtos()
+    except Exception:
+        return []
+
 @app.route("/api/gelo")
 @login_required
 def api_gelo():
@@ -2449,7 +2545,7 @@ def api_gelo():
         itens.sort(key=lambda x: (x["data"], str(x["id"])), reverse=True)
         return {"mes": mes, "mensal": GELO_MENSAL, "credito": credito, "usado": usado,
                 "saldo": round(credito - usado, 2), "pagamentos": pagos, "itens": itens,
-                "produtos": _gelo_produtos(),
+                "produtos": _gelo_produtos_seguro(),
                 "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached("gelo", 60, build))
 

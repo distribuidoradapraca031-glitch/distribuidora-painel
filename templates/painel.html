@@ -1,33 +1,36 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("tema")||"dark";}catch(e){document.documentElement.dataset.theme="dark";}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel — Distribuidora da Praça</title>
 <style>
+/* Cores (20/10/2026): roxo, inspirado nas fotos do "Meu Caixa Organizado" que o dono mandou.
+   O escuro é o padrão; o botão 🌙/☀️ do topo troca. Série 1/2 dos gráficos validadas pra daltonismo. */
 :root{
-  --bg:#F4F2ED; --surface:#FFFFFF; --surface2:#EDEAE2; --ink:#26241F; --muted:#6E6A60;
-  --line:#DDD8CC; --accent:#A66A12; --accent-soft:#F3E4CB;
+  --bg:#F5F3FA; --surface:#FFFFFF; --surface2:#EEEAF6; --ink:#1E1B2E; --muted:#635E78;
+  --line:#DEDAEA; --accent:#5B45C9; --accent-soft:#ECE7FB;
   --good:#2E7D4F; --good-bg:#E3F0E8; --warn:#9A5B00; --warn-bg:#F7EBD4; --crit:#B3403A; --crit-bg:#F8E3E1;
-  --ser2:#4A6FA5;
+  --ser2:#eb6834; --series-1:#6250d6; --series-2:#eb6834;
 }
-@media (prefers-color-scheme: dark){:root{
-  --bg:#16181D; --surface:#1E2128; --surface2:#262A33; --ink:#E8E6E1; --muted:#9A9DA6;
-  --line:#333845; --accent:#E0A33E; --accent-soft:#3A3020;
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E0B1A; --surface:#17132A; --surface2:#211B3A; --ink:#ECEAF5; --muted:#A29DBB;
+  --line:#2E2750; --accent:#8B78F2; --accent-soft:#2A2150;
   --good:#5BB98C; --good-bg:#1E332A; --warn:#E3A008; --warn-bg:#382D14; --crit:#E5716A; --crit-bg:#3A2220;
-  --ser2:#7FA3D7;
+  --ser2:#d95926; --series-1:#9085e9; --series-2:#d95926;
 }}
 :root[data-theme="dark"]{
-  --bg:#16181D; --surface:#1E2128; --surface2:#262A33; --ink:#E8E6E1; --muted:#9A9DA6;
-  --line:#333845; --accent:#E0A33E; --accent-soft:#3A3020;
+  --bg:#0E0B1A; --surface:#17132A; --surface2:#211B3A; --ink:#ECEAF5; --muted:#A29DBB;
+  --line:#2E2750; --accent:#8B78F2; --accent-soft:#2A2150;
   --good:#5BB98C; --good-bg:#1E332A; --warn:#E3A008; --warn-bg:#382D14; --crit:#E5716A; --crit-bg:#3A2220;
-  --ser2:#7FA3D7;
+  --ser2:#d95926; --series-1:#9085e9; --series-2:#d95926;
 }
 :root[data-theme="light"]{
-  --bg:#F4F2ED; --surface:#FFFFFF; --surface2:#EDEAE2; --ink:#26241F; --muted:#6E6A60;
-  --line:#DDD8CC; --accent:#A66A12; --accent-soft:#F3E4CB;
+  --bg:#F5F3FA; --surface:#FFFFFF; --surface2:#EEEAF6; --ink:#1E1B2E; --muted:#635E78;
+  --line:#DEDAEA; --accent:#5B45C9; --accent-soft:#ECE7FB;
   --good:#2E7D4F; --good-bg:#E3F0E8; --warn:#9A5B00; --warn-bg:#F7EBD4; --crit:#B3403A; --crit-bg:#F8E3E1;
-  --ser2:#4A6FA5;
+  --ser2:#eb6834; --series-1:#6250d6; --series-2:#eb6834;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;
@@ -198,6 +201,54 @@ body.lc-aberto{overflow:hidden}
 .lc-box .note{font-size:.8rem;color:var(--muted);margin:4px 0 0}
 .toast{bottom:86px;z-index:50}   /* acima do botão + Lançar e da janela da central */
 .lc-atalho{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* ---- INÍCIO (painel do dia) ---- */
+.ini-hero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ini-hero h2{font-size:1.4rem;margin:0;font-weight:800;letter-spacing:-.01em}
+.ini-hero p{margin:2px 0 0;color:var(--muted);font-size:.88rem}
+.ini-mes{font-size:.8rem;font-weight:700;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 14px;color:var(--ink)}
+.ini-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:760px){.ini-cards{grid-template-columns:repeat(4,1fr)}}
+.ini-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.ini-card .lbl{display:flex;align-items:center;gap:7px;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.ini-card .dot{width:9px;height:9px;border-radius:3px;flex:none}
+.ini-card .val{font-size:1.5rem;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ini-card .sub{font-size:.74rem;color:var(--muted);margin-top:4px;line-height:1.4}
+.ini-up{color:var(--good);font-weight:700}.ini-down{color:var(--crit);font-weight:700}
+.ini-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);align-items:center;margin-top:6px}
+.ini-legend span{display:inline-flex;align-items:center;gap:6px}
+.ini-legend i{display:inline-block;width:10px;height:10px;border-radius:3px}
+.ini-chart{position:relative;margin-top:10px}
+.ini-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:7px 10px;font-size:.76rem;display:none;white-space:nowrap;z-index:5;line-height:1.45;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.ini-lanc{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+.ini-lanc:last-child{border-bottom:0}
+.ini-lanc .d{color:var(--muted);font-size:.72rem}
+.ini-lanc .v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ini-bar{height:10px;border-radius:6px;background:var(--surface2);overflow:hidden;margin-top:8px}
+.ini-bar>div{height:100%;border-radius:6px;background:var(--series-1)}
+.ini-link{font:inherit;font-size:.78rem;font-weight:700;border:0;background:transparent;color:var(--accent);cursor:pointer;padding:0}
+.ini-link:focus-visible,.btn-tema:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* ---- menu de baixo (celular) ---- */
+.nav-baixo{display:none}
+.nav-mais{display:none}
+@media(max-width:720px){
+  .toolbar .toggle{display:none}
+  .lc-fab{display:none}
+  .nav-baixo{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--surface);border-top:1px solid var(--line);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));justify-content:space-around;align-items:flex-end;box-shadow:0 -4px 18px rgba(0,0,0,.18)}
+  .nav-baixo button{font:inherit;font-size:.66rem;font-weight:600;border:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;
+    align-items:center;gap:2px;padding:4px 4px;cursor:pointer;min-width:58px}
+  .nav-baixo button .ic{font-size:1.2rem;line-height:1}
+  .nav-baixo button.on{color:var(--accent)}
+  .nav-baixo .nb-lancar{background:var(--accent);color:var(--surface);border-radius:999px;width:56px;height:56px;min-width:56px;font-size:1.7rem;
+    font-weight:700;margin-top:-26px;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  .nav-mais.aberto{display:flex;flex-direction:column;position:fixed;right:10px;bottom:76px;z-index:36;background:var(--surface);border:1px solid var(--line);
+    border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:200px}
+  .nav-mais button{font:inherit;font-size:.9rem;text-align:left;border:0;background:transparent;color:var(--ink);padding:10px 12px;border-radius:8px;cursor:pointer}
+  .nav-mais button:hover{background:var(--surface2)}
+  .toast{bottom:100px}
+}
+.btn-tema{font:inherit;font-size:.95rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 10px;border-radius:9px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -210,7 +261,8 @@ body.lc-aberto{overflow:hidden}
     </div>
     <div class="toolbar">
       <div class="toggle" role="tablist" aria-label="Escolher visão">
-        <button id="tab-loja" class="on" role="tab" aria-selected="true">🏪 Loja</button>
+        <button id="tab-inicio" class="on" role="tab" aria-selected="true">🏠 Início</button>
+        <button id="tab-loja" role="tab" aria-selected="false">🏪 Loja</button>
         <button id="tab-acomp" role="tab" aria-selected="false">📊 Acompanhamento</button>
         <button id="tab-estoque" role="tab" aria-selected="false">📦 Estoque</button>
         <button id="tab-contas" role="tab" aria-selected="false">🧾 Contas</button>
@@ -220,13 +272,56 @@ body.lc-aberto{overflow:hidden}
       <button class="btn-refresh" id="btn-refresh" title="Recarrega a versão mais recente do painel">
         <span class="ic">↻</span> Atualizar
       </button>
+      <button class="btn-tema" id="btn-tema" type="button" title="Trocar entre tela escura e clara" aria-label="Trocar tema">🌙</button>
       <a class="btn-refresh" href="/logout" title="Sair do painel" style="text-decoration:none">Sair</a>
     </div>
   </div>
 </header>
 
+<!-- ============ INÍCIO: o painel do dia (inspirado no Meu Caixa Organizado, 20/10/2026) ============ -->
+<div id="view-inicio">
+<section class="ini-hero">
+  <div><h2>Olá, Victor! 👋</h2><p>Veja como está a loja hoje.</p></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="ini-mes" id="ini-mes">…</span>
+    <button class="lc-btn" type="button" data-lc="inicio">＋ Lançar</button></div>
+</section>
+<section class="ini-cards" id="ini-cards"><div class="ini-card"><div class="sub">carregando…</div></div></section>
+<section class="card">
+  <div class="eyebrow">Movimentações do mês</div>
+  <h2>Quanto entrou e quanto saiu, dia a dia</h2>
+  <div class="ini-legend"><span><i style="background:var(--series-1)"></i>Entradas (vendas)</span><span><i style="background:var(--series-2)"></i>Saídas (o que foi pago)</span></div>
+  <div class="ini-chart" id="ini-mov"><div class="ini-tip" id="ini-tip1"></div></div>
+  <p class="note" id="ini-nota-mov"></p>
+</section>
+<div class="grid2">
+  <section class="card">
+    <div class="eyebrow">Sobrou no mês</div>
+    <h2>Entradas menos saídas, somando dia a dia</h2>
+    <div class="ini-chart" id="ini-sobra"><div class="ini-tip" id="ini-tip2"></div></div>
+    <details style="margin-top:8px"><summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--accent)">ver os números dia a dia</summary><div class="tblwrap tall" id="ini-tabela"></div></details>
+  </section>
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div><div class="eyebrow">Últimos lançamentos</div><h2>O que foi lançado por último</h2></div>
+      <button class="ini-link" type="button" data-lc="lista">ver todos →</button></div>
+    <div id="ini-lanc" style="margin-top:6px"><p class="note">carregando…</p></div>
+  </section>
+</div>
+<div class="grid2">
+  <section class="card">
+    <div class="eyebrow">Contas</div>
+    <h2>O que falta pagar</h2>
+    <div id="ini-contas" style="margin-top:6px"><p class="note">carregando…</p></div>
+  </section>
+  <section class="card">
+    <div class="eyebrow">Gelo do freezer · consignado</div>
+    <h2>Crédito de gelo do mês</h2>
+    <div id="ini-gelo" style="margin-top:6px"><p class="note">carregando…</p></div>
+  </section>
+</div>
+</div><!-- /view-inicio -->
+
 <!-- ============ VISÃO LOJA (balcão) ============ -->
-<div id="view-loja">
+<div id="view-loja" hidden>
 <div id="live-wrap"></div>
 <section class="kpis" id="kpis"></section>
 
@@ -668,6 +763,21 @@ body.lc-aberto{overflow:hidden}
   <span class="stamp" id="d-notas-stamp"></span>
 </section>
 </div><!-- /view-delivery -->
+
+<!-- ============ MENU DE BAIXO (só no celular) ============ -->
+<nav class="nav-baixo" id="nav-baixo" aria-label="Menu">
+  <button data-aba="inicio" class="on"><span class="ic">🏠</span>Início</button>
+  <button data-aba="loja"><span class="ic">🏪</span>Loja</button>
+  <button class="nb-lancar" id="nb-lancar" aria-label="Lançar">＋</button>
+  <button data-aba="contas"><span class="ic">🧾</span>Contas</button>
+  <button id="nb-mais" aria-haspopup="true" aria-expanded="false"><span class="ic">☰</span>Mais</button>
+</nav>
+<div class="nav-mais" id="nav-mais" role="menu">
+  <button data-aba="acomp" role="menuitem">📊 Acompanhamento</button>
+  <button data-aba="estoque" role="menuitem">📦 Estoque</button>
+  <button data-aba="financeiro" role="menuitem">💰 Financeiro</button>
+  <button data-aba="delivery" role="menuitem">🛵 Delivery</button>
+</div>
 
 <!-- ============ CENTRAL DE LANÇAMENTOS (aparece em todas as abas) ============ -->
 <button id="lc-fab" class="lc-fab" aria-haspopup="dialog" title="Lançar saída, entrada, mover dinheiro ou conferir o extrato">＋ Lançar</button>
@@ -1419,20 +1529,35 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
 // ============ TOGGLE LOJA/DELIVERY + BOTÃO ATUALIZAR ============
 (function(){
-  const VIEWS={loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',financeiro:'view-financeiro',delivery:'view-delivery'};
-  const TABS={loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',contas:'tab-contas',financeiro:'tab-financeiro',delivery:'tab-deliv'};
+  const VIEWS={inicio:'view-inicio',loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',financeiro:'view-financeiro',delivery:'view-delivery'};
+  const TABS={inicio:'tab-inicio',loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',contas:'tab-contas',financeiro:'tab-financeiro',delivery:'tab-deliv'};
   function sel(which){
-    if(!VIEWS[which]) which='loja';
+    if(!VIEWS[which]) which='inicio';
     for(const k in VIEWS){
       const v=document.getElementById(VIEWS[k]), t=document.getElementById(TABS[k]);
       if(v) v.hidden=(k!==which);
       if(t){ t.classList.toggle('on',k===which); t.setAttribute('aria-selected',k===which); }
     }
     try{history.replaceState(null,'','#'+which);}catch(e){}
+    document.querySelectorAll('#nav-baixo [data-aba]').forEach(b=>b.classList.toggle('on',b.dataset.aba===which));
+    const nm=document.getElementById('nav-mais'); if(nm) nm.classList.remove('aberto');
+    if(which==='inicio'&&window.desenhaInicio) window.desenhaInicio();
     try{window.scrollTo(0,0);}catch(e){}
   }
   for(const k in TABS){ const t=document.getElementById(TABS[k]); if(t) t.addEventListener('click',()=>sel(k)); }
   const _h=(location.hash||'').replace('#',''); if(VIEWS[_h]) sel(_h);
+  window.selAba=sel;
+  // menu de baixo (celular)
+  document.querySelectorAll('[data-aba]').forEach(b=>b.addEventListener('click',()=>sel(b.dataset.aba)));
+  const nbm=document.getElementById('nb-mais'), nmm=document.getElementById('nav-mais');
+  if(nbm&&nmm) nbm.addEventListener('click',e=>{ e.stopPropagation(); const a=!nmm.classList.contains('aberto'); nmm.classList.toggle('aberto',a); nbm.setAttribute('aria-expanded',a); });
+  document.addEventListener('click',e=>{ if(nmm&&!e.target.closest('#nav-mais')) nmm.classList.remove('aberto'); });
+  // tema escuro/claro (fica guardado neste aparelho)
+  const bt=document.getElementById('btn-tema');
+  const pintaTema=()=>{ if(bt) bt.textContent=document.documentElement.dataset.theme==='light'?'🌙':'☀️'; };
+  pintaTema();
+  if(bt) bt.addEventListener('click',()=>{ const t=document.documentElement.dataset.theme==='light'?'dark':'light';
+    document.documentElement.dataset.theme=t; try{localStorage.setItem('tema',t);}catch(e){} pintaTema(); });
 
   // O botão agora manda o PRÓPRIO SERVIDOR refazer as contas dos gráficos direto do
   // sistema (antes só recarregava a página e dependia de eu gerar no Mac).
@@ -2382,6 +2507,144 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ b.disabled=false; b.textContent='Guardar saldo'; msg.innerHTML='<span style="color:var(--crit)">❌ sem conexão</span>'; });
     });
   })();
+
+  /* ---------- INÍCIO: o painel do dia (fase 2, 20/10/2026) ---------- */
+  const INI={dados:null, como:null};
+  const MESES_NOME=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const nomeMes=m=>MESES_NOME[+m.slice(5,7)-1]||m;
+  const moedaCurta=v=>{ const a=Math.abs(v); return (v<0?'−':'')+(a>=1000?(a/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k':fmt0(a)); };
+  function varPct(atual,antes){ if(!antes) return null; return Math.round((atual/antes-1)*100); }
+  function barraTopo(x,y,w,y0){ const h=y0-y; if(h<=0) return ''; const r=Math.min(4,w/2,h);
+    return '<path d="M'+x+','+y0+' V'+(y+r)+' Q'+x+','+y+' '+(x+r)+','+y+' H'+(x+w-r)+' Q'+(x+w)+','+y+' '+(x+w)+','+(y+r)+' V'+y0+' Z"/>'; }
+  function desenhaMov(){
+    const d=INI.dados, box=g('ini-mov'), tip=g('ini-tip1'); if(!d||!box) return;
+    box.querySelectorAll('svg').forEach(x=>x.remove());
+    const dias=d.dias||[], n=Math.max(dias.length,1);
+    const W=Math.max(box.clientWidth||900,320), H=230, padL=46, padB=24, padT=12;
+    const max=Math.max(...dias.map(x=>Math.max(x.entradas,x.saidas)),1000);
+    const y=v=>padT+(H-padT-padB)*(1-v/max), y0=y(0), gw=(W-padL-6)/n;
+    const bw=Math.max(Math.min((gw-6)/2,16),2);
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="Entradas e saídas por dia do mês">';
+    [0,max/2,max].forEach(v=>{ svg+='<line x1="'+padL+'" x2="'+W+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1"/>'+
+      '<text x="'+(padL-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+moedaCurta(v)+'</text>'; });
+    let barras1='', barras2='', alvos='', rot='';
+    dias.forEach((x,i)=>{
+      const gx=padL+i*gw+(gw-(2*bw+2))/2;
+      barras1+=barraTopo(gx,y(x.entradas),bw,y0); barras2+=barraTopo(gx+bw+2,y(x.saidas),bw,y0);
+      alvos+='<rect data-i="'+i+'" x="'+(padL+i*gw)+'" y="'+padT+'" width="'+gw+'" height="'+(H-padT-padB)+'" fill="transparent"/>';
+      const ehHoje=x.data===d.hoje;
+      if(i%5===0||ehHoje) rot+='<text x="'+(padL+i*gw+gw/2)+'" y="'+(H-7)+'" text-anchor="middle" font-size="10" fill="var(--muted)"'+(ehHoje?' font-weight="700"':'')+'>'+(ehHoje?'hoje':dbr(x.data))+'</text>';
+    });
+    svg+='<g fill="var(--series-1)">'+barras1+'</g><g fill="var(--series-2)">'+barras2+'</g><g>'+alvos+'</g>'+rot+'</svg>';
+    box.insertAdjacentHTML('beforeend',svg);
+    box.querySelectorAll('rect[data-i]').forEach(r=>{
+      const show=e=>{ const x=dias[+r.dataset.i], s=x.entradas-x.saidas;
+        tip.innerHTML='<b>'+dbr(x.data)+(x.data===d.hoje?' (hoje, até agora)':'')+'</b><br>Entradas R$ '+fmt(x.entradas)+'<br>Saídas R$ '+fmt(x.saidas)+'<br>No dia: '+(s>=0?'+':'−')+'R$ '+fmt(Math.abs(s));
+        tip.style.display='block'; const bb=box.getBoundingClientRect();
+        tip.style.left=Math.min(Math.max(e.clientX-bb.left+12,0),bb.width-190)+'px'; tip.style.top=Math.max(e.clientY-bb.top-70,0)+'px'; };
+      r.addEventListener('mousemove',show); r.addEventListener('click',show); r.addEventListener('mouseleave',()=>tip.style.display='none');
+    });
+  }
+  function desenhaSobra(){
+    const d=INI.dados, box=g('ini-sobra'), tip=g('ini-tip2'); if(!d||!box) return;
+    box.querySelectorAll('svg').forEach(x=>x.remove());
+    const dias=d.dias||[]; if(!dias.length) return;
+    let acc=0; const cum=dias.map(x=>(acc+=x.entradas-x.saidas));
+    const W=Math.max(box.clientWidth||600,300), H=250, padL=50, padB=24, padT=22;
+    const lo=Math.min(0,...cum), hi=Math.max(0,...cum), span=(hi-lo)||1;
+    const y=v=>padT+(H-padT-padB)*(1-(v-lo)/span), n=dias.length, x=i=>padL+(n<2?0:i*(W-padL-10)/(n-1));
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="Quanto sobrou no mês, somando dia a dia">';
+    [hi,lo].forEach(v=>{ svg+='<text x="'+(padL-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+moedaCurta(v)+'</text>'; });
+    svg+='<line x1="'+padL+'" x2="'+W+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 4" opacity=".7"/>'+
+      '<text x="'+(padL+4)+'" y="'+(y(0)-5)+'" text-anchor="start" font-size="10" fill="var(--muted)">zero</text>';
+    svg+='<polyline fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="'+cum.map((v,i)=>x(i)+','+y(v)).join(' ')+'"/>';
+    const li=n-1;
+    svg+='<circle cx="'+x(li)+'" cy="'+y(cum[li])+'" r="4.5" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/>';
+    svg+='<text x="'+(x(li)-8)+'" y="'+(y(cum[li])+(cum[li]>=0?-10:18))+'" text-anchor="end" font-size="11" font-weight="700" fill="var(--ink)">'+(cum[li]>=0?'+':'−')+'R$ '+fmt(Math.abs(cum[li]))+'</text>';
+    svg+='<line id="ini-cross" x1="0" x2="0" y1="'+padT+'" y2="'+(H-padB)+'" stroke="var(--muted)" stroke-width="1" opacity="0"/><circle id="ini-crossp" r="5" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2" opacity="0"/>';
+    svg+='<rect id="ini-hit" x="'+padL+'" y="0" width="'+(W-padL)+'" height="'+H+'" fill="transparent"/>';
+    [0,Math.floor(li/2),li].forEach((i,k)=>{ svg+='<text x="'+x(i)+'" y="'+(H-7)+'" text-anchor="'+(['start','middle','end'][k])+'" font-size="10" fill="var(--muted)">'+dbr(dias[i].data)+'</text>'; });
+    svg+='</svg>';
+    box.insertAdjacentHTML('beforeend',svg);
+    const sv=box.querySelector('svg'), hit=sv.querySelector('#ini-hit'), cr=sv.querySelector('#ini-cross'), cp=sv.querySelector('#ini-crossp');
+    const move=e=>{ const bb=sv.getBoundingClientRect(), px=(e.clientX-bb.left)*W/bb.width;
+      const i=Math.max(0,Math.min(li,Math.round((px-padL)/((W-padL-10)/Math.max(li,1)))));
+      cr.setAttribute('x1',x(i)); cr.setAttribute('x2',x(i)); cr.setAttribute('opacity','.6');
+      cp.setAttribute('cx',x(i)); cp.setAttribute('cy',y(cum[i])); cp.setAttribute('opacity','1');
+      tip.innerHTML='<b>até '+dbr(dias[i].data)+'</b><br>sobrou '+(cum[i]>=0?'+':'−')+'R$ '+fmt(Math.abs(cum[i]));
+      tip.style.display='block'; const b2=box.getBoundingClientRect();
+      tip.style.left=Math.min(Math.max(e.clientX-b2.left+12,0),b2.width-150)+'px'; tip.style.top='4px'; };
+    hit.addEventListener('mousemove',move); hit.addEventListener('click',move);
+    hit.addEventListener('mouseleave',()=>{ tip.style.display='none'; cr.setAttribute('opacity','0'); cp.setAttribute('opacity','0'); });
+    const tb=g('ini-tabela');
+    if(tb) tb.innerHTML='<table><thead><tr><th>Dia</th><th class="num">Entradas</th><th class="num">Saídas</th><th class="num">No dia</th><th class="num">Sobrou até aqui</th></tr></thead><tbody>'+
+      dias.map((z,i)=>{ const s0=z.entradas-z.saidas; return '<tr><td>'+dbr(z.data)+'</td><td class="num">R$ '+fmt(z.entradas)+'</td><td class="num">R$ '+fmt(z.saidas)+'</td>'+
+        '<td class="num" style="color:'+(s0>=0?'var(--good)':'var(--crit)')+'">'+(s0>=0?'+':'−')+fmt(Math.abs(s0))+'</td><td class="num">'+(cum[i]>=0?'+':'−')+fmt(Math.abs(cum[i]))+'</td></tr>'; }).join('')+'</tbody></table>';
+  }
+  function pintaCards(){
+    const d=INI.dados, c=INI.como, box=g('ini-cards'); if(!d||!box) return;
+    const a=d.atual, mp=d.ant_mesmo_periodo, nm=nomeMes(d.mes_ant);
+    const delta=(at,an,ruimSubir)=>{ const v=varPct(at,an); if(v===null) return '';
+      const sobe=v>=0, bom=ruimSubir?!sobe:sobe;
+      return '<span class="'+(bom?'ini-up':'ini-down')+'">'+(sobe?'▲ ':'▼ ')+Math.abs(v)+'%</span> vs mesmo período de '+nm; };
+    const subE=mp?delta(a.entradas,mp.entradas,false):(d.ant_total_vendas?nm+' inteiro: R$ '+fmt(d.ant_total_vendas):'');
+    const subS=mp?delta(a.saidas,mp.saidas,true):'despesa + mercadoria já pagas';
+    const card=(cor,lbl,val,sub,corVal)=>'<div class="ini-card"><div class="lbl">'+(cor?'<span class="dot" style="background:'+cor+'"></span>':'')+lbl+'</div>'+
+      '<div class="val"'+(corVal?' style="color:'+corVal+'"':'')+'>'+val+'</div><div class="sub">'+sub+'</div></div>';
+    const dh=c?card('','💵 Dinheiro hoje','R$ '+fmt(c.total),(c.falta_atrasado>0?'<span class="ini-down">faltam R$ '+fmt(c.falta_atrasado)+'</span> pro atrasado':'gaveta, reserva, sobra e bancos')):card('','💵 Dinheiro hoje','…','carregando');
+    box.innerHTML=card('var(--series-1)','Entradas do mês','R$ '+fmt(a.entradas),subE||'vendas do balcão e do delivery')+
+      card('var(--series-2)','Saídas do mês','R$ '+fmt(a.saidas),subS)+
+      card('','Sobrou no mês',(a.sobrou<0?'−':'')+'R$ '+fmt(Math.abs(a.sobrou)),'entradas − saídas'+(mp?' · em '+nm+' até hoje: '+(mp.sobrou<0?'−':'')+'R$ '+fmt(Math.abs(mp.sobrou)):''),a.sobrou<0?'var(--crit)':'var(--good)')+dh;
+    const mes=g('ini-mes'); if(mes) mes.textContent=nomeMes(d.mes)+' de '+d.mes.slice(0,4);
+    const nt=g('ini-nota-mov');
+    if(nt) nt.innerHTML='Saída é o que já foi <b>pago</b> no dia (despesa + mercadoria). O gelo do freezer entra uma vez só, no pagamento de R$ 300; o gelo que chega vai descontando do crédito e não é gasto novo.'+
+      (d.foto&&d.foto<d.hoje?' Vendas até '+dbr(d.foto)+' vêm da foto diária; dali em diante, ao vivo.':'');
+  }
+  function pintaContas(){
+    const c=INI.como, box=g('ini-contas'); if(!c||!box) return;
+    const prox=Math.max(0,(c.d30||0)-(c.atrasado||0));
+    box.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+      '<div class="ini-card" style="flex:1 1 140px"><div class="lbl">⚠️ Atrasado</div><div class="val" style="font-size:1.2rem;color:'+(c.atrasado>0?'var(--crit)':'var(--muted)')+'">R$ '+fmt(c.atrasado)+'</div></div>'+
+      '<div class="ini-card" style="flex:1 1 140px"><div class="lbl">Próximos 30 dias</div><div class="val" style="font-size:1.2rem">R$ '+fmt(prox)+'</div></div></div>'+
+      '<p class="note" style="margin-top:10px;color:var(--ink)">'+((c.falta_atrasado||0)>0?'O dinheiro de hoje não cobre o atrasado: <b class="ini-down">faltam R$ '+fmt(c.falta_atrasado)+'</b>.'
+        :(c.falta_em?'O dinheiro de hoje paga as contas até <b>'+dbr(c.cobre_ate)+'</b>.':'O dinheiro de hoje paga tudo que vence em 90 dias.'))+'</p>'+
+      '<div class="lc-acts" style="margin-top:8px"><button class="lc-btn mini" type="button" id="ini-ir-contas">Abrir o mapa de contas</button><button class="lc-btn ghost mini" type="button" id="ini-ir-loja">Ver o dinheiro de hoje</button></div>';
+    g('ini-ir-contas').addEventListener('click',()=>window.selAba&&window.selAba('contas'));
+    g('ini-ir-loja').addEventListener('click',()=>{ window.selAba&&window.selAba('loja'); const cc=g('card-como'); if(cc) cc.scrollIntoView({behavior:'smooth'}); });
+  }
+  function pintaGelo(gl){
+    const box=g('ini-gelo'); if(!box) return;
+    if(!gl){ box.innerHTML='<p class="note">Não consegui ler o crédito do gelo agora.</p>'; return; }
+    const cred=gl.credito||0, usado=gl.usado||0, falta=+(cred-usado).toFixed(2), pct=cred>0?Math.min(100,usado/cred*100):0;
+    box.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.86rem">'+
+        '<span>Pago no mês: <b>R$ '+fmt(cred)+'</b></span><span>Já chegou: <b>R$ '+fmt(usado)+'</b></span>'+
+        '<span>'+(falta>=0?'Falta usar: <b class="ini-up">R$ '+fmt(falta)+'</b>':'Passou: <b class="ini-down">R$ '+fmt(-falta)+'</b>')+'</span></div>'+
+      '<div class="ini-bar" role="img" aria-label="'+Math.round(pct)+'% do crédito usado"><div style="width:'+pct+'%"></div></div>'+
+      '<p class="note" style="margin-top:8px">'+(cred?'Pagamos R$ '+fmt(gl.mensal||300)+' por mês ao freezer consignado e cada entrega de gelo em saco desconta daqui: não é conta nova.'
+        :'O pagamento do freezer deste mês ainda não foi lançado.')+'</p>'+
+      '<div class="lc-acts" style="margin-top:8px"><button class="lc-btn mini" type="button" id="ini-gelo-ir">🧊 Chegou gelo</button></div>';
+    g('ini-gelo-ir').addEventListener('click',()=>{ window.selAba&&window.selAba('estoque'); setTimeout(()=>{ const el=g('gl-prod'); if(el) el.closest('section').scrollIntoView({behavior:'smooth'}); },150); });
+  }
+  function pintaLanc(L){
+    const box=g('ini-lanc'); if(!box) return;
+    const its=(L&&L.itens||[]).slice(0,8);
+    if(!its.length){ box.innerHTML='<p class="note">Nada lançado neste mês ainda.</p>'; return; }
+    const pill={Entrada:'pok',Saída:'pcrit','A pagar':'pwarn',Movimento:'pB'};
+    box.innerHTML=its.map(x=>'<div class="ini-lanc"><div style="min-width:0"><span class="pill '+(pill[x.tipo]||'pB')+'">'+esc(x.tipo)+'</span> <b>'+esc(x.cat)+'</b>'+
+      '<div class="d">'+(x.data?dbr(x.data):'')+(x.desc&&x.desc!==x.cat?' · '+esc(x.desc).slice(0,60):'')+' · '+esc(x.forma)+'</div></div>'+
+      '<div class="v">R$ '+fmt(x.valor)+'</div></div>').join('');
+  }
+  window.desenhaInicio=()=>{ desenhaMov(); desenhaSobra(); };
+  function loadInicio(f){
+    const q=qf(f);
+    const p1=fetch('/api/inicio'+q).then(r=>r.json()).then(d=>{ INI.dados=d; pintaCards(); desenhaMov(); desenhaSobra(); }).catch(()=>{ const b=g('ini-cards'); if(b) b.innerHTML='<div class="ini-card"><div class="sub">Não consegui ler o mês agora. Clique em Atualizar daqui a pouco.</div></div>'; });
+    const p2=fetch('/api/como-esta'+q).then(r=>r.json()).then(c=>{ INI.como=c; pintaCards(); pintaContas(); }).catch(()=>{});
+    const p3=fetch('/api/gelo'+q).then(r=>r.ok?r.json():null).then(pintaGelo).catch(()=>pintaGelo(null));
+    const p4=fetch('/api/lancamentos?mes='+hojeBR().slice(0,7)+(f?'&fresh=1':'')).then(r=>r.json()).then(pintaLanc).catch(()=>pintaLanc(null));
+    return Promise.all([p1,p2,p3,p4]);
+  }
+  let _iniTimer=null;
+  window.addEventListener('resize',()=>{ clearTimeout(_iniTimer); _iniTimer=setTimeout(()=>{ if(!g('view-inicio').hidden) window.desenhaInicio(); },250); });
   /* ================= CENTRAL DE LANÇAMENTOS (botão "+ Lançar", em todas as abas) =================
      Um lugar só pra lançar tudo (pedido do dono em 20/10/2026, inspirado na planilha "Meu Caixa
      Organizado"). As gravações são as rotas de sempre: gasto, baixa, saque, troca, fiado, reserva,
@@ -2411,11 +2674,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     // depois de lançar, recarrega SÓ os quadros que aquele lançamento mexe, e de uma vez só
     // (vários lançamentos seguidos viram uma recarga): cada quadro relê o sistema inteiro e,
     // tudo junto, o GestãoClick chegou a recusar leitura no teste.
-    const QUADROS={loja:loadComoEsta, mapa:loadMapa, gasto:loadGastosMes, gaveta:loadFechHoje, dias:loadFechamentos,
+    const QUADROS={inicio:loadInicio, loja:loadComoEsta, mapa:loadMapa, gasto:loadGastosMes, gaveta:loadFechHoje, dias:loadFechamentos,
                    reserva:loadReserva, sobra:loadSobra, bolso:loadRecursoProprio, saque:loadSaqueResumo};
     let _fila=new Set(), _timer=null;
     function recarrega(quais){
-      (quais||Object.keys(QUADROS)).forEach(k=>_fila.add(k)); _fila.add('loja');
+      (quais||Object.keys(QUADROS)).forEach(k=>_fila.add(k)); _fila.add('loja'); _fila.add('inicio');
       clearTimeout(_timer);
       _timer=setTimeout(()=>{ const f=[..._fila]; _fila=new Set(); f.forEach(k=>{ try{ QUADROS[k](true); }catch(e){} }); },1500);
     }
@@ -2453,6 +2716,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     g('lc-fechar').addEventListener('click',fecha);
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!lc.hidden) fecha(); });
     fab.addEventListener('click',()=>abre('inicio'));
+    const nbl=g('nb-lancar'); if(nbl) nbl.addEventListener('click',()=>abre('inicio'));
     document.querySelectorAll('[data-lc]').forEach(b=>b.addEventListener('click',()=>{ const [t,a]=b.dataset.lc.split(':'); abre(t,a); }));
     window.abreLancar=abre;
 
@@ -2991,11 +3255,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   }
   vigiaGraficos();
 
-  loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo();
+  loadInicio(); loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin'); vigiaGraficos();
-      Promise.all([loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadInicio(true),loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados ✓'); }); });
   }
 })();
