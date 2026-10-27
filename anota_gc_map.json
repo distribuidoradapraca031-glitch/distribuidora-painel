@@ -5548,5 +5548,56 @@
   "score": 1.0,
   "sugestao": "COPAO WHISKY BALLANTINES SUNSHINE",
   "manual": true
+ },
+ "CERVEJA MICHELOB ULTRA LATA 473ML": {
+  "anota_title": "Cerveja Michelob Ultra Lata 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "99998331",
+  "gc_nome": "MICHELOB ULTRA LT 473 ML",
+  "candidatos": [
+   [
+    1.0,
+    "MICHELOB ULTRA LT 473 ML",
+    "99998331"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MICHELOB ULTRA LT 473 ML",
+  "manual": true
+ },
+ "MICHELOB ULTRA LONG NECK 330ML": {
+  "anota_title": "Michelob Ultra Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "99998332",
+  "gc_nome": "MICHELOB ULTRA LONG NECK 330 ML",
+  "candidatos": [
+   [
+    1.0,
+    "MICHELOB ULTRA LONG NECK 330 ML",
+    "99998332"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MICHELOB ULTRA LONG NECK 330 ML",
+  "manual": true
+ },
+ "SKOL BEATS PINK LEMONADE 296ML": {
+  "anota_title": "Skol Beats Pink Lemonade 296ml",
+  "categoria": "Drink's",
+  "gc_id": "99998401",
+  "gc_nome": "SKOL BEATS PINK LEMONADE LATA 269 ML",
+  "candidatos": [
+   [
+    1.0,
+    "SKOL BEATS PINK LEMONADE LATA 269 ML",
+    "99998401"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SKOL BEATS PINK LEMONADE LATA 269 ML",
+  "manual": true
  }
 }
