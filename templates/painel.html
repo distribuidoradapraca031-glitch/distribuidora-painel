@@ -197,6 +197,11 @@ body{padding-bottom:84px}
   background:var(--surface);color:var(--ink);max-width:100%}
 .lc-sec{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);font-weight:700;margin:18px 0 2px}
 .lc-aviso{font-size:.76rem;color:var(--warn);margin-top:3px}
+.ni-mais{flex:1 1 100%;min-width:0}
+.ni-contas{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;margin-top:2px}
+.ni-contas .m{grid-column:1/-1}
+.ni-contas select{width:100%;min-width:0}
+.ni-outros{font-size:.74rem;color:var(--muted);margin-top:4px}
 body.lc-aberto{overflow:hidden}
 .lc-box .note{font-size:.8rem;color:var(--muted);margin:4px 0 0}
 .toast{bottom:86px;z-index:50}   /* acima do botão + Lançar e da janela da central */
@@ -2648,7 +2653,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const c=INI.como, box=g('ini-avisos'); if(!box) return;
     const a=c&&c.avisos;
     const ven=(a&&a.vencendo)||[], atr=(a&&a.atrasadas)||[], tet=(a&&a.tetos)||[];
-    if(!ven.length&&!atr.length&&!tet.length){ box.hidden=true; box.innerHTML=''; return; }
+    const ni=(c&&c.nao_ident)||{n:0, total:0};      // gasto do banco que ninguém lançou
+    if(!ven.length&&!atr.length&&!tet.length&&!ni.n){ box.hidden=true; box.innerHTML=''; return; }
     const hoje=hojeBR(), [y,m,d]=hoje.split('-').map(Number);
     const amanha=new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
     const SEM=['dom','seg','ter','qua','qui','sex','sáb'];
@@ -2668,6 +2674,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         atr.slice(3).map(x=>linha(x,'venceu '+dbr(x.venc),'var(--crit)')).join('')+'</details>';
       h+='</div>';
     }
+    if(ni.n) h+='<div class="av-bloco"><div class="av-tit">❓ '+ni.n+' gasto'+(ni.n>1?'s':'')+' do banco sem explicação, somando R$ '+fmt(ni.total)+'</div>'+
+      '<div class="av-row" style="display:block"><span class="q" style="color:var(--muted)">'+(ni.n>1?'Saíram':'Saiu')+' da conta e não '+(ni.n>1?'casaram':'casou')+' com nenhuma nota, compra ou conta lançada.</span></div></div>';
     if(tet.length){
       h+='<div class="av-bloco"><div class="av-tit">🎯 Teto do mês</div>'+tet.map(t=>{
         const passou=t.nivel==='passou', cor=passou?'var(--crit)':'var(--warn)';
@@ -2679,9 +2687,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }
     h+='<div class="lc-acts" style="margin-top:10px">'+((ven.length||atr.length)?'<button class="lc-btn mini" type="button" id="av-pagar">Pagar uma conta</button>'+
       '<button class="lc-btn ghost mini" type="button" id="av-mapa">Abrir o mapa de contas</button>':'')+
+      (ni.n?'<button class="lc-btn mini" type="button" id="av-ni">Resolver o Não identificado</button>':'')+
       (tet.length?'<button class="lc-btn ghost mini" type="button" id="av-cats">Ver os tetos</button>':'')+'</div>';
     box.innerHTML=h; box.hidden=false;
-    const b1=g('av-pagar'), b2=g('av-mapa'), b3=g('av-cats');
+    const b1=g('av-pagar'), b2=g('av-mapa'), b3=g('av-cats'), b4=g('av-ni');
+    if(b4) b4.addEventListener('click',()=>window.abreLancar&&window.abreLancar('naoident'));
     if(b1) b1.addEventListener('click',()=>window.abreLancar&&window.abreLancar('saida','conta'));
     if(b2) b2.addEventListener('click',()=>window.selAba&&window.selAba('contas'));
     if(b3) b3.addEventListener('click',()=>window.abreLancar&&window.abreLancar('categorias'));
@@ -2836,7 +2846,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<button class="lc-big entrada" data-t="entrada"><span class="ic">↑</span><span><b>Entrada</b><span class="s">dinheiro que entrou e não é venda</span></span></button></div>'+
         '<div class="lc-tiles">'+
         '<button class="lc-tile" data-t="mover">🔁<b>Mover dinheiro</b><span>entre gaveta, reserva, sobra e banco</span></button>'+
-        '<button class="lc-tile" data-t="extrato">🏦<b>Conferir extrato</b><span>Itaú ou Nubank: o que falta lançar</span></button>'+
+        '<button class="lc-tile" data-t="extrato">🏦<b>Conferir extrato</b><span>Itaú ou Nubank: concilia sozinho</span></button>'+
+        '<button class="lc-tile" data-t="naoident">❓<b>Não identificado</b><span>gasto do banco que ninguém lançou</span></button>'+
         '<button class="lc-tile" data-t="lista">📋<b>Meus lançamentos</b><span>tudo que foi lançado no mês</span></button>'+
         '<button class="lc-tile" data-t="categorias">🏷️<b>Minhas categorias</b><span>criar, renomear ou esconder</span></button></div>';
       body.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.t)));
@@ -3015,7 +3026,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
             if(o) sel.value=o.value; }
         }
         const sec=sel?sel.closest('section'):null; if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
-        if(pre) toast('Preenchi o dia'+(pre.forma?' e o pagamento':'')+'. Escolha os produtos e confira o fornecedor.');
+        if(pre) toast('Preenchi o dia'+(pre.forma?' e o pagamento':'')+'. Escolha os produtos e confira o fornecedor.'+(pre.aviso?' '+esc(pre.aviso):''));
       },200);
     }
     function painelCompra(p){
@@ -3155,63 +3166,75 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       });
     };
 
-    /* ---- CONFERIR EXTRATO (Itaú / Nubank) ---- */
-    const IGN_KEY='lc_extrato_ignorados';
-    const ignLoad=()=>{ try{ return new Set(JSON.parse(localStorage.getItem(IGN_KEY))||[]); }catch(e){ return new Set(); } };
-    const ignSave=s=>{ try{ localStorage.setItem(IGN_KEY,JSON.stringify([...s].slice(-2000))); }catch(e){} };
+    /* ---- CONFERIR EXTRATO (Itaú / Nubank) ----
+       Desde 28/10/2026 o extrato concilia SOZINHO (pedido do dono): o que já está lançado fica,
+       conta aberta igual leva baixa, PIX pro Victor ou pro Igor vira retirada e o resto vai pro
+       Não identificado. O que foi feito sozinho dá pra desfazer aqui mesmo. */
     TELAS.extrato=()=>{
-      cab('Conferir extrato','o que saiu do banco e ainda não está lançado');
+      cab('Conferir extrato','o banco conciliado com o que está lançado');
       body.innerHTML='<div class="lc-form">'+
         '<label>Banco<select id="lc-banco">'+opts([['itau','Itaú'],['nubank','Nubank']],'escolha o banco…')+'</select></label>'+
         '<label class="lg">Arquivo do extrato<input id="lc-arq" type="file" accept=".ofx,.OFX,.csv,.CSV,.txt"></label></div>'+
-        '<p class="note">No app do banco: <b>Extrato → exportar → formato OFX</b> (se não tiver OFX, CSV serve). Um mês por vez. <b>Nada é gravado agora</b>: eu só mostro, e cada linha entra quando você confirmar.</p>'+
-        '<div class="lc-acts"><button class="lc-btn" id="lc-ler">Ler extrato</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div><div id="lc-ext"></div>';
+        '<p class="note">No app do banco: <b>Extrato → exportar → formato OFX</b> (se não tiver OFX, CSV serve). Um mês por vez. '+
+        'Eu <b>concilio sozinho</b>: dou baixa na conta aberta que bate, lanço o PIX pra você ou pro Igor como retirada, e o que eu não souber o que é vai pro <b>Não identificado</b>. Ler o mesmo extrato de novo não lança nada duas vezes.</p>'+
+        '<div class="lc-acts"><button class="lc-btn" id="lc-ler">Ler e conciliar</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div><div id="lc-ext"></div>';
       g('lc-ler').addEventListener('click',()=>{
         const banco=val('lc-banco'), arq=(g('lc-arq').files||[])[0], msg=g('lc-msg'), b=g('lc-ler');
         if(!banco){ msg.innerHTML=ER('Escolha o banco.'); return; }
         if(!arq){ msg.innerHTML=ER('Escolha o arquivo do extrato.'); return; }
         if(arq.size>3000000){ msg.innerHTML=ER('Arquivo grande demais: baixe um mês por vez.'); return; }
-        trava(b,'lendo…'); msg.innerHTML='';
+        trava(b,'conciliando…'); msg.innerHTML='<span class="note">lendo o extrato e conferindo com o sistema…</span>';
+        // extrato grande vai em partes (o servidor grava no máximo 25 por vez). A última parte já
+        // enxerga como "lançado" o que as primeiras fizeram, então guardo o que cada uma fez.
+        const feitos={};
+        const roda=(txt,n)=>post('/api/extrato/ler',{banco, arquivo:txt}).then(d=>{
+          if(!d.ok) return d;
+          (d.saidas||[]).forEach(x=>{ if(['baixa','retirada','ni','resolvido'].includes(x.status)) feitos[x.id]=x; });
+          if(d.continua&&n<8){ msg.innerHTML='<span class="note">conciliando… (parte '+(n+1)+')</span>'; return roda(txt,n+1); }
+          d.saidas=(d.saidas||[]).map(x=>feitos[x.id]&&x.status!=='erro'?feitos[x.id]:x);
+          return d;
+        });
         arq.arrayBuffer().then(buf=>{
           let txt; try{ txt=new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ txt=new TextDecoder('windows-1252').decode(buf); }
-          return post('/api/extrato/ler',{banco, arquivo:txt});
-        }).then(d=>{ solta(b); if(!d.ok){ msg.innerHTML=ER(esc(d.erro||'não consegui ler')); return; } pintaExtrato(d); })
-          .catch(()=>{ solta(b); msg.innerHTML=ER('Não consegui ler esse arquivo agora. Tente de novo.'); });
+          return roda(txt,1);
+        }).then(d=>{ solta(b); if(!d.ok){ msg.innerHTML=ER(esc(d.erro||'não consegui ler')); return; } msg.innerHTML=''; pintaExtrato(d); recarrega(['mapa','gasto']); })
+          .catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Leia o extrato de novo: o que já entrou não entra duas vezes.'); });
       });
     };
     function pintaExtrato(d){
-      const box=g('lc-ext'), ign=ignLoad(), NB=d.nome_banco;
-      const cont=d.contagem||{}, sai=d.saidas||[];
-      const falta=sai.filter(x=>(x.status==='falta'||x.status==='parecido')&&!ign.has(x.id));
-      const nIgn=sai.filter(x=>(x.status==='falta'||x.status==='parecido')&&ign.has(x.id)).length;
-      const abertas=sai.filter(x=>x.status==='aberta'), lanc=sai.filter(x=>x.status==='lancado');
+      const box=g('lc-ext'), NB=d.nome_banco, sai=d.saidas||[];
+      const por=(...sts)=>sai.filter(x=>sts.includes(x.status));
+      const lanc=por('lancado','resolvido'), baixas=por('baixa'), ret=por('retirada'), novos=por('ni'), pend=por('pendente'),
+            ign=por('ignorado'), fora=por('fora'), parou=por('fila','erro');
+      const s=n=>n>1?'s':'';
       let h='<div class="lc-prev">Extrato do <b>'+esc(NB)+'</b> de '+dbr(d.de)+' a '+dbr(d.ate)+': <b>'+sai.length+' saídas</b> (R$ '+fmt(d.total_saidas)+').<br>'+
-        '✅ <b>'+lanc.length+'</b> já lançadas · 🧾 <b>'+abertas.length+'</b> contas abertas pra dar baixa · ⚠️ <b>'+falta.length+'</b> faltam lançar'+(nIgn?' · '+nIgn+' que você mandou ignorar':'')+'.<br>'+
+        '✅ <b>'+lanc.length+'</b> já estava'+(lanc.length>1?'m':'')+' lançada'+s(lanc.length)+
+        (baixas.length?' · 🧾 <b>'+baixas.length+'</b> baixa'+s(baixas.length)+' dada'+s(baixas.length)+' agora':'')+
+        (ret.length?' · 👤 <b>'+ret.length+'</b> retirada'+s(ret.length)+' lançada'+s(ret.length):'')+
+        (fora.length?' · ↔️ <b>'+fora.length+'</b> não '+(fora.length>1?'são':'é')+' gasto':'')+
+        ' · ❓ <b>'+(novos.length+pend.length)+'</b> no Não identificado'+(pend.length?' ('+pend.length+' já estava'+(pend.length>1?'m':'')+' lá)':'')+'.<br>'+
         '<span class="note" style="margin:0">Entraram também '+(d.entradas.n||0)+' créditos (R$ '+fmt(d.entradas.total||0)+'): são vendas no PIX e na maquininha, que já entram pelas vendas. Não lancei nada disso.</span></div>';
+      if(d.erro||parou.length) h+='<div class="lc-aviso" style="margin-top:8px">⚠️ O sistema parou de responder no meio'+(d.erro?' ('+esc(d.erro)+')':'')+'. '+parou.length+' linha'+s(parou.length)+' ficou'+(parou.length>1?'aram':'')+' pra depois: leia o mesmo extrato de novo daqui a pouco. O que já entrou não entra duas vezes.</div>';
       const linha=(x,acoes,extra)=>'<div class="lc-row" data-id="'+x.id+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
-        '<div class="m">'+dbr(x.data)+' · '+esc(x.memo)+'</div>'+(extra||'')+'</div><div class="a">'+acoes+'</div></div>';
-      const acoesFalta=x=>x.mercadoria
-        ? '<span class="m">parece <b>mercadoria</b></span><button class="lc-btn mini ex-gc" type="button">Lançar no Gerar compra</button>'+
-          '<button class="lc-btn ghost mini ex-merc" type="button" title="entra como compra de mercadoria, mas NÃO mexe no estoque">Só o valor (sem estoque)</button>'+
-          '<button class="lc-btn ghost mini ex-naomerc" type="button">Não é mercadoria</button><button class="lc-btn ghost mini ex-ign" type="button">Ignorar</button>'
-        : '<select class="ex-cat" aria-label="Categoria"><option value="" '+(x.sugestao?'':'selected')+' disabled>categoria…</option>'+
-            CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option'+(c===x.sugestao?' selected':'')+'>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>'+
-          (x.sugestao?'<span class="pill pA" title="'+(x.por==='historico'?'você já lançou esse nome assim antes':'pela palavra no texto do banco')+'">sugestão</span>':'')+
-          '<button class="lc-btn good mini ex-lanc" type="button">Lançar</button><button class="lc-btn ghost mini ex-ehmerc" type="button">É mercadoria</button><button class="lc-btn ghost mini ex-ign" type="button">Ignorar</button>';
-      const avisoFalta=x=>(x.ignorar?'<div class="lc-aviso">Parece '+esc(x.ignorar)+'. Se for, clique em Ignorar.</div>':'')+
-        (x.status==='parecido'&&x.match?'<div class="lc-aviso">Tem um lançamento em dinheiro de R$ '+fmt(x.match.valor)+' no dia '+dbr(x.match.data)+' ('+esc(x.match.desc)+'). Se for o mesmo, clique em Ignorar.</div>':'');
-      h+='<div class="lc-sec">⚠️ Faltam lançar ('+falta.length+')</div>';
-      h+=falta.length?falta.map(x=>linha(x,acoesFalta(x),avisoFalta(x))).join(''):'<p class="note">Nada faltando. Tudo que saiu do banco já está lançado. ✓</p>';
-      if(abertas.length){
-        h+='<div class="lc-sec">🧾 Contas abertas no mapa: é só dar baixa ('+abertas.length+')</div>';
-        h+=abertas.map(x=>linha(x,'<button class="lc-btn good mini ex-baixa" type="button">Dar baixa nessa conta</button><button class="lc-btn ghost mini ex-naoe" type="button">Não é essa</button>',
-          '<div class="m" style="color:var(--ink)">conta aberta: <b>'+esc((x.match.cat?x.match.cat+' · ':'')+x.match.desc)+'</b>'+(x.match.fornecedor?' · '+esc(x.match.fornecedor):'')+' · vence '+dbr(x.match.venc)+' · R$ '+fmt(x.match.valor)+'</div>')).join('');
+        '<div class="m">'+dbr(x.data)+' · '+esc(x.memo)+'</div>'+(extra||'')+'</div><div class="a">'+(acoes||'')+'</div></div>';
+      const desf=(x,tipo,rot)=>x.pid?'<button class="lc-btn ghost mini ex-desf" data-tipo="'+tipo+'" type="button">'+rot+'</button>'
+                                    :'<span class="m">pra desfazer, use Meus lançamentos</span>';
+      if(baixas.length||ret.length){
+        h+='<div class="lc-sec">⚡ Feito agora, sozinho ('+(baixas.length+ret.length)+')</div>';
+        h+=baixas.map(x=>linha(x,desf(x,'baixa','Não é essa conta'),
+          '<div class="m" style="color:var(--ink)">🧾 baixa na conta <b>'+esc((x.match.cat?x.match.cat+' · ':'')+x.match.desc)+'</b>'+(x.match.fornecedor?' · '+esc(x.match.fornecedor):'')+' · vencia '+dbr(x.match.venc)+'</div>')).join('');
+        h+=ret.map(x=>linha(x,desf(x,'retirada','Não é retirada'),
+          '<div class="m" style="color:var(--ink)">👤 lançada como <b>'+esc(x.cat||'retirada')+'</b> (PIX '+esc(NB)+')</div>')).join('');
       }
-      if(lanc.length){
-        h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">✅ Já lançadas ('+lanc.length+')</summary>'+
-          lanc.map(x=>'<div class="lc-row"><div><div class="q">'+esc(x.quem)+' <span class="v">R$ '+fmt(x.valor)+'</span></div><div class="m">'+dbr(x.data)+' · lançado como: '+esc(x.match.desc)+' ('+esc(x.match.forma)+', '+dbr(x.match.data)+')</div></div></div>').join('')+'</details>';
-      }
-      if(nIgn) h+='<p class="note" style="margin-top:10px"><button class="lc-btn ghost mini" id="ex-desig" type="button">Mostrar as '+nIgn+' ignoradas de novo</button></p>';
+      const nNI=novos.length+pend.length;
+      h+='<div class="lc-sec">❓ Não identificado ('+nNI+')</div>'+(nNI
+        ? '<p class="note">'+(novos.length?'<b>'+novos.length+'</b> saída'+s(novos.length)+' desse extrato não '+(novos.length>1?'casaram':'casou')+' com nenhuma nota, compra, conta ou gasto lançado. ':'')+
+          'Lá você diz o que foi cada uma.</p><div class="lc-acts"><button class="lc-btn" type="button" id="ex-ni">Resolver o Não identificado</button></div>'
+        : '<p class="note">Nada sem explicação nesse extrato. ✓</p>');
+      const det=(tit,L,fn)=>L.length?'<details style="margin-top:12px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">'+tit+' ('+L.length+')</summary>'+L.map(fn).join('')+'</details>':'';
+      h+=det('↔️ Não são gasto',fora,x=>linha(x,'','<div class="m">'+esc(x.motivo||'')+'</div>'));
+      h+=det('✅ Já lançadas',lanc,x=>linha(x,'',x.match?'<div class="m">lançado como: '+esc(x.match.desc)+' ('+esc(x.match.forma)+', '+dbr(x.match.data)+')</div>':''));
+      h+=det('🙈 Você disse que não é gasto',ign,x=>linha(x,'','<div class="m">'+esc(x.motivo||'')+'</div>'));
       // saldo do banco no fim do extrato: é o que entra no "Como está a loja"
       h+='<div class="lc-sec">🏦 Saldo do '+esc(NB)+' no fim do extrato</div>'+(d._saldoOk
         ? '<p class="note" style="color:var(--good)">✅ '+d._saldoOk+'</p>'
@@ -3230,40 +3253,90 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           else { solta(bs); toast('❌ '+(res.erro||'não consegui')); }
         }).catch(()=>{ solta(bs); toast('❌ sem conexão'); });
       });
+      const bni=g('ex-ni'); if(bni) bni.addEventListener('click',()=>ir('naoident'));
       const pega=b=>sai.find(x=>x.id===b.closest('.lc-row').dataset.id);
-      const fim=(b,html)=>{ b.closest('.a').innerHTML=html; };
-      box.querySelectorAll('.ex-ign').forEach(b=>b.addEventListener('click',()=>{ const s=ignLoad(); s.add(pega(b).id); ignSave(s); pintaExtrato(d); }));
-      const desig=g('ex-desig'); if(desig) desig.addEventListener('click',()=>{ const s=ignLoad(); sai.forEach(x=>s.delete(x.id)); ignSave(s); pintaExtrato(d); });
-      box.querySelectorAll('.ex-ehmerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=true; pintaExtrato(d); }));
-      box.querySelectorAll('.ex-naomerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=false; pintaExtrato(d); }));
-      box.querySelectorAll('.ex-naoe').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); x.status='falta'; x.match=null; pintaExtrato(d); }));
-      box.querySelectorAll('.ex-gc').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b); abreGerarCompra({data:x.data, forma:'PIX '+NB, quem:x.quem}); }));
-      box.querySelectorAll('.ex-lanc').forEach(b=>b.addEventListener('click',()=>{
-        const x=pega(b), cat=b.closest('.a').querySelector('.ex-cat').value;
-        if(!cat){ toast('❌ escolha a categoria dessa linha'); return; }
+      box.querySelectorAll('.ex-desf').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b), tipo=b.dataset.tipo;
+        if(!confirm(tipo==='baixa'
+            ? 'Desfazer a baixa?\n\nA conta "'+x.match.desc+'" volta a ficar aberta e essa saída do banco vai pro Não identificado.'
+            : 'Desfazer a retirada?\n\nO lançamento é apagado e essa saída do banco vai pro Não identificado.')) return;
         trava(b,'…');
-        post('/api/gasto',{categoria:cat, valor:x.valor, forma:'PIX '+NB, data:x.data, descricao:x.quem+' · extrato '+NB+' #ext:'+x.id}).then(res=>{
-          if(res.ok){ x.status='lancado'; x.match={desc:cat+' · '+x.quem, forma:'PIX', data:x.data}; fim(b,'<span style="color:var(--good);font-weight:700">✅ lançado em '+esc(cat)+'</span>'); recarrega(['gasto']); }
-          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
-        }).catch(()=>{ solta(b); toast('❌ sem resposta: leia o extrato de novo antes de repetir'); });
+        post('/api/extrato/desfazer',{tipo, pid:x.pid, banco:NB, linha:{id:x.id, data:x.data, valor:x.valor, memo:x.memo}}).then(res=>{
+          if(res.ok){ x.status='ni'; b.closest('.a').innerHTML='<span style="color:var(--good);font-weight:700">↩️ desfeito: foi pro Não identificado</span>'; recarrega(['mapa','gasto']); }
+          else { solta(b); toast('❌ '+esc(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(b); toast('❌ sem resposta: confira em Meus lançamentos antes de repetir'); });
       }));
-      box.querySelectorAll('.ex-merc').forEach(b=>b.addEventListener('click',()=>{
+    }
+
+    /* ---- NÃO IDENTIFICADO ----
+       Gasto que saiu do banco e não casou com nada (28/10/2026). O dono diz o que foi: uma
+       categoria, mercadoria, uma conta aberta (paga com juros, atrasada…) ou que não é gasto. */
+    TELAS.naoident=()=>{
+      cab('Não identificado','gasto que saiu do banco e ninguém lançou');
+      body.innerHTML='<p class="note">conferindo com o sistema…</p>';
+      fetch('/api/nao-identificado').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(pintaNI)
+        .catch(()=>{ body.innerHTML='<p class="note">Não consegui ler agora. Tente de novo em alguns segundos.</p>'; });
+    };
+    function pintaNI(d){
+      const its=d.itens||[], ign=d.ignorados||[], falta=its.filter(x=>!x.feito);
+      let h='<div class="lc-prev">'+(its.length
+          ? '<b>'+its.length+' saída'+(its.length>1?'s':'')+' do banco</b>, somando <b>R$ '+fmt(d.total)+'</b>, não '+(its.length>1?'casaram':'casou')+' com nenhuma nota, compra, conta ou gasto lançado. Diga o que foi cada uma.'+
+            (falta.length<its.length?(falta.length===1?' Falta <b>1</b>.':' Faltam <b>'+falta.length+'</b>.'):'')
+          : 'Nada pendente: tudo que saiu do banco está explicado. ✓')+
+        (d.limpos?'<br><span class="note" style="margin:0">'+d.limpos+' que estava'+(d.limpos>1?'m':'')+' aqui já '+(d.limpos>1?'foram lançadas':'foi lançada')+' por outro caminho e '+(d.limpos>1?'saíram':'saiu')+' da lista.</span>':'')+'</div>';
+      const selC=x=>'<select class="ni-cat" aria-label="Categoria"><option value="" '+(x.sugestao?'':'selected')+' disabled>categoria…</option>'+
+        CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option'+(c===x.sugestao?' selected':'')+'>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>';
+      const acoes=x=>x.feito?'<span style="color:var(--good);font-weight:700">✅ '+x.feito+'</span>':(x.mercadoria
+        ? '<span class="m">parece <b>mercadoria</b></span><button class="lc-btn mini ni-gc" type="button">Lançar no Gerar compra</button>'+
+          '<button class="lc-btn ghost mini ni-merc" type="button" title="entra como compra de mercadoria, mas NÃO mexe no estoque">Só o valor (sem estoque)</button>'+
+          '<button class="lc-btn ghost mini ni-naomerc" type="button">Não é mercadoria</button>'
+        : selC(x)+(x.sugestao?'<span class="pill pA" title="'+(x.por==='historico'?'você já lançou esse nome assim antes':'pela palavra no texto do banco')+'">sugestão</span>':'')+
+          '<button class="lc-btn good mini ni-lanc" type="button">Lançar</button><button class="lc-btn ghost mini ni-ehmerc" type="button">É mercadoria</button>');
+      const extra=x=>x.feito||!x.parecido?'':'<div class="lc-aviso">Tem um lançamento em dinheiro de R$ '+fmt(x.parecido.valor)+' no dia '+dbr(x.parecido.data)+' ('+esc(x.parecido.desc)+'). Se for o mesmo, clique em "Já está lançado".</div>';
+      // o caso comum (categoria) vem primeiro; conta aberta e "não é gasto" ficam embaixo
+      const mais=x=>x.feito?'':'<div class="ni-mais">'+
+        ((x.contas||[]).length?'<div class="ni-contas"><span class="m">É uma conta aberta?</span> <select class="ni-conta" aria-label="Conta aberta"><option value="" selected disabled>escolha a conta…</option>'+
+          x.contas.map(c=>'<option value="'+esc(String(c.id))+'">'+esc(((c.cat?c.cat+' · ':'')+c.desc).slice(0,60))+' · vence '+dbr(c.venc)+' · R$ '+fmt(c.valor)+'</option>').join('')+
+          '</select> <button class="lc-btn ghost mini ni-baixa" type="button">Dar baixa nela</button></div>':'')+
+        '<div class="ni-outros"><button class="lc-link ni-ja" type="button">Já está lançado</button> · <button class="lc-link ni-nao" type="button">Não é gasto da loja</button></div></div>';
+      const linha=x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
+        '<div class="m">'+dbr(x.data)+' · '+esc(x.banco)+' · '+esc(x.memo)+'</div>'+extra(x)+'</div><div class="a">'+acoes(x)+'</div>'+mais(x)+'</div>';
+      h+=its.map(linha).join('');
+      if(ign.length) h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🙈 Você disse que não é gasto ('+ign.length+')</summary>'+
+        ign.map(x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
+          '<div class="m">'+dbr(x.data)+' · '+esc(x.banco)+' · '+esc(x.motivo||'')+'</div></div><div class="a">'+
+          (x.feito?'<span style="color:var(--good);font-weight:700">✅ '+x.feito+'</span>':'<button class="lc-btn ghost mini ni-volta" type="button">Voltar pro Não identificado</button>')+'</div></div>').join('')+'</details>';
+      body.innerHTML=h;
+      const pega=b=>its.concat(ign).find(x=>x.rid===b.closest('.lc-row').dataset.rid);
+      const manda=(b,pl,okTxt,quais)=>{ const x=pega(b); trava(b,'…');
+        post('/api/nao-identificado',pl).then(res=>{
+          if(res.ok){ x.feito=okTxt; pintaNI(d); if(quais.length) recarrega(quais); }
+          else { solta(b); toast('❌ '+esc(res.erro||'não consegui')); }
+        }).catch(()=>{ solta(b); toast('❌ sem resposta: abra o Não identificado de novo antes de repetir'); }); };
+      body.querySelectorAll('.ni-lanc').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b), cat=b.closest('.a').querySelector('.ni-cat').value;
+        if(!cat){ toast('❌ escolha a categoria dessa linha'); return; }
+        manda(b,{rid:x.rid, acao:'categoria', categoria:cat},'lançado em '+esc(cat)+' (PIX '+esc(x.banco)+')',['gasto']);
+      }));
+      body.querySelectorAll('.ni-merc').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b);
         if(!confirm('Lançar R$ '+fmt(x.valor)+' como compra de mercadoria SEM itens?\n\nEntra no gasto do mês e no resultado, mas o ESTOQUE não muda. Se você tem a lista do que veio, prefira "Lançar no Gerar compra".')) return;
-        trava(b,'…');
-        post('/api/gasto',{mercadoria:true, categoria:'Outros', valor:x.valor, forma:'PIX '+NB, data:x.data,
-                           descricao:'Compra de '+x.quem+' — sem nota, extrato '+NB+' #ext:'+x.id}).then(res=>{
-          if(res.ok){ x.status='lancado'; x.match={desc:'Compra de '+x.quem, forma:'PIX', data:x.data}; fim(b,'<span style="color:var(--good);font-weight:700">✅ lançado como mercadoria (sem estoque)</span>'); recarrega(['gasto']); }
-          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
-        }).catch(()=>{ solta(b); toast('❌ sem resposta: leia o extrato de novo antes de repetir'); });
+        manda(b,{rid:x.rid, acao:'mercadoria'},'lançado como mercadoria (sem estoque)',['gasto']);
       }));
-      box.querySelectorAll('.ex-baixa').forEach(b=>b.addEventListener('click',()=>{
-        const x=pega(b); trava(b,'…');
-        post('/api/baixa',{id:x.match.id, forma:'PIX '+NB, valor:x.valor, data:x.data}).then(res=>{
-          if(res.ok){ x.status='lancado'; fim(b,'<span style="color:var(--good);font-weight:700">✅ baixa dada: pago no PIX '+esc(NB)+' dia '+dbr(x.data)+'</span>'); recarrega(['mapa','gasto']); }
-          else { solta(b); toast('❌ '+(res.erro||'não consegui')); }
-        }).catch(()=>{ solta(b); toast('❌ sem resposta: confira no mapa antes de repetir'); });
+      body.querySelectorAll('.ni-baixa').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b), cid=b.closest('.ni-contas').querySelector('.ni-conta').value;
+        if(!cid){ toast('❌ escolha a conta'); return; }
+        const c=(x.contas||[]).find(c=>String(c.id)===cid);
+        manda(b,{rid:x.rid, acao:'conta', conta_id:cid},'baixa dada'+(c&&Math.abs(c.valor-x.valor)>0.009?': pago R$ '+fmt(x.valor)+' (a conta era R$ '+fmt(c.valor)+')':''),['mapa','gasto']);
       }));
+      body.querySelectorAll('.ni-ja').forEach(b=>b.addEventListener('click',()=>manda(b,{rid:pega(b).rid, acao:'ignorar', motivo:'já estava lançado'},'marcado: já estava lançado',[])));
+      body.querySelectorAll('.ni-nao').forEach(b=>b.addEventListener('click',()=>manda(b,{rid:pega(b).rid, acao:'ignorar', motivo:'não é gasto da loja'},'marcado: não é gasto da loja',[])));
+      body.querySelectorAll('.ni-volta').forEach(b=>b.addEventListener('click',()=>manda(b,{rid:pega(b).rid, acao:'voltar'},'voltou (abra a tela de novo pra ver)',[])));
+      body.querySelectorAll('.ni-ehmerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=true; pintaNI(d); }));
+      body.querySelectorAll('.ni-naomerc').forEach(b=>b.addEventListener('click',()=>{ pega(b).mercadoria=false; pintaNI(d); }));
+      body.querySelectorAll('.ni-gc').forEach(b=>b.addEventListener('click',()=>{ const x=pega(b);
+        abreGerarCompra({data:x.data, forma:'PIX '+x.banco, quem:x.quem,
+                         aviso:'O banco mostra R$ '+fmt(x.valor)+'. Depois de salvar, ela sai sozinha do Não identificado.'}); }));
     }
 
     /* ---- MINHAS CATEGORIAS ----
