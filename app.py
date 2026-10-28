@@ -327,6 +327,7 @@ def home():
     _graficos_do_dia()      # snapshot velho? o servidor regenera sozinho, em segundo plano
     _baixa_drinks_do_dia()  # garrafas dos copões vendidos: desconta o que ainda não passou
     _baixa_tabacaria_do_dia()  # maços do cigarro avulso/picado/seda: mesma ideia
+    _pluggy_do_dia()        # extrato do Itaú e do Nubank pelo Open Finance: concilia sozinho
     with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
         tpl = f.read()
     return tpl.replace("__DATA__", _painel_data_atual())
@@ -1659,6 +1660,19 @@ def _ultimo_extrato(pgs):
                 out[m.group(1)] = d
     return out
 
+def _grava_saldo(banco, v, data, origem):
+    """Guarda um saldo do banco (registro só do painel). origem começando com "extrato" conta
+    como extrato da semana conferido."""
+    r = gcapi.post("/pagamentos", {
+        "descricao": f"{SALDO_TAG} {banco} = {v:.2f} ({origem})",
+        # o GestãoClick não aceita valor zero em todo lugar; o saldo de verdade é o da descrição
+        "valor": f"{max(abs(v), 0.01):.2f}", "data_vencimento": data,
+        "data_competencia": data, "liquidado": "0",
+        "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
+    _invalida("como_esta", "saldos_bancos")
+    d = r.get("data") or {}
+    return d.get("id") if isinstance(d, dict) else None
+
 @app.route("/api/saldo-banco", methods=["GET", "POST"])
 @login_required
 def api_saldo_banco():
@@ -1677,16 +1691,8 @@ def api_saldo_banco():
             return jsonify({"ok": False, "erro": "essa data ainda não chegou"}), 400
         origem = "extrato" if (body.get("origem") or "") == "extrato" else "informado"
         try:
-            r = gcapi.post("/pagamentos", {
-                "descricao": f"{SALDO_TAG} {banco} = {v:.2f} ({origem})",
-                # o GestãoClick não aceita valor zero em todo lugar; o saldo de verdade é o da descrição
-                "valor": f"{max(abs(v), 0.01):.2f}", "data_vencimento": data,
-                "data_competencia": data, "liquidado": "0",
-                "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID})
-            d = r.get("data") or {}
-            _invalida("como_esta", "saldos_bancos")
-            return jsonify({"ok": True, "banco": banco, "saldo": v, "data": data,
-                            "id": d.get("id") if isinstance(d, dict) else None})
+            rid = _grava_saldo(banco, v, data, origem)
+            return jsonify({"ok": True, "banco": banco, "saldo": v, "data": data, "id": rid})
         except Exception as e:
             return jsonify({"ok": False, "erro": str(e)[:200]}), 502
     def build():
@@ -2083,8 +2089,12 @@ def _ni_corpo(desc, data):
             "data_competencia": data, "liquidado": "0",
             "plano_contas_id": CATS["Outros"], "forma_pagamento_id": BOLETO_FORMA_ID}
 
-def _ni_cria(nb, l):
-    r = gcapi.post("/pagamentos", _ni_corpo(_ni_desc(NI_TAG, nb, l), l["data"]))
+def _ni_cria(nb, l, motivo=None):
+    """Guarda a linha no Não identificado, ou já como "não é gasto" se vier o motivo (dinheiro
+    indo pra outra conta da loja): assim nenhuma leitura depois traz ela de volta, nem o
+    arquivo do Itaú, que corta o nome de quem recebeu."""
+    tag = NIX_TAG if motivo else NI_TAG
+    r = gcapi.post("/pagamentos", _ni_corpo(_ni_desc(tag, nb, l, motivo or ""), l["data"]))
     d = r.get("data") or {}
     return d.get("id") if isinstance(d, dict) else None
 
@@ -2306,30 +2316,13 @@ def _ext_invalida():
     _invalida("pagar", "resumo", "previsoes", "gastos_mes", "mapa", "como_esta", "inicio",
               "hoje", "saldos_bancos", "ultima_atualizacao", "lancamentos_" + _hoje()[:7])
 
-@app.route("/api/extrato/ler", methods=["POST"])
-@login_required
-def api_extrato_ler():
-    body = request.get_json(force=True, silent=True) or {}
-    banco = (body.get("banco") or "").strip().lower()
-    txt = body.get("arquivo") or ""
-    if banco not in BANCOS_EXTRATO:
-        return jsonify({"ok": False, "erro": "escolha o banco do extrato"}), 400
-    if len(txt) < 20:
-        return jsonify({"ok": False, "erro": "o arquivo veio vazio"}), 400
-    if len(txt) > 3_000_000:
-        return jsonify({"ok": False, "erro": "arquivo grande demais — baixe um mês por vez"}), 400
-    txt = txt.lstrip("﻿")
-    linhas, saldo_ext = _ext_linhas(banco, txt)
-    if not linhas:
-        return jsonify({"ok": False, "erro": "não achei lançamento nenhum nesse arquivo. "
-                        "No app do banco, exporte o extrato em OFX (ou CSV)."}), 400
-    nb = BANCOS_EXTRATO[banco]
+def _ext_concilia(banco, nb, linhas, saldo=None, simular=False):
+    """Concilia as linhas de um banco com o sistema e grava o que tem de gravar (simular=True
+    só mostra o que faria). Serve pro arquivo do extrato e pro Open Finance. Quem chama
+    segura a _ext_trava."""
     saidas = sorted((l for l in linhas if l["valor"] < 0), key=lambda x: (x["data"], x["id"]))
     entradas = [l for l in linhas if l["valor"] > 0]
-    de, ate = min(l["data"] for l in linhas), max(l["data"] for l in linhas)
-    if not _ext_trava.acquire(blocking=False):
-        return jsonify({"ok": False, "erro": "já estou conciliando um extrato. Espere terminar "
-                        "e leia de novo."}), 409
+    datas = [l["data"] for l in linhas]
     out, feitas, erro = [], 0, None
     try:
         ctx = _ext_contexto(gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
@@ -2348,7 +2341,7 @@ def api_extrato_ler():
                 item["motivo"] = r["motivo"]
             if st == "retirada":
                 item["cat"] = _cat_nome(r["cat"])
-            if st in ("baixa", "retirada", "ni", "resolvido"):
+            if st in ("baixa", "retirada", "ni", "resolvido", "fora") and not simular:
                 if erro or feitas >= EXT_MAX_ACOES:
                     item["status"] = "fila"
                 else:
@@ -2360,6 +2353,8 @@ def api_extrato_ler():
                             item["pid"] = _ext_lanca(nb, l, cat=r["cat"])
                         elif st == "ni":
                             item["rid"] = _ni_cria(nb, l)
+                        elif st == "fora":
+                            item["rid"] = _ni_cria(nb, l, r["motivo"])
                         if r.get("ni"):         # saiu do Não identificado
                             gcapi.delete(f"/pagamentos/{r['ni']['rid']}")
                         feitas += 1
@@ -2370,17 +2365,42 @@ def api_extrato_ler():
                         item["status"] = "erro"
             out.append(item)
     finally:
-        _ext_trava.release()
         if feitas or erro:
             _ext_invalida()
     cont = defaultdict(int)
     for x in out:
         cont[x["status"]] += 1
-    return jsonify({"ok": True, "banco": banco, "nome_banco": nb, "de": de, "ate": ate,
-                    "saldo": saldo_ext, "saidas": out, "contagem": cont,
-                    "total_saidas": round(sum(x["valor"] for x in out), 2),
-                    "continua": bool(cont.get("fila")) and not erro, "erro": erro,
-                    "entradas": {"n": len(entradas), "total": round(sum(l["valor"] for l in entradas), 2)}})
+    return {"ok": True, "banco": banco, "nome_banco": nb, "simulado": simular,
+            "de": min(datas) if datas else None, "ate": max(datas) if datas else None,
+            "saldo": saldo, "saidas": out, "contagem": cont,
+            "total_saidas": round(sum(x["valor"] for x in out), 2),
+            "continua": bool(cont.get("fila")) and not erro, "erro": erro,
+            "entradas": {"n": len(entradas), "total": round(sum(l["valor"] for l in entradas), 2)}}
+
+@app.route("/api/extrato/ler", methods=["POST"])
+@login_required
+def api_extrato_ler():
+    body = request.get_json(force=True, silent=True) or {}
+    banco = (body.get("banco") or "").strip().lower()
+    txt = body.get("arquivo") or ""
+    if banco not in BANCOS_EXTRATO:
+        return jsonify({"ok": False, "erro": "escolha o banco do extrato"}), 400
+    if len(txt) < 20:
+        return jsonify({"ok": False, "erro": "o arquivo veio vazio"}), 400
+    if len(txt) > 3_000_000:
+        return jsonify({"ok": False, "erro": "arquivo grande demais — baixe um mês por vez"}), 400
+    txt = txt.lstrip("\ufeff")
+    linhas, saldo_ext = _ext_linhas(banco, txt)
+    if not linhas:
+        return jsonify({"ok": False, "erro": "não achei lançamento nenhum nesse arquivo. "
+                        "No app do banco, exporte o extrato em OFX (ou CSV)."}), 400
+    if not _ext_trava.acquire(blocking=False):
+        return jsonify({"ok": False, "erro": "já estou conciliando um extrato. Espere terminar "
+                        "e leia de novo."}), 409
+    try:
+        return jsonify(_ext_concilia(banco, BANCOS_EXTRATO[banco], linhas, saldo_ext))
+    finally:
+        _ext_trava.release()
 
 @app.route("/api/extrato/desfazer", methods=["POST"])
 @login_required
@@ -2541,6 +2561,208 @@ def _ni_resolver(body):
             pass    # a marca já está no lançamento: a linha some na próxima vez que a tela abrir
         _ext_invalida()
     return jsonify({"ok": True, "id": pid})
+
+# ---- OPEN FINANCE (Meu Pluggy, só leitura) ----
+# 28/10/2026: o dono conectou as contas da loja (Itaú e Nubank) no Meu Pluggy, que é grátis e
+# lê pelo Open Finance o que ele autorizou no app do banco. Só LEITURA: nada aqui move
+# dinheiro. O painel lê o banco sozinho (ao abrir, no máximo de 3 em 3 horas, ou no botão da
+# tela do extrato) e passa pela MESMA conciliação do arquivo. O Meu Pluggy atualiza os bancos
+# 1 vez por dia: o que saiu hoje pode aparecer só amanhã.
+# No servidor: PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET (senha: só no Render e no .env, nunca no
+# código) e PLUGGY_ITENS = "Itaú=<item id>;Nubank=<item id>".
+PLUGGY_API = "https://api.pluggy.ai"
+PLUGGY_DIAS = 10                  # cada leitura olha 10 dias pra trás (banco às vezes posta atrasado)
+PLUGGY_INTERVALO = 3 * 3600
+_BRT = datetime.timezone(datetime.timedelta(hours=-3))     # Brasília, sem horário de verão
+_pluggy = {"rodando": False, "ultimo": 0.0, "quando": None, "erro": None, "bancos": {}}
+_pluggy_lock = threading.Lock()
+
+def _pluggy_cfg():
+    itens = []
+    for par in (gcapi._tok("PLUGGY_ITENS") or "").split(";"):
+        b, _, i = par.partition("=")
+        if b.strip() in BANCOS and i.strip():
+            itens.append((b.strip(), i.strip()))
+    cid, sec = gcapi._tok("PLUGGY_CLIENT_ID"), gcapi._tok("PLUGGY_CLIENT_SECRET")
+    return {"cid": cid, "sec": sec, "itens": itens} if cid and sec and itens else None
+
+def _pluggy_req(metodo, caminho, corpo=None, chave=None):
+    import json as _json, urllib.request, urllib.error
+    h = {"Content-Type": "application/json", "Accept": "application/json"}
+    if chave:
+        h["X-API-KEY"] = chave
+    req = urllib.request.Request(PLUGGY_API + caminho, method=metodo, headers=h,
+                                 data=_json.dumps(corpo).encode() if corpo is not None else None)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return _json.load(r)
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"o Open Finance respondeu {e.code} em {caminho.split('?')[0]}") from None
+
+def _pluggy_data(iso):
+    """O Pluggy manda a hora em UTC: PIX de 30/09 às 23h51 chega como 01/10 02h51."""
+    s = str(iso or "")
+    if len(s) <= 10:
+        return s[:10]
+    s = re.sub(r"\.\d+", "", s.replace("Z", "+00:00"))
+    return datetime.datetime.fromisoformat(s).astimezone(_BRT).date().isoformat()
+
+def _pluggy_transacoes(chave, conta, de, ate):
+    import urllib.parse
+    base = f"/v2/transactions?accountId={conta}&dateFrom={de}&dateTo={ate}"
+    url, out = base, []
+    for _ in range(100):
+        r = _pluggy_req("GET", url, chave=chave)
+        out += r.get("results", [])
+        n = r.get("next")
+        if not n:
+            break
+        if n.startswith("http"):
+            u = urllib.parse.urlparse(n)
+            url = u.path + "?" + u.query
+        elif n.startswith("/"):
+            url = n
+        else:
+            url = base + "&cursor=" + urllib.parse.quote(n)
+    return out
+
+def _pluggy_le(cfg, dias):
+    """Lê a conta de cada banco (corrente/poupança; cartão fica de fora: a fatura sai da conta
+    e aparece lá). Devolve as linhas no MESMO formato do arquivo do extrato, o saldo e se o
+    banco está em dia com o Open Finance."""
+    import hashlib
+    chave = _pluggy_req("POST", "/auth", {"clientId": cfg["cid"], "clientSecret": cfg["sec"]})["apiKey"]
+    hoje = datetime.date.fromisoformat(_hoje())
+    de = (hoje - datetime.timedelta(days=dias)).isoformat()
+    ate = (hoje + datetime.timedelta(days=1)).isoformat()
+    out = {}
+    for nb, item_id in cfg["itens"]:
+        item = _pluggy_req("GET", f"/items/{item_id}", chave=chave)
+        b = {"status": item.get("status") or "?", "linhas": [], "saldo": None,
+             "atualizado": _pluggy_data(item["lastUpdatedAt"]) if item.get("lastUpdatedAt") else None}
+        for c in _pluggy_req("GET", f"/accounts?itemId={item_id}", chave=chave).get("results", []):
+            if c.get("type") != "BANK":
+                continue
+            b["saldo"] = round((b["saldo"] or 0) + (c.get("balance") or 0), 2)
+            for t in _pluggy_transacoes(chave, c["id"], de, ate):
+                if t.get("status") == "PENDING":
+                    continue            # ainda pode mudar de valor ou sumir
+                v = round(abs(t.get("amount") or 0), 2)
+                tipo = t.get("type") or ("CREDIT" if (t.get("amount") or 0) > 0 else "DEBIT")
+                pd = t.get("paymentData") or {}
+                outro = ((pd.get("receiver") if tipo == "DEBIT" else pd.get("payer")) or {}).get("name") or ""
+                memo = re.sub(r"\s+", " ", t.get("description") or "").strip()
+                if outro and _ext_norm(outro) not in _ext_norm(memo):
+                    memo = f"{memo} · {outro}".strip(" ·")
+                b["linhas"].append({
+                    "data": _pluggy_data(t.get("date")), "valor": -v if tipo == "DEBIT" else v,
+                    "memo": memo, "fitid": t.get("id") or "",
+                    # a marca vem do código do lançamento no Open Finance (não muda nunca)
+                    "id": hashlib.sha1(f"pluggy|{t.get('id')}".encode()).hexdigest()[:8],
+                    # quem recebeu, do jeito que o banco registrou o PIX (é o que acha Victor e Igor)
+                    "quem": _ext_norm(outro) if outro else _ext_quem(memo)})
+        out[nb] = b
+    return out
+
+def _pluggy_saldo(nb, v, data):
+    """Guarda o saldo lido do banco, só se mudou (ou é de um dia mais novo que o guardado)."""
+    atual = _saldos_bancos(gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
+                                                         "data_fim": "2027-12-31"})).get(nb)
+    if atual and (atual["data"] > data or (atual["data"] == data and abs(atual["saldo"] - v) < 0.005)):
+        return
+    _grava_saldo(nb, v, data, "extrato open finance")
+
+def _pluggy_sincroniza(dias=PLUGGY_DIAS, simular=False, rodadas=8):
+    """Lê o banco e concilia. Em segundo plano roda até acabar (rodadas); no botão, uma ou
+    duas rodadas e a tela chama de novo."""
+    cfg = _pluggy_cfg()
+    if not cfg:
+        raise RuntimeError("o Open Finance ainda não está ligado")
+    lido = _pluggy_le(cfg, dias)
+    res = {}
+    with _ext_trava:
+        for nb, b in lido.items():
+            banco = next(k for k, v in BANCOS_EXTRATO.items() if v == nb)
+            feitos = {}
+            for _ in range(1 if simular else max(rodadas, 1)):
+                r = _ext_concilia(banco, nb, b["linhas"], simular=simular)
+                feitos.update({x["id"]: x for x in r["saidas"]
+                               if not simular and x["status"] in ("baixa", "retirada", "ni", "resolvido", "fora")})
+                if not r["continua"]:
+                    break
+            # o que uma rodada fez a seguinte já vê como "lançado": vale o que foi feito
+            r["saidas"] = [x if x["status"] == "erro" else feitos.get(x["id"], x) for x in r["saidas"]]
+            cont = defaultdict(int)
+            for x in r["saidas"]:
+                cont[x["status"]] += 1
+            r.update(contagem=cont, status=b["status"], atualizado=b["atualizado"],
+                     saldo={"valor": b["saldo"], "data": b["atualizado"] or _hoje()} if b["saldo"] is not None else None)
+            if not simular and b["saldo"] is not None and b["status"] == "UPDATED":
+                try:
+                    _pluggy_saldo(nb, b["saldo"], b["atualizado"] or _hoje())
+                except Exception:
+                    pass            # o saldo volta na próxima leitura
+            res[nb] = r
+    return res
+
+def _pluggy_resumo(res):
+    return {nb: {"status": r["status"], "atualizado": r["atualizado"], "contagem": dict(r["contagem"]),
+                 "erro": r["erro"]} for nb, r in res.items()}
+
+def _pluggy_roda():
+    try:
+        res = _pluggy_sincroniza()
+        _pluggy.update(erro=None, bancos=_pluggy_resumo(res))
+    except Exception as e:
+        _pluggy.update(erro=str(e)[:200])
+        print(f"[open finance] erro: {e}", flush=True)
+    finally:
+        _pluggy.update(rodando=False, quando=time.strftime("%d/%m %H:%M"))
+
+def _pluggy_do_dia():
+    """Ao abrir o painel: lê o banco em segundo plano, no máximo de 3 em 3 horas."""
+    if not _pluggy_cfg():
+        return
+    agora = time.time()
+    with _pluggy_lock:
+        if _pluggy["rodando"] or agora - _pluggy["ultimo"] < PLUGGY_INTERVALO:
+            return
+        _pluggy.update(rodando=True, ultimo=agora)
+    threading.Thread(target=_pluggy_roda, daemon=True).start()
+
+@app.route("/api/banco/status")
+@login_required
+def api_banco_status():
+    cfg = _pluggy_cfg()
+    return jsonify({"configurado": bool(cfg), "bancos": [nb for nb, _ in (cfg or {}).get("itens", [])],
+                    "rodando": _pluggy["rodando"], "quando": _pluggy["quando"], "erro": _pluggy["erro"],
+                    "resumo": _pluggy["bancos"]})
+
+@app.route("/api/banco/ler", methods=["POST"])
+@login_required
+def api_banco_ler():
+    """Botão "Ler o banco agora". simular=true mostra o que faria, sem gravar nada."""
+    body = request.get_json(force=True, silent=True) or {}
+    if not _pluggy_cfg():
+        return jsonify({"ok": False, "erro": "o Open Finance ainda não está ligado"}), 400
+    with _pluggy_lock:
+        if _pluggy["rodando"]:
+            return jsonify({"ok": False, "erro": "já estou lendo o banco agora. Espere um minuto "
+                            "e clique de novo."}), 409
+        _pluggy.update(rodando=True, ultimo=time.time())
+    simular = bool(body.get("simular"))
+    dias = max(1, min(int(_num(body.get("dias")) or PLUGGY_DIAS), 60))
+    try:
+        res = _pluggy_sincroniza(dias, simular=simular, rodadas=2)
+        if not simular:
+            _pluggy.update(erro=None, bancos=_pluggy_resumo(res))
+        return jsonify({"ok": True, "simulado": simular, "dias": dias, "bancos": res,
+                        "continua": any(r["continua"] for r in res.values())})
+    except Exception as e:
+        _pluggy.update(erro=str(e)[:200])
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+    finally:
+        _pluggy.update(rodando=False, quando=time.strftime("%d/%m %H:%M"))
 
 # ---- MEUS LANÇAMENTOS (tudo que foi lançado no mês, num lugar só) ----
 _LANC_SO_PAINEL = (RES_DEP_TAG, RES_OUT_TAG, SOB_DEP_TAG, SOB_OUT_TAG)

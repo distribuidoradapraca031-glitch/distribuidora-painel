@@ -3172,12 +3172,14 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
        Não identificado. O que foi feito sozinho dá pra desfazer aqui mesmo. */
     TELAS.extrato=()=>{
       cab('Conferir extrato','o banco conciliado com o que está lançado');
-      body.innerHTML='<div class="lc-form">'+
+      body.innerHTML='<div id="lc-of"><p class="note">vendo se o Open Finance está ligado…</p></div>'+
+        '<div class="lc-sec">📄 Ou suba o arquivo do extrato</div><div class="lc-form">'+
         '<label>Banco<select id="lc-banco">'+opts([['itau','Itaú'],['nubank','Nubank']],'escolha o banco…')+'</select></label>'+
         '<label class="lg">Arquivo do extrato<input id="lc-arq" type="file" accept=".ofx,.OFX,.csv,.CSV,.txt"></label></div>'+
         '<p class="note">No app do banco: <b>Extrato → exportar → formato OFX</b> (se não tiver OFX, CSV serve). Um mês por vez. '+
         'Eu <b>concilio sozinho</b>: dou baixa na conta aberta que bate, lanço o PIX pra você ou pro Igor como retirada, e o que eu não souber o que é vai pro <b>Não identificado</b>. Ler o mesmo extrato de novo não lança nada duas vezes.</p>'+
         '<div class="lc-acts"><button class="lc-btn" id="lc-ler">Ler e conciliar</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div><div id="lc-ext"></div>';
+      quadroOF();
       g('lc-ler').addEventListener('click',()=>{
         const banco=val('lc-banco'), arq=(g('lc-arq').files||[])[0], msg=g('lc-msg'), b=g('lc-ler');
         if(!banco){ msg.innerHTML=ER('Escolha o banco.'); return; }
@@ -3189,7 +3191,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         const feitos={};
         const roda=(txt,n)=>post('/api/extrato/ler',{banco, arquivo:txt}).then(d=>{
           if(!d.ok) return d;
-          (d.saidas||[]).forEach(x=>{ if(['baixa','retirada','ni','resolvido'].includes(x.status)) feitos[x.id]=x; });
+          (d.saidas||[]).forEach(x=>{ if(['baixa','retirada','ni','resolvido','fora'].includes(x.status)) feitos[x.id]=x; });
           if(d.continua&&n<8){ msg.innerHTML='<span class="note">conciliando… (parte '+(n+1)+')</span>'; return roda(txt,n+1); }
           d.saidas=(d.saidas||[]).map(x=>feitos[x.id]&&x.status!=='erro'?feitos[x.id]:x);
           return d;
@@ -3201,19 +3203,57 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           .catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Leia o extrato de novo: o que já entrou não entra duas vezes.'); });
       });
     };
-    function pintaExtrato(d){
-      const box=g('lc-ext'), NB=d.nome_banco, sai=d.saidas||[];
+    /* Open Finance (Meu Pluggy, 28/10/2026): o painel lê o Itaú e o Nubank sozinho ao abrir, de 3
+       em 3 horas, e passa pela mesma conciliação do arquivo. Aqui dá pra ler na hora. */
+    function quadroOF(){
+      const of=g('lc-of'); if(!of) return;
+      fetch('/api/banco/status').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(st=>{
+        if(!st.configurado){ of.innerHTML='<p class="note">🔌 O Open Finance ainda não está ligado. Enquanto isso, suba o arquivo do extrato aqui embaixo.</p>'; return; }
+        const res=st.resumo||{};
+        const lin=Object.keys(res).map(nb=>{ const r=res[nb], c=r.contagem||{};
+          return esc(nb)+(r.status&&r.status!=='UPDATED'?' <b style="color:var(--crit)">precisa reconectar no Meu Pluggy</b>':
+            ' em dia'+(r.atualizado?' (banco de '+dbr(r.atualizado)+')':''))+((c.ni||c.pendente)?' · '+((c.ni||0)+(c.pendente||0))+' no Não identificado':''); }).join(' · ');
+        of.innerHTML='<div class="lc-prev">🔌 <b>Open Finance ligado:</b> '+esc(st.bancos.join(' e '))+'. Eu leio o banco sozinho quando você abre o painel (de 3 em 3 horas) e concilio do mesmo jeito do arquivo. '+
+          'O banco manda os dados 1 vez por dia: o que saiu hoje pode aparecer só amanhã.'+
+          (st.quando?'<br>Última leitura: <b>'+esc(st.quando)+'</b>'+(lin?' · '+lin:''):'')+
+          (st.erro?'<br><span style="color:var(--crit)">⚠️ A última leitura deu erro: '+esc(st.erro)+'</span>':'')+'</div>'+
+          '<div class="lc-acts"><button class="lc-btn" type="button" id="of-ler">Ler o banco agora</button></div><div class="lc-msg" id="of-msg" aria-live="polite"></div><div id="of-res"></div>';
+        g('of-ler').addEventListener('click',()=>{
+          const b=g('of-ler'), msg=g('of-msg'), feitos={};
+          trava(b,'lendo o banco…'); msg.innerHTML='<span class="note">lendo o Itaú e o Nubank e conferindo com o sistema…</span>';
+          const roda=n=>post('/api/banco/ler',{}).then(d=>{
+            if(!d.ok) return d;
+            Object.values(d.bancos||{}).forEach(r=>(r.saidas||[]).forEach(x=>{ if(['baixa','retirada','ni','resolvido','fora'].includes(x.status)) feitos[x.id]=x; }));
+            if(d.continua&&n<6){ msg.innerHTML='<span class="note">conciliando… (parte '+(n+1)+')</span>'; return roda(n+1); }
+            Object.values(d.bancos||{}).forEach(r=>{ r.saidas=(r.saidas||[]).map(x=>feitos[x.id]&&x.status!=='erro'?feitos[x.id]:x); });
+            return d;
+          });
+          roda(1).then(d=>{ solta(b);
+            if(!d.ok){ msg.innerHTML=ER(esc(d.erro||'não consegui ler o banco')); return; }
+            msg.innerHTML=''; const res=g('of-res'); res.innerHTML='';
+            Object.values(d.bancos||{}).forEach(r=>{ const box=document.createElement('div'); res.appendChild(box); pintaExtrato(r,box,true); });
+            recarrega(['mapa','gasto']);
+          }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Clique de novo daqui a pouco: o que já entrou não entra duas vezes.'); });
+        });
+      }).catch(()=>{ of.innerHTML='<p class="note">Não consegui ver o Open Finance agora.</p>'; });
+    }
+    function pintaExtrato(d,alvo,auto){
+      const box=alvo||g('lc-ext'), NB=d.nome_banco, sai=d.saidas||[];
       const por=(...sts)=>sai.filter(x=>sts.includes(x.status));
       const lanc=por('lancado','resolvido'), baixas=por('baixa'), ret=por('retirada'), novos=por('ni'), pend=por('pendente'),
             ign=por('ignorado'), fora=por('fora'), parou=por('fila','erro');
       const s=n=>n>1?'s':'';
-      let h='<div class="lc-prev">Extrato do <b>'+esc(NB)+'</b> de '+dbr(d.de)+' a '+dbr(d.ate)+': <b>'+sai.length+' saídas</b> (R$ '+fmt(d.total_saidas)+').<br>'+
-        '✅ <b>'+lanc.length+'</b> já estava'+(lanc.length>1?'m':'')+' lançada'+s(lanc.length)+
-        (baixas.length?' · 🧾 <b>'+baixas.length+'</b> baixa'+s(baixas.length)+' dada'+s(baixas.length)+' agora':'')+
-        (ret.length?' · 👤 <b>'+ret.length+'</b> retirada'+s(ret.length)+' lançada'+s(ret.length):'')+
-        (fora.length?' · ↔️ <b>'+fora.length+'</b> não '+(fora.length>1?'são':'é')+' gasto':'')+
-        ' · ❓ <b>'+(novos.length+pend.length)+'</b> no Não identificado'+(pend.length?' ('+pend.length+' já estava'+(pend.length>1?'m':'')+' lá)':'')+'.<br>'+
-        '<span class="note" style="margin:0">Entraram também '+(d.entradas.n||0)+' créditos (R$ '+fmt(d.entradas.total||0)+'): são vendas no PIX e na maquininha, que já entram pelas vendas. Não lancei nada disso.</span></div>';
+      let h=(auto?'<div class="lc-sec">🏦 '+esc(NB)+(d.status&&d.status!=='UPDATED'?' · precisa reconectar no Meu Pluggy':'')+'</div>':'')+
+        (d.simulado?'<div class="lc-aviso">🔎 Simulação: é o que eu faria. Nada foi gravado.</div>':'')+
+        '<div class="lc-prev">'+(d.de?(auto?'Banco':'Extrato do <b>'+esc(NB)+'</b>')+' de '+dbr(d.de)+' a '+dbr(d.ate)+': ':'Nenhuma movimentação no período: ')+
+          '<b>'+sai.length+' saída'+s(sai.length)+'</b> (R$ '+fmt(d.total_saidas)+').<br>'+
+        [lanc.length?'✅ <b>'+lanc.length+'</b> já estava'+(lanc.length>1?'m':'')+' lançada'+s(lanc.length):'',
+         baixas.length?'🧾 <b>'+baixas.length+'</b> baixa'+s(baixas.length)+' dada'+s(baixas.length)+' agora':'',
+         ret.length?'👤 <b>'+ret.length+'</b> retirada'+s(ret.length)+' lançada'+s(ret.length):'',
+         fora.length?'↔️ <b>'+fora.length+'</b> não '+(fora.length>1?'são':'é')+' gasto':'',
+         (novos.length+pend.length)?'❓ <b>'+(novos.length+pend.length)+'</b> no Não identificado'+(pend.length?' ('+pend.length+' já estava'+(pend.length>1?'m':'')+' lá)':''):'']
+          .filter(Boolean).join(' · ')+(sai.length?'.':'')+
+        (d.entradas&&d.entradas.n?'<br><span class="note" style="margin:0">Entr'+(d.entradas.n>1?'aram':'ou')+' também '+d.entradas.n+' crédito'+s(d.entradas.n)+' (R$ '+fmt(d.entradas.total||0)+'): são vendas no PIX e na maquininha, que já entram pelas vendas. Não lancei nada disso.</span>':'')+'</div>';
       if(d.erro||parou.length) h+='<div class="lc-aviso" style="margin-top:8px">⚠️ O sistema parou de responder no meio'+(d.erro?' ('+esc(d.erro)+')':'')+'. '+parou.length+' linha'+s(parou.length)+' ficou'+(parou.length>1?'aram':'')+' pra depois: leia o mesmo extrato de novo daqui a pouco. O que já entrou não entra duas vezes.</div>';
       const linha=(x,acoes,extra)=>'<div class="lc-row" data-id="'+x.id+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
         '<div class="m">'+dbr(x.data)+' · '+esc(x.memo)+'</div>'+(extra||'')+'</div><div class="a">'+(acoes||'')+'</div></div>';
@@ -3229,14 +3269,15 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const nNI=novos.length+pend.length;
       h+='<div class="lc-sec">❓ Não identificado ('+nNI+')</div>'+(nNI
         ? '<p class="note">'+(novos.length?'<b>'+novos.length+'</b> saída'+s(novos.length)+' desse extrato não '+(novos.length>1?'casaram':'casou')+' com nenhuma nota, compra, conta ou gasto lançado. ':'')+
-          'Lá você diz o que foi cada uma.</p><div class="lc-acts"><button class="lc-btn" type="button" id="ex-ni">Resolver o Não identificado</button></div>'
+          'Lá você diz o que foi cada uma.</p><div class="lc-acts"><button class="lc-btn ex-ni" type="button">Resolver o Não identificado</button></div>'
         : '<p class="note">Nada sem explicação nesse extrato. ✓</p>');
       const det=(tit,L,fn)=>L.length?'<details style="margin-top:12px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">'+tit+' ('+L.length+')</summary>'+L.map(fn).join('')+'</details>':'';
       h+=det('↔️ Não são gasto',fora,x=>linha(x,'','<div class="m">'+esc(x.motivo||'')+'</div>'));
       h+=det('✅ Já lançadas',lanc,x=>linha(x,'',x.match?'<div class="m">lançado como: '+esc(x.match.desc)+' ('+esc(x.match.forma)+', '+dbr(x.match.data)+')</div>':''));
-      h+=det('🙈 Você disse que não é gasto',ign,x=>linha(x,'','<div class="m">'+esc(x.motivo||'')+'</div>'));
+      h+=det('🙈 Marcadas como não é gasto',ign,x=>linha(x,'','<div class="m">'+esc(x.motivo||'')+'</div>'));
       // saldo do banco no fim do extrato: é o que entra no "Como está a loja"
-      h+='<div class="lc-sec">🏦 Saldo do '+esc(NB)+' no fim do extrato</div>'+(d._saldoOk
+      if(auto) h+=d.saldo&&d.saldo.valor!=null?'<p class="note">🏦 Saldo do '+esc(NB)+' em '+dbr(d.saldo.data)+': <b>R$ '+fmt(d.saldo.valor)+'</b>'+(d.simulado?'':' (já guardei no "Como está a loja")')+'</p>':'';
+      else h+='<div class="lc-sec">🏦 Saldo do '+esc(NB)+' no fim do extrato</div>'+(d._saldoOk
         ? '<p class="note" style="color:var(--good)">✅ '+d._saldoOk+'</p>'
         : '<div class="lc-row"><div class="m" style="flex:1 1 220px">'+(d.saldo?'Li do arquivo. Confira com o app do banco e guarde.':'O arquivo não traz o saldo: digite o que aparece no app do banco.')+'</div>'+
           '<div class="a"><label class="m" style="display:inline-flex;gap:4px;align-items:center">R$<input id="ex-saldo" type="number" step="0.01" inputmode="decimal" style="width:110px" value="'+(d.saldo?d.saldo.valor:'')+'"></label>'+
@@ -3249,11 +3290,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         if(t===''||isNaN(v)){ toast('❌ digite o saldo (pode ser 0)'); return; }
         trava(bs,'…');
         post('/api/saldo-banco',{banco:NB, valor:v, data:dt, origem:'extrato'}).then(res=>{
-          if(res.ok){ d._saldoOk='Saldo do '+NB+' guardado: R$ '+fmt(res.saldo)+' em '+dbr(res.data)+'. Extrato da semana conferido.'; pintaExtrato(d); recarrega(['loja']); }
+          if(res.ok){ d._saldoOk='Saldo do '+NB+' guardado: R$ '+fmt(res.saldo)+' em '+dbr(res.data)+'. Extrato da semana conferido.'; pintaExtrato(d,box,auto); recarrega(['loja']); }
           else { solta(bs); toast('❌ '+(res.erro||'não consegui')); }
         }).catch(()=>{ solta(bs); toast('❌ sem conexão'); });
       });
-      const bni=g('ex-ni'); if(bni) bni.addEventListener('click',()=>ir('naoident'));
+      const bni=box.querySelector('.ex-ni'); if(bni) bni.addEventListener('click',()=>ir('naoident'));
       const pega=b=>sai.find(x=>x.id===b.closest('.lc-row').dataset.id);
       box.querySelectorAll('.ex-desf').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b), tipo=b.dataset.tipo;
@@ -3302,7 +3343,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       const linha=x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
         '<div class="m">'+dbr(x.data)+' · '+esc(x.banco)+' · '+esc(x.memo)+'</div>'+extra(x)+'</div><div class="a">'+acoes(x)+'</div>'+mais(x)+'</div>';
       h+=its.map(linha).join('');
-      if(ign.length) h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🙈 Você disse que não é gasto ('+ign.length+')</summary>'+
+      if(ign.length) h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🙈 Marcadas como não é gasto ('+ign.length+')</summary>'+
         ign.map(x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
           '<div class="m">'+dbr(x.data)+' · '+esc(x.banco)+' · '+esc(x.motivo||'')+'</div></div><div class="a">'+
           (x.feito?'<span style="color:var(--good);font-weight:700">✅ '+x.feito+'</span>':'<button class="lc-btn ghost mini ni-volta" type="button">Voltar pro Não identificado</button>')+'</div></div>').join('')+'</details>';
