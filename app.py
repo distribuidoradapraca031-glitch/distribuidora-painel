@@ -4315,19 +4315,13 @@ def _lanca_pagamento_conta(valor, cliente, forma, data):
 # 29/10/2026: o fiado saiu do caderno e foi pro GestãoGPT, o sistema em teste pra substituir o
 # GestãoClick. Cada cliente do fiado é um cliente de lá e o que ele deve é conta a receber em
 # aberto no nome dele (o saldo do caderno entrou como "SALDO ANTERIOR FIADO").
-# Enquanto as vendas passam no GestãoClick, a venda fiada continua no caixa de lá e aqui só se
-# anota quem ficou devendo ("pendurou"). Quando o cliente paga, abate a dívida lá E lança o
-# dinheiro no GestãoClick (PAGAMENTO DE CONTA), senão o fechamento não conta com ele.
+# O dono pediu: pagamento e fiado novo ele lança no GestãoGPT; o painel só ACOMPANHA (lê).
 # Victor (LUCCHESI) e o sócio Igor ficam à parte: é consumo dos sócios, não dinheiro de cliente
 # pra receber, e cada um tem a sua linha (o dono pediu pra NÃO somar os dois).
 # No servidor: GESTAOGPT_TOKEN (só no Render e no .env, nunca no código).
 GGPT_API = "https://api.gestaogpt.com.br/v1"
 GGPT_SOCIOS = {"LUCCHESI": "Victor", "IGOR": "Igor"}
 GGPT_CONSUMIDOR = 1                 # CONSUMIDOR BALCÃO: venda sem cliente, não é fiado
-GGPT_CC = {"Caixa": 2, "PIX": 1}    # CAIXA PDV/DINHEIRO e BANCO INTER (o único banco cadastrado lá)
-GGPT_CC_FIADO = 3                   # conta corrente FIADO
-GGPT_PLANO_CLIENTES = 14            # 1.1.3.01 Clientes
-GGPT_PRAZO_FIADO = 30               # dias até a dívida anotada aparecer como atrasada
 
 def _ggpt_req(metodo, caminho, corpo=None):
     import json as _json, urllib.request, urllib.error
@@ -4335,7 +4329,7 @@ def _ggpt_req(metodo, caminho, corpo=None):
     if not tok:
         raise RuntimeError("a chave do sistema novo não está configurada no servidor")
     # User-Agent próprio: o Cloudflare deles barra o do Python (erro 1010). Sem corpo, vai sem
-    # Content-Type: o cancelamento (DELETE) com Content-Type volta 400.
+    # Content-Type (DELETE com Content-Type volta 400).
     h = {"Authorization": "Bearer " + tok, "Accept": "application/json",
          "User-Agent": "DistribuidoraPraca031/1.0"}
     if corpo is not None:
@@ -4363,7 +4357,8 @@ def _ggpt_todas(caminho):
         page += 1
 
 def _fiado_dados():
-    """Quem deve quanto e desde quando. Cliente de teste (nome TESTE…) fica fora da tela."""
+    """Quem deve quanto e desde quando; atrasado = passou do vencimento que está no GestãoGPT.
+    Cliente de teste (nome TESTE…) fica fora da tela."""
     clientes = [c for c in _ggpt_todas("/cliente")
                 if c["ID"] != GGPT_CONSUMIDOR and not (c.get("FANTASIA") or "").upper().startswith("TESTE")]
     atrasadas = {k["ID"] for k in _ggpt_todas("/conta?tipo=receber&status=atrasado")}
@@ -4395,117 +4390,11 @@ def _fiado_dados():
             "total": round(sum(x["aberto"] for x in lista), 2),
             "devendo": sum(1 for x in lista if x["aberto"] > 0.004)}
 
-def _fiado_cliente(cid):
-    d = _fiado_dados()
-    _cache["fiado"] = (time.time(), d)
-    return next((c for c in d["clientes"] + d["socios"] if c["id"] == cid), None)
-
 @app.route("/api/fiado")
 @login_required
 def api_fiado():
     try:
         return jsonify({"ok": True, **cached("fiado", 60, _fiado_dados)})
-    except Exception as e:
-        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
-
-@app.route("/api/fiado/pagou", methods=["POST"])
-@login_required
-def api_fiado_pagou():
-    """Cliente acertou (tudo ou parte): abate da parcela mais antiga pra mais nova no sistema
-    novo e lança o dinheiro no GestãoClick pro fechamento contar com ele."""
-    body = request.get_json(force=True, silent=True) or {}
-    cid = int(_num(body.get("cliente")))
-    valor = round(_num(body.get("valor")), 2)
-    forma = body.get("forma") or ""
-    data = (body.get("data") or _hoje())[:10]
-    if valor <= 0:
-        return jsonify({"ok": False, "erro": "informe o valor que ele pagou"}), 400
-    if forma != "Caixa" and not _banco_da_forma(forma):
-        return jsonify({"ok": False, "erro": "escolha onde recebeu (gaveta ou PIX de qual banco)"}), 400
-    try:
-        cli = _fiado_cliente(cid)
-        if not cli:
-            return jsonify({"ok": False, "erro": "cliente não encontrado"}), 404
-        if valor > cli["aberto"] + 0.01:
-            return jsonify({"ok": False, "erro": f"{cli['nome']} deve R$ {cli['aberto']:.2f}: "
-                            f"o pagamento não pode passar disso"}), 400
-        parcelas = []
-        for k in _ggpt_todas(f"/conta?tipo=receber&status=aberto&id_cliente={cid}"):
-            parcelas += [p for p in _ggpt_req("GET", f"/conta/{k['ID']}").get("parcelas") or []
-                         if p.get("STATUS") != "PG"]
-        parcelas.sort(key=lambda p: (p.get("DATA_VENC") or "", p["ID"]))
-    except Exception as e:
-        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
-    cc = GGPT_CC["Caixa" if forma == "Caixa" else "PIX"]
-    resto, abatido, falha = valor, 0.0, None
-    for p in parcelas:
-        if resto <= 0.004:
-            break
-        v = round(min(resto, _num(p.get("VALOR"))), 2)
-        try:     # abaixo do valor da parcela é baixa parcial: o sistema cria a parcela do resto
-            _ggpt_req("POST", f"/conta-parcela/{p['ID']}/baixar",
-                      {"data_pagto": data, "id_conta_corrente": cc, "valor_pago": v})
-        except Exception as e:
-            falha = str(e)[:150]
-            break
-        resto, abatido = round(resto - v, 2), round(abatido + v, 2)
-    _cache.pop("fiado", None)
-    if abatido <= 0:
-        return jsonify({"ok": False, "erro": "não consegui abater a dívida: " + (falha or "nada em aberto")}), 502
-    try:      # só o que de fato abateu entra no caixa, pra nunca contar dinheiro duas vezes
-        _lanca_pagamento_conta(abatido, cli["nome"], forma, data)
-    except Exception as e:
-        return jsonify({"ok": False, "erro": f"abati R$ {abatido:.2f} da dívida de {cli['nome']}, mas o "
-                        f"dinheiro NÃO entrou no caixa ({str(e)[:120]}). Lance só a entrada pelo ＋ Lançar → "
-                        f"Entrada → Fiado, sem escolher o cliente."}), 502
-    if falha:
-        return jsonify({"ok": False, "erro": f"abati e lancei no caixa só R$ {abatido:.2f} de R$ {valor:.2f} "
-                        f"({falha}). Confira a dívida na tela antes de lançar o resto."}), 502
-    return jsonify({"ok": True, "cliente": cli["nome"], "valor": abatido,
-                    "falta": round(cli["aberto"] - abatido, 2), "forma": forma})
-
-@app.route("/api/fiado/pendurou", methods=["POST"])
-@login_required
-def api_fiado_pendurou():
-    """Anota que o cliente ficou devendo. A venda em si continua passando no caixa."""
-    body = request.get_json(force=True, silent=True) or {}
-    cid = int(_num(body.get("cliente")))
-    valor = round(_num(body.get("valor")), 2)
-    data = (body.get("data") or _hoje())[:10]
-    obs = (body.get("obs") or "").strip()
-    if valor <= 0:
-        return jsonify({"ok": False, "erro": "informe quanto ele ficou devendo"}), 400
-    try:
-        cli = _fiado_cliente(cid)
-        if not cli:
-            return jsonify({"ok": False, "erro": "cliente não encontrado"}), 404
-        venc = (datetime.date.fromisoformat(data) + datetime.timedelta(days=GGPT_PRAZO_FIADO)).isoformat()
-        _ggpt_req("POST", "/conta", {
-            "tipo": "receber", "origem": "CLI", "id_empresa": cid, "id_plnconta": GGPT_PLANO_CLIENTES,
-            "fatura": (f"FIADO {data[8:10]}/{data[5:7]}" + (f" {obs}" if obs else ""))[:60],
-            "data_lanc": data, "obs": "Anotado pelo painel",
-            "parcelas": [{"data_venc": venc, "valor": valor, "id_conta_corrente": GGPT_CC_FIADO}]})
-        _cache.pop("fiado", None)
-        return jsonify({"ok": True, "cliente": cli["nome"], "valor": valor,
-                        "deve": round(cli["aberto"] + valor, 2)})
-    except Exception as e:
-        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
-
-@app.route("/api/fiado/cliente", methods=["POST"])
-@login_required
-def api_fiado_cliente():
-    body = request.get_json(force=True, silent=True) or {}
-    nome = re.sub(r"\s+", " ", (body.get("nome") or "")).strip().upper()
-    if len(nome) < 2:
-        return jsonify({"ok": False, "erro": "digite o nome do cliente"}), 400
-    try:
-        d = _fiado_dados()
-        if any(c["nome"].upper() == nome for c in d["clientes"] + d["socios"]):
-            return jsonify({"ok": False, "erro": f"{nome} já está cadastrado"}), 400
-        r = _ggpt_req("POST", "/cliente", {"fantasia": nome, "razaosocial": nome, "tipopessoa": "PF",
-                                           "perfilfiscal": "CF Não Contribuinte", "obs": "Cliente do fiado"})
-        _cache.pop("fiado", None)
-        return jsonify({"ok": True, "id": r.get("ID"), "nome": nome})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
