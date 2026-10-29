@@ -198,6 +198,10 @@ body{padding-bottom:84px}
 .lc-sec{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);font-weight:700;margin:18px 0 2px}
 .lc-aviso{font-size:.76rem;color:var(--warn);margin-top:3px}
 .ni-mais{flex:1 1 100%;min-width:0}
+/* aba Fiado: no celular a data e a situação descem pra baixo do nome e os botões empilham */
+.fi-sub{display:none;font-size:.7rem;color:var(--muted);margin-top:2px;font-weight:400}
+@media(max-width:600px){#view-fiado .fi-c3,#view-fiado .fi-c4{display:none}#view-fiado .fi-sub{display:block}
+  #view-fiado td.nome{min-width:0}#view-fiado td.fi-acts .lc-btn{display:block;width:100%;margin:3px 0}}
 .ni-contas{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;margin-top:2px}
 .ni-contas .m{grid-column:1/-1}
 .ni-contas select{width:100%;min-width:0}
@@ -293,6 +297,7 @@ body.lc-aberto{overflow:hidden}
         <button id="tab-estoque" role="tab" aria-selected="false">📦 Estoque</button>
         <button id="tab-contas" role="tab" aria-selected="false">🧾 Contas</button>
         <button id="tab-financeiro" role="tab" aria-selected="false">💰 Financeiro</button>
+        <button id="tab-fiado" role="tab" aria-selected="false">📒 Fiado</button>
         <button id="tab-deliv" role="tab" aria-selected="false">🛵 Delivery</button>
       </div>
       <button class="btn-refresh" id="btn-refresh" title="Recarrega a versão mais recente do painel">
@@ -753,6 +758,33 @@ body.lc-aberto{overflow:hidden}
 
 </div><!-- /view-financeiro -->
 
+<!-- ============ FIADO (no sistema novo, GestãoGPT · 29/10/2026) ============ -->
+<div id="view-fiado" hidden>
+<section class="kpis" id="fi-kpis"></section>
+<section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+    <div><div class="eyebrow">Fiado · clientes</div><h2>Quem está devendo</h2></div>
+    <label class="note" style="display:flex;gap:6px;align-items:center;margin:0;cursor:pointer"><input type="checkbox" id="fi-todos"> mostrar quem não deve nada</label>
+  </div>
+  <div class="tblwrap" id="fi-tbl"><p class="note">carregando…</p></div>
+  <p class="note"><b>Pagou</b>: quando o cliente acertar, tudo ou uma parte. A dívida baixa e o dinheiro entra na gaveta ou no PIX, igual ao ＋ Lançar (o fechamento já conta). <b>Pendurou</b>: só anota quem ficou devendo, a venda continua passando no caixa como sempre. A dívida aparece como <b>atrasada</b> depois de 30 dias.</p>
+</section>
+<section class="card">
+  <div class="eyebrow">Consumo dos sócios</div>
+  <h2>Victor e Igor</h2>
+  <div class="tblwrap" id="fi-socios"><p class="note">carregando…</p></div>
+  <p class="note">Fica <b>fora</b> do "a receber" dos clientes: é o que cada um consumiu da loja. Cada sócio na sua linha, sem somar.</p>
+</section>
+<section class="card">
+  <div class="eyebrow">Fiado · cadastro</div>
+  <h2>Cliente novo</h2>
+  <div class="lc-form" style="margin-top:10px"><label>Nome (como vocês chamam ele na loja)<input id="fi-novo" placeholder="ex.: ZÉ DA BANCA" autocomplete="off"></label></div>
+  <div class="lc-acts"><button class="lc-btn" id="fi-novo-go" type="button">Cadastrar cliente</button></div>
+  <div class="lc-msg" id="fi-novo-msg" aria-live="polite"></div>
+</section>
+<span class="stamp" id="fi-stamp"></span>
+</div><!-- /view-fiado -->
+
 <!-- ============ VISÃO DELIVERY (Anota AI) ============ -->
 <div id="view-delivery" hidden>
 <section class="kpis" id="d-kpis"></section>
@@ -803,6 +835,7 @@ body.lc-aberto{overflow:hidden}
   <button data-aba="acomp" role="menuitem">📊 Acompanhamento</button>
   <button data-aba="estoque" role="menuitem">📦 Estoque</button>
   <button data-aba="financeiro" role="menuitem">💰 Financeiro</button>
+  <button data-aba="fiado" role="menuitem">📒 Fiado</button>
   <button data-aba="delivery" role="menuitem">🛵 Delivery</button>
 </div>
 
@@ -1556,8 +1589,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
 // ============ TOGGLE LOJA/DELIVERY + BOTÃO ATUALIZAR ============
 (function(){
-  const VIEWS={inicio:'view-inicio',loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',financeiro:'view-financeiro',delivery:'view-delivery'};
-  const TABS={inicio:'tab-inicio',loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',contas:'tab-contas',financeiro:'tab-financeiro',delivery:'tab-deliv'};
+  const VIEWS={inicio:'view-inicio',loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',financeiro:'view-financeiro',fiado:'view-fiado',delivery:'view-delivery'};
+  const TABS={inicio:'tab-inicio',loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',contas:'tab-contas',financeiro:'tab-financeiro',fiado:'tab-fiado',delivery:'tab-deliv'};
   function sel(which){
     if(!VIEWS[which]) which='inicio';
     for(const k in VIEWS){
@@ -3051,8 +3084,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       }).catch(()=>{ solta(b); msg.innerHTML=ER('Sem resposta do sistema. Confira em Meus lançamentos antes de lançar de novo.'); });
     }
     function painelFiado(p){
-      p.innerHTML='<p class="note" style="margin:0 0 10px">A venda do fiado <b>já está lançada</b>: aqui entra só o dinheiro (não conta venda de novo).</p><div class="lc-form">'+
-        '<label>Cliente (opcional)<input id="lc-cli" placeholder="nome"></label>'+
+      // cliente da lista do fiado: abate a dívida dele no sistema novo junto com a entrada do dinheiro
+      const fd=window.fiadoDados&&window.fiadoDados();
+      const devem=fd?fd.clientes.concat(fd.socios).filter(c=>c.aberto>0.004):[];
+      p.innerHTML='<p class="note" style="margin:0 0 10px">A venda do fiado <b>já está lançada</b>: aqui entra só o dinheiro (não conta venda de novo). Escolhendo o cliente, a dívida dele baixa na aba <b>📒 Fiado</b>.</p><div class="lc-form">'+
+        (devem.length?'<label>Cliente<select id="lc-cli-id"><option value="">não está na lista / sem nome</option>'+
+          devem.map(c=>'<option value="'+c.id+'">'+esc(c.socio||c.nome)+' · deve R$ '+fmt(c.aberto)+'</option>').join('')+'</select></label>':'')+
+        '<label id="lc-cli-l">Nome (opcional)<input id="lc-cli" placeholder="nome"></label>'+
         '<label>Valor recebido (R$)<input id="lc-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
         '<label>Recebi em<select id="lc-forma">'+opts([['Caixa','Dinheiro (gaveta)'],['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank']],'escolha…')+'</select></label>'+
         '<label>Dia<input id="lc-data" type="date" value="'+hojeL+'" max="'+hojeL+'"></label></div>'+rodape('Lançar entrada');
@@ -3060,6 +3098,15 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         const v=num('lc-valor'), f=val('lc-forma'), msg=g('lc-msg');
         if(!(v>0)){ msg.innerHTML=ER('Digite o valor recebido.'); return; }
         if(!f){ msg.innerHTML=ER('Escolha onde recebeu.'); return; }
+        const cid=g('lc-cli-id')?+val('lc-cli-id'):0;
+        if(cid){
+          const c=devem.find(x=>x.id===cid);
+          if(c&&v>c.aberto+0.01){ msg.innerHTML=ER(esc(c.socio||c.nome)+' deve R$ '+fmt(c.aberto)+': o pagamento não pode passar disso.'); return; }
+          manda('/api/fiado/pagou',{cliente:cid, valor:v, forma:f, data:val('lc-data')||hojeL},
+                r=>'R$ '+fmt(r.valor)+' de '+esc(r.cliente)+' lançado '+(f==='Caixa'?'na gaveta':'no '+esc(f))+'. '+(r.falta>0.004?'Ainda deve R$ '+fmt(r.falta)+'.':'Quitou tudo.'),
+                f==='Caixa'?['gaveta','dias']:[]).then(()=>{ if(window.carregaFiado) window.carregaFiado(true); });
+          return;
+        }
         manda('/api/pagamento-conta',{valor:v, cliente:val('lc-cli'), forma:f, data:val('lc-data')||hojeL},
               r=>'R$ '+fmt(r.valor)+(r.cliente?' de '+esc(r.cliente):'')+' lançado '+(f==='Caixa'?'na gaveta (o fechamento já conta)':'no '+esc(f))+', sem venda nova.',
               f==='Caixa'?['gaveta','dias']:[]);
@@ -3567,6 +3614,113 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       Promise.all([loadInicio(true),loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados ✓'); }); });
   }
+})();
+</script>
+<script>
+/* ===== FIADO — lê e grava no sistema novo (GestãoGPT); o dinheiro recebido entra no GestãoClick ===== */
+(function(){
+  const g=id=>document.getElementById(id);
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const post=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+  const dbr=d=>d?d.slice(8,10)+'/'+d.slice(5,7):'';
+  const OK=t=>'<span style="color:var(--good)">✓ '+t+'</span>', ER=t=>'<span style="color:var(--crit)">'+t+'</span>';
+  const FORMAS=[['Caixa','Dinheiro (gaveta)'],['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank']];
+  let dados=null, aberto=null;   // aberto = {id, acao}: a linha com o formulário aberto
+  window.fiadoDados=()=>dados;
+
+  function linha(c,socio){
+    const deve=c.aberto>0.004;
+    const sit=!deve?'<span class="pill pB">em dia</span>':(c.atrasado?'<span class="pill pcrit">atrasado</span>':'<span class="pill pwarn">em aberto</span>');
+    const sub=deve?(c.desde?'desde '+dbr(c.desde)+' · ':'')+(c.atrasado?'<b style="color:var(--crit)">atrasado</b>':'em aberto'):'em dia';
+    let h='<tr data-id="'+c.id+'"><td class="nome"><b>'+esc(socio?c.socio:c.nome)+'</b>'+(socio?'<div class="note" style="margin:0">'+esc(c.nome)+'</div>':'')+'<div class="fi-sub">'+sub+'</div></td>'+
+      '<td class="num"><b>R$ '+fmt(c.aberto)+'</b></td><td class="fi-c3">'+(deve&&c.desde?dbr(c.desde):'')+'</td><td class="fi-c4">'+sit+'</td>'+
+      '<td class="fi-acts" style="text-align:right"><button class="lc-btn mini good" data-acao="pagou" data-id="'+c.id+'" type="button"'+(deve?'':' disabled')+'>pagou</button> '+
+      '<button class="lc-btn mini ghost" data-acao="pendurou" data-id="'+c.id+'" type="button">pendurou</button></td></tr>';
+    if(aberto&&aberto.id===c.id) h+='<tr class="fi-form"><td colspan="5">'+form(c,aberto.acao)+'</td></tr>';
+    return h;
+  }
+  function form(c,acao){
+    const hoje=hojeBR();
+    if(acao==='pagou') return '<div class="lc-form">'+
+      '<label>Quanto pagou (R$)<input id="fi-v" type="number" step="0.01" min="0" max="'+c.aberto+'" inputmode="decimal" placeholder="deve '+fmt(c.aberto)+'"></label>'+
+      '<label>Recebi em<select id="fi-f"><option value="">escolha…</option>'+FORMAS.map(f=>'<option value="'+f[0]+'">'+f[1]+'</option>').join('')+'</select></label>'+
+      '<label>Dia<input id="fi-d" type="date" value="'+hoje+'" max="'+hoje+'"></label></div>'+
+      '<div class="lc-acts"><button class="lc-btn good" id="fi-go" type="button">Lançar pagamento de '+esc(c.socio||c.nome)+'</button>'+
+      '<button class="lc-btn ghost" id="fi-tudo" type="button">pagou tudo (R$ '+fmt(c.aberto)+')</button><button class="lc-btn ghost" id="fi-x" type="button">cancelar</button></div><div class="lc-msg" id="fi-msg" aria-live="polite"></div>';
+    return '<div class="lc-form">'+
+      '<label>Quanto ficou devendo (R$)<input id="fi-v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></label>'+
+      '<label>Dia<input id="fi-d" type="date" value="'+hoje+'" max="'+hoje+'"></label>'+
+      '<label>O que levou (opcional)<input id="fi-o" maxlength="40" placeholder="ex.: 2 Heineken"></label></div>'+
+      '<div class="lc-acts"><button class="lc-btn" id="fi-go" type="button">Anotar fiado de '+esc(c.socio||c.nome)+'</button><button class="lc-btn ghost" id="fi-x" type="button">cancelar</button></div><div class="lc-msg" id="fi-msg" aria-live="polite"></div>';
+  }
+  const tabela=(rows,vazio)=>rows.length?'<table><thead><tr><th>Cliente</th><th class="num">Deve</th><th class="fi-c3">Desde</th><th class="fi-c4">Situação</th><th></th></tr></thead><tbody>'+rows.join('')+'</tbody></table>':'<p class="note">'+vazio+'</p>';
+  function pinta(){
+    if(!dados) return;
+    const todos=g('fi-todos').checked;
+    const cl=dados.clientes.filter(c=>todos||c.aberto>0.004||(aberto&&aberto.id===c.id));
+    g('fi-tbl').innerHTML=tabela(cl.map(c=>linha(c,false)),'Ninguém devendo agora.');
+    g('fi-socios').innerHTML=tabela(dados.socios.map(c=>linha(c,true)),'Nenhum sócio cadastrado no fiado.');
+    const atr=dados.clientes.filter(c=>c.atrasado&&c.aberto>0.004);
+    g('fi-kpis').innerHTML='<div class="kpi"><div class="lbl">Clientes devem</div><div class="val">R$ '+fmt(dados.total)+'</div><div class="sub">'+dados.devendo+' cliente'+(dados.devendo===1?'':'s')+' com fiado</div></div>'+
+      '<div class="kpi"><div class="lbl">Atrasado (mais de 30 dias)</div><div class="val">R$ '+fmt(atr.reduce((a,c)=>a+c.aberto,0))+'</div><div class="sub">'+atr.length+' cliente'+(atr.length===1?'':'s')+'</div></div>'+
+      dados.socios.map(s=>'<div class="kpi"><div class="lbl">Consumo '+esc(s.socio)+'</div><div class="val">R$ '+fmt(s.aberto)+'</div><div class="sub">sócio · fora do a receber</div></div>').join('');
+    if(aberto) liga();
+  }
+  function acha(id){ return dados&&(dados.clientes.concat(dados.socios)).find(c=>c.id===id); }
+  function liga(){
+    const c=acha(aberto.id), msg=g('fi-msg'), go=g('fi-go'); if(!c||!go) return;
+    const v=g('fi-v'); if(v&&!v.value) setTimeout(()=>v.focus(),0);
+    g('fi-x').onclick=()=>{ aberto=null; pinta(); };
+    if(g('fi-tudo')) g('fi-tudo').onclick=()=>{ v.value=c.aberto.toFixed(2); };
+    go.onclick=()=>{
+      const val=parseFloat(String(v.value).replace(',','.')), dia=g('fi-d').value||hojeBR();
+      if(!(val>0)){ msg.innerHTML=ER('Digite o valor.'); return; }
+      let url, corpo;
+      if(aberto.acao==='pagou'){
+        const f=g('fi-f').value;
+        if(!f){ msg.innerHTML=ER('Escolha onde recebeu.'); return; }
+        if(val>c.aberto+0.01){ msg.innerHTML=ER(esc(c.socio||c.nome)+' deve R$ '+fmt(c.aberto)+': o pagamento não pode passar disso.'); return; }
+        url='/api/fiado/pagou'; corpo={cliente:c.id, valor:val, forma:f, data:dia};
+      } else { url='/api/fiado/pendurou'; corpo={cliente:c.id, valor:val, data:dia, obs:g('fi-o').value}; }
+      go.disabled=true; msg.innerHTML='lançando…';
+      post(url,corpo).then(r=>{
+        if(!r.ok){ go.disabled=false; msg.innerHTML=ER(esc(r.erro||'não consegui lançar')); if(/abati/.test(r.erro||'')) carrega(true); return; }
+        const nome=esc(c.socio||c.nome);
+        const t=aberto.acao==='pagou'
+          ? 'R$ '+fmt(r.valor)+' de '+nome+' lançado '+(corpo.forma==='Caixa'?'na gaveta':'no '+esc(corpo.forma))+'. '+(r.falta>0.004?'Ainda deve R$ '+fmt(r.falta)+'.':'Quitou tudo.')
+          : 'Anotado: '+nome+' agora deve R$ '+fmt(r.deve)+'.';
+        aberto=null; carrega(true).then(()=>{ const s=g('fi-stamp'); if(s) s.innerHTML=OK(t); toastFi(t); });
+      }).catch(()=>{ go.disabled=false; msg.innerHTML=ER('Sem resposta do sistema. Recarregue a aba e confira a dívida antes de lançar de novo.'); });
+    };
+  }
+  function toastFi(t){ let el=g('toast'); if(!el){el=document.createElement('div');el.id='toast';el.className='toast';document.body.appendChild(el);} el.innerHTML='✓ '+t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),5200); }
+  function carrega(fresh){
+    return fetch('/api/fiado'+(fresh?'?fresh=1':'')).then(r=>r.json()).then(r=>{
+      if(!r.ok){ g('fi-tbl').innerHTML='<p class="note" style="color:var(--crit)">Não consegui ler o fiado agora: '+esc(r.erro)+'</p>'; g('fi-socios').innerHTML=''; return; }
+      dados=r; pinta();
+      const s=g('fi-stamp'); if(s) s.textContent='lido do sistema novo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }).catch(()=>{ g('fi-tbl').innerHTML='<p class="note" style="color:var(--crit)">Sem resposta do sistema novo agora. Tente o Atualizar daqui a pouco.</p>'; });
+  }
+  window.carregaFiado=carrega;
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('#view-fiado [data-acao]'); if(!b) return;
+    const id=+b.dataset.id;
+    aberto=(aberto&&aberto.id===id&&aberto.acao===b.dataset.acao)?null:{id:id,acao:b.dataset.acao};
+    pinta();
+  });
+  g('fi-todos').addEventListener('change',pinta);
+  g('fi-novo-go').addEventListener('click',()=>{
+    const nome=g('fi-novo').value.trim(), msg=g('fi-novo-msg'), b=g('fi-novo-go');
+    if(nome.length<2){ msg.innerHTML=ER('Digite o nome do cliente.'); return; }
+    b.disabled=true; msg.innerHTML='cadastrando…';
+    post('/api/fiado/cliente',{nome:nome}).then(r=>{ b.disabled=false;
+      if(!r.ok){ msg.innerHTML=ER(esc(r.erro||'não consegui cadastrar')); return; }
+      g('fi-novo').value=''; msg.innerHTML=OK(esc(r.nome)+' cadastrado. Ele aparece na lista com "mostrar quem não deve nada" ou depois do primeiro fiado.');
+      g('fi-todos').checked=true; carrega(true);
+    }).catch(()=>{ b.disabled=false; msg.innerHTML=ER('Sem resposta do sistema. Confira na lista antes de cadastrar de novo.'); });
+  });
+  carrega(false);
+  const rb=document.getElementById('btn-refresh'); if(rb) rb.addEventListener('click',()=>carrega(true));
 })();
 </script>
 </body>

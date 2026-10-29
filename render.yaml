@@ -21,3 +21,6 @@ services:
         sync: false
       - key: ANOTA_PAGE_ID
         sync: false
+      # sistema novo em teste (GestãoGPT): aba Fiado
+      - key: GESTAOGPT_TOKEN
+        sync: false
