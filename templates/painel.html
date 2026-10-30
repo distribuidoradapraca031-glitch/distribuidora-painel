@@ -767,7 +767,7 @@ body.lc-aberto{overflow:hidden}
     <label class="note" style="display:flex;gap:6px;align-items:center;margin:0;cursor:pointer"><input type="checkbox" id="fi-todos"> mostrar quem não deve nada</label>
   </div>
   <div class="tblwrap" id="fi-tbl"><p class="note">carregando…</p></div>
-  <p class="note">Só acompanhamento: o <b>pagamento</b> e o <b>fiado novo</b> são lançados no <b>GestãoGPT</b>, e aqui atualiza sozinho (em até 1 minuto, ou no botão Atualizar). A dívida aparece como <b>atrasada</b> quando passa do vencimento.</p>
+  <p class="note">Clique no cliente pra abrir o que ele comprou: dia, produtos e valor. Só acompanhamento: o <b>pagamento</b> e o <b>fiado novo</b> são lançados no <b>GestãoGPT</b>, e aqui atualiza sozinho (em até 1 minuto, ou no botão Atualizar). Compra paga some da lista. A dívida aparece como <b>atrasada</b> quando passa do vencimento.</p>
 </section>
 <section class="card">
   <div class="eyebrow">Consumo dos sócios</div>
@@ -3602,12 +3602,36 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const dbr=d=>d?d.slice(8,10)+'/'+d.slice(5,7):'';
   let dados=null;
+  const abertos={};   // cliente com a setinha aberta -> compras lidas (relê se a dívida mudou)
   function linha(c,socio){
     const deve=c.aberto>0.004;
     const sit=!deve?'<span class="pill pB">em dia</span>':(c.atrasado?'<span class="pill pcrit">atrasado</span>':'<span class="pill pwarn">em aberto</span>');
     const sub=deve?(c.desde?'desde '+dbr(c.desde)+' · ':'')+(c.atrasado?'<b style="color:var(--crit)">atrasado</b>':'em aberto'):'em dia';
-    return '<tr><td class="nome"><b>'+esc(socio?c.socio:c.nome)+'</b>'+(socio?'<div class="note" style="margin:0">'+esc(c.nome)+'</div>':'')+'<div class="fi-sub">'+sub+'</div></td>'+
-      '<td class="num"><b>R$ '+fmt(c.aberto)+'</b></td><td class="fi-c3">'+(deve&&c.desde?dbr(c.desde):'')+'</td><td class="fi-c4">'+sit+'</td></tr>';
+    const ab=abertos[c.id];
+    return '<tr'+(deve?' class="fi-cli" data-id="'+c.id+'" style="cursor:pointer"':'')+'><td class="nome">'+
+      (deve?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">'+(ab?'▾':'▸')+'</span>':'<span style="display:inline-block;width:12px"></span>')+
+      '<b>'+esc(socio?c.socio:c.nome)+'</b>'+(socio?'<div class="note" style="margin:0 0 0 12px">'+esc(c.nome)+'</div>':'')+'<div class="fi-sub" style="margin-left:12px">'+sub+'</div></td>'+
+      '<td class="num"><b>R$ '+fmt(c.aberto)+'</b></td><td class="fi-c3">'+(deve&&c.desde?dbr(c.desde):'')+'</td><td class="fi-c4">'+sit+'</td></tr>'+
+      (deve?'<tr class="fi-det" data-id="'+c.id+'"'+(ab?'':' hidden')+'><td colspan="4" style="padding:0;white-space:normal"><div class="fi-box" style="padding:6px 12px;background:var(--bg)">'+(ab&&ab.html?ab.html:'<p class="note">carregando…</p>')+'</div></td></tr>':'');
+  }
+  const qt=q=>String(Math.round(q*1000)/1000).replace('.',',');
+  function compra(x){
+    const tit=x.tipo==='venda'?dbr(x.data)+(x.hora?' às '+x.hora:'')+' <span style="color:var(--muted)">· venda nº '+esc(x.numero)+'</span>'
+      :(x.tipo==='caderno'?'<span>Saldo do caderno</span> <span style="color:var(--muted)">· compras antes de 29/10, sem produto anotado</span>'
+      :dbr(x.data)+' <span style="color:var(--muted)">· '+esc(x.texto)+'</span>');
+    const prods=(x.itens||[]).map(i=>'<div style="display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);padding:1px 0 1px 10px"><span>'+qt(i.qtde)+' × '+esc(i.nome)+'</span><span class="num">R$ '+fmt(i.valor)+'</span></div>').join('');
+    const parcial=x.total-x.deve>0.004?'<div style="font-size:.76rem;color:var(--warn);padding-left:10px">compra de R$ '+fmt(x.total)+': já pagou R$ '+fmt(x.total-x.deve)+'</div>':'';
+    return '<div style="padding:6px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;font-size:.85rem"><span>'+tit+'</span><span class="num" style="font-weight:600;white-space:nowrap">R$ '+fmt(x.deve)+'</span></div>'+prods+parcial+'</div>';
+  }
+  function abre(id,forcar){
+    const c=dados&&dados.clientes.concat(dados.socios).find(x=>x.id===id); if(!c) return;
+    const ab=abertos[id]||(abertos[id]={});
+    if(ab.html&&ab.aberto===c.aberto&&!forcar) return;
+    return fetch('/api/fiado/cliente/'+id).then(r=>r.json()).then(r=>{
+      ab.aberto=c.aberto;
+      ab.html=r.ok?(r.compras.length?r.compras.map(compra).join(''):'<p class="note">Nada em aberto.</p>'):'<p class="note" style="color:var(--crit)">Não consegui ler as compras: '+esc(r.erro)+'</p>';
+      const box=document.querySelector('#view-fiado tr.fi-det[data-id="'+id+'"] .fi-box'); if(box) box.innerHTML=ab.html;
+    }).catch(()=>{ const box=document.querySelector('#view-fiado tr.fi-det[data-id="'+id+'"] .fi-box'); if(box) box.innerHTML='<p class="note" style="color:var(--crit)">Sem resposta do GestãoGPT agora.</p>'; });
   }
   const tabela=(rows,vazio)=>rows.length?'<table><thead><tr><th>Cliente</th><th class="num">Deve</th><th class="fi-c3">Desde</th><th class="fi-c4">Situação</th></tr></thead><tbody>'+rows.join('')+'</tbody></table>':'<p class="note">'+vazio+'</p>';
   function pinta(){
@@ -3624,9 +3648,16 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     return fetch('/api/fiado'+(fresh?'?fresh=1':'')).then(r=>r.json()).then(r=>{
       if(!r.ok){ g('fi-tbl').innerHTML='<p class="note" style="color:var(--crit)">Não consegui ler o fiado agora: '+esc(r.erro)+'</p>'; g('fi-socios').innerHTML=''; return; }
       dados=r; pinta();
+      Object.keys(abertos).forEach(id=>abre(+id,fresh));   // quem está aberto relê (pagou no GestãoGPT, some daqui)
       g('fi-stamp').textContent='lido do GestãoGPT às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }).catch(()=>{ g('fi-tbl').innerHTML='<p class="note" style="color:var(--crit)">Sem resposta do GestãoGPT agora. Tente o Atualizar daqui a pouco.</p>'; });
   }
+  g('view-fiado').addEventListener('click',e=>{
+    const tr=e.target.closest('tr.fi-cli'); if(!tr) return;
+    const id=+tr.dataset.id, det=g('view-fiado').querySelector('tr.fi-det[data-id="'+id+'"]'), ch=tr.querySelector('.chev');
+    if(abertos[id]){ delete abertos[id]; if(det) det.hidden=true; if(ch) ch.textContent='▸'; return; }
+    abertos[id]={}; if(det) det.hidden=false; if(ch) ch.textContent='▾'; abre(id);
+  });
   g('fi-todos').addEventListener('change',pinta);
   carrega(false);
   // abriu a aba de novo: relê (o dono acabou de lançar no GestãoGPT)

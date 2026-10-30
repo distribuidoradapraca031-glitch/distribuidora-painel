@@ -4398,6 +4398,45 @@ def api_fiado():
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
 
+_ggpt_ped = {}      # venda do caixa já lida {id: (quando, pedido)}: venda emitida não muda
+
+def _ggpt_pedido(pid):
+    hit = _ggpt_ped.get(pid)
+    if hit and time.time() - hit[0] < 600:
+        return hit[1]
+    p = _ggpt_req("GET", f"/pedido/{pid}")
+    _ggpt_ped[pid] = (time.time(), p)
+    return p
+
+@app.route("/api/fiado/cliente/<int:cid>")
+@login_required
+def api_fiado_compras(cid):
+    """A setinha do cliente: o que está em aberto no nome dele, compra por compra, com os
+    produtos. Pagou no GestãoGPT, a compra some daqui (só entra conta em aberto)."""
+    try:
+        out = []
+        for k in _ggpt_todas(f"/conta?tipo=receber&status=aberto&id_cliente={cid}"):
+            if (k.get("ORIGEM") or "").strip() != "CLI":
+                continue
+            c = {"data": (k.get("DATA_LANC") or "")[:10], "hora": "", "tipo": "outro", "itens": [],
+                 "texto": (k.get("FATURA") or "").strip(), "total": round(_num(k.get("VALOR")), 2),
+                 "deve": round(_num(k.get("VALOR_EM_ABERTO")), 2)}
+            if k.get("ID_PEDIDO"):
+                p = _ggpt_pedido(k["ID_PEDIDO"])
+                d = p.get("DATA") or ""      # vem com "Z" mas já é hora de Brasília: não converter
+                c.update(tipo="venda", numero=p.get("NUMERO"), data=d[:10] or c["data"], hora=d[11:16],
+                         total=round(_num(p.get("TOTAL")) or c["total"], 2),   # parte pode ter sido paga na hora
+                         itens=[{"nome": (i.get("DESCRICAO") or "").strip(), "qtde": _num(i.get("QTDE")),
+                                 "valor": round(_num(i.get("VALORTOTAL")), 2)}
+                                for i in p.get("ITENS") or [] if (i.get("STATUS") or "") != "CANCELADO"])
+            elif c["texto"].upper().startswith("SALDO ANTERIOR"):
+                c["tipo"] = "caderno"
+            out.append(c)
+        out.sort(key=lambda x: (x["data"], x["hora"]))
+        return jsonify({"ok": True, "compras": out, "deve": round(sum(x["deve"] for x in out), 2)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
 @app.route("/api/reforco-caixa", methods=["POST"])
 @login_required
 def api_reforco_caixa():
