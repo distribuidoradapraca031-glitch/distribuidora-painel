@@ -3937,6 +3937,12 @@ def api_abc():
                 fat30[pid] += _num(p.get("valor_total"))
                 if d >= d7:
                     un7[pid] += q
+        # vendas do caixa novo vêm das saídas de estoque: /vendas de lá não traz os produtos
+        for m in gcapi.saidas_de_venda(ini30):
+            un30[m["pid"]] += m["qtde"]
+            fat30[m["pid"]] += m["valor"]
+            if m["dia"] >= d7:
+                un7[m["pid"]] += m["qtde"]
         prods = {str(p.get("id")): p for p in gcapi.get_all("/produtos")
                  if str(p.get("ativo")) == "1"}
         total_fat = sum(fat30.values()) or 1.0

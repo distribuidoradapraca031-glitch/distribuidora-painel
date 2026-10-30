@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Mesma "cara" do gclient, mas /pagamentos e /recebimentos moram no GestãoGPT (virada de
 30/10/2026). As telas do painel continuam falando em pagamento e recebimento; aqui isso vira
-conta + parcela de lá. O resto (/vendas, /produtos, /compras) ainda passa pro gclient até migrar.
+conta + parcela de lá. /produtos, /compras e /fornecedores também moram lá (ver as seções abaixo).
 
 Conta de verdade: 1 parcela = 1 registro, id = id da parcela. A descrição inteira do painel e os
 códigos que ele usa (plano, forma, conta) vão no OBS da conta, numa marca {{…}} no fim. O banco
@@ -12,9 +12,9 @@ lançado direto no GestãoGPT não tem marca: os códigos saem do plano e da con
 
 Registro só do painel ([RES±], [SOB±], [SALDO], [NI], [GELO…], valor zero) não pode virar conta,
 senão aparece como conta a pagar na tela do dono: fica no controle (produtos técnicos inativos
-CONTROLE PAINEL n, JSON até 3.500 letras por produto), com id "i<numero>".
+CONTROLE PAINEL n, um JSON cortado em pedaços de 2.400 letras), com id "i<numero>".
 """
-import json, re, threading, time, urllib.error, urllib.parse, urllib.request
+import json, os, re, threading, time, urllib.error, urllib.parse, urllib.request
 import gclient as _gc
 from gclient import _tok   # noqa: F401 (o app usa gcapi._tok)
 
@@ -45,7 +45,7 @@ INTERNO = re.compile(r"^\[(RES\+|RES-|SOB\+|SOB-|SALDO|NI|NIX|GELO[^\]]*)\]")
 FORA_DA_LISTA = ("PDV DIF. ABERTURA", "PDV SANGRIA")   # abertura e fechamento: só a gaveta lê
 MARCA = re.compile(r"\s*(?:æ|\{\{)(\{.*?\})(?:ç|\}\})\s*$", re.S)
 CTRL_NOME = "CONTROLE PAINEL"
-CTRL_MAX = 3400
+CTRL_MAX = 2400     # o gatilho de auditoria deles soma texto antigo + novo e estoura em 5.000 (erro 500)
 _memo, _memo_lock = {}, threading.Lock()
 _ctrl = {"ids": None}
 _ctrl_txt = {}
@@ -114,39 +114,30 @@ def _ctrl_ids():
 
 
 def _ctrl_ler():
+    """Os registros são um JSON só, cortado em pedaços de 2.400 letras, um por produto técnico."""
     def ler():
-        regs = {}
+        txt = ""
         for pid in _ctrl_ids():
-            try:
-                _ctrl_txt[pid] = _req("GET", f"/produto/{pid}").get("INFOADICIONAL") or "{}"
-                regs.update(json.loads(_txt(_ctrl_txt[pid]), strict=False))
-            except ValueError:
-                pass
-        return regs
-    return _guarda("ctrl", 60, ler)
+            _ctrl_txt[pid] = _req("GET", f"/produto/{pid}").get("INFOADICIONAL") or ""
+            txt += _ctrl_txt[pid]
+        return json.loads(_txt(txt), strict=False) if txt.strip() else {}
+    return _guarda("ctrl", 120, ler)
 
 
 def _ctrl_grava(regs):
-    """Reparte em páginas; cria produto técnico novo quando não cabe."""
-    paginas, atual = [], {}
-    for k in sorted(regs, key=lambda x: int(x[1:])):
-        teste = dict(atual); teste[k] = regs[k]
-        if len(json.dumps(teste, ensure_ascii=False, separators=(",", ":"))) > CTRL_MAX:
-            paginas.append(atual); atual = {k: regs[k]}
-        else:
-            atual = teste
-    paginas.append(atual)
+    """Só regrava o pedaço que mudou; cria produto técnico novo quando não cabe."""
+    txt = json.dumps(dict(sorted(regs.items(), key=lambda kv: int(kv[0][1:]))), ensure_ascii=False, separators=(",", ":"))
+    pedacos = [txt[i:i + CTRL_MAX] for i in range(0, len(txt), CTRL_MAX)]
     ids = _ctrl_ids()
-    novos = len(ids) < len(paginas)
-    while len(ids) < len(paginas):
+    while len(ids) < len(pedacos):
         r = _req("POST", "/produto", {"descricao": f"{CTRL_NOME} {len(ids) + 1}", "codfiscal": f"CTRL-PAINEL-{len(ids) + 1}",
-                                      "tipo": "SERVIÇO", "unidmed": "UN", "inativo": True, "infoadicional": "{}"})
+                                      "tipo": "SERVIÇO", "unidmed": "UN", "inativo": True, "infoadicional": ""})
         ids.append(r["ID"])
     for i, pid in enumerate(ids):
-        txt = json.dumps(paginas[i] if i < len(paginas) else {}, ensure_ascii=False, separators=(",", ":"))
-        if _ctrl_txt.get(pid) != txt:       # só regrava a página que mudou
-            _req("PUT", f"/produto/{pid}", {"infoadicional": txt})
-            _ctrl_txt[pid] = txt
+        t = pedacos[i] if i < len(pedacos) else ""
+        if _ctrl_txt.get(pid) != t:
+            _req("PUT", f"/produto/{pid}", {"infoadicional": t})
+            _ctrl_txt[pid] = t
     _limpa()
 
 
@@ -278,6 +269,9 @@ def _put(path, rid, body):
         _ctrl_grava(regs)
         return {"code": 200, "status": "success", "data": {"id": rid}}
     p = _req("GET", f"/conta-parcela/{rid}")
+    velho = _shape(p, tipo)      # o painel reescreve a conta sem o fornecedor: não pode perder
+    body = {**body, "fornecedor_id": body.get("fornecedor_id") or velho["fornecedor_id"],
+            "nome_fornecedor": body.get("nome_fornecedor") or velho["nome_fornecedor"]}
     pago_antes, pago_agora = p.get("STATUS") == "PG", str(body.get("liquidado")) == "1"
     if pago_antes:          # parcela paga só muda valor e conta depois de estornar
         _req("POST", f"/conta-parcela/{rid}/estornar", {})
@@ -353,6 +347,202 @@ def _vendas(params):
     return out
 
 
+# ---- produtos ----
+# Por fora o id continua o do GC (gelo, mapa do Anota, histórico de compras dependem dele); produto
+# novo usa o id do GestãoGPT. Fardo e fornecedor não têm campo lá: ficam em produtos técnicos.
+# INFOADICIONAL pode sair impresso na nota, por isso o [fardo=N] não vai no produto.
+_DIR = os.path.dirname(os.path.abspath(__file__))
+_MAPA = json.load(open(os.path.join(_DIR, "ggpt_map.json")))
+_INV = {v: k for k, v in _MAPA.items()}
+_SEM_ESTOQUE = set(json.load(open(os.path.join(_DIR, "ggpt_sem_estoque.json"))))
+_tec = {}
+
+
+def _ext(pid):
+    return _INV.get(pid) or str(pid)
+
+
+def _pid(ext):
+    return _MAPA.get(str(ext)) or int(ext)
+
+
+def _tec_id(nome, criar=False):
+    if nome not in _tec:
+        q = urllib.parse.quote(nome)
+        ids = [p["ID"] for p in _todas(f"/produto?inativo=true&descricao={q}") if (p.get("DESCRICAO") or "").strip().upper() == nome]
+        if ids:
+            _tec[nome] = ids[0]
+        elif criar:
+            _tec[nome] = _req("POST", "/produto", {"descricao": nome, "codfiscal": "CTRL-" + nome[9:18].strip().replace(" ", "-"), "tipo": "SERVIÇO",
+                                                   "unidmed": "UN", "inativo": True, "infoadicional": "{}"})["ID"]
+        else:
+            return None
+    return _tec[nome]
+
+
+def _tec_ler(nome):
+    def ler():
+        pid = _tec_id(nome)
+        try:
+            return json.loads(_txt(_req("GET", f"/produto/{pid}").get("INFOADICIONAL")) or "{}", strict=False) if pid else {}
+        except ValueError:
+            return {}
+    return _guarda("tec" + nome, 60, ler)
+
+
+def _tec_grava(nome, dado):
+    _req("PUT", f"/produto/{_tec_id(nome, True)}", {"infoadicional": json.dumps(dado, ensure_ascii=False, separators=(",", ":"))})
+    _limpa()
+
+
+def _p_shape(p):
+    ext, nome = _ext(p["ID"]), (p.get("DESCRICAO") or "").strip()
+    fardo = _tec_ler("CONTROLE FARDOS").get(ext)
+    custo, venda = f"{float(p.get('CUSTO') or 0):.4f}", f"{float(p.get('VALORUNIT') or 0):.2f}"
+    tecnico = nome.startswith("CONTROLE ")
+    return {"id": ext, "nome": nome, "codigo_interno": p.get("CODFISCAL") or "", "codigo_barra": p.get("EAN") or "",
+            "ativo": "0" if p.get("INATIVO") else "1", "estoque": str(p.get("ESTOQUE") or 0),
+            "movimenta_estoque": "0" if ext in _SEM_ESTOQUE or tecnico else "1", "valor_custo": custo, "valor_venda": venda,
+            "grupo_id": str(p.get("ID_GRUPO") or ""), "nome_grupo": p.get("GRUPO") or "",
+            "descricao": _txt(p.get("INFOADICIONAL")) if tecnico else (f"[fardo={fardo}]" if fardo else ""),
+            "fiscal": {"ncm": p.get("CLFISC") or ""}, "possui_composicao": "0", "possui_variacao": "0",
+            "valores": [{"nome_tipo": "Varejo", "valor_custo": custo, "valor_venda": venda}]}
+
+
+def _produtos(params):
+    nome = ((params or {}).get("nome") or "").strip()
+    if nome.startswith("CONTROLE "):
+        pid = _tec_id(nome.upper())
+        return [_p_shape(_req("GET", f"/produto/{pid}"))] if pid else []
+    return [_p_shape(p) for p in _guarda("prods", 30, lambda: _todas("/produto"))]
+
+
+def _p_post(body):
+    tecnico = str(body.get("ativo")) == "0"
+    r = _req("POST", "/produto", {"descricao": body.get("nome"), "tipo": "SERVIÇO" if tecnico else "PRODUTO", "unidmed": "UN", "inativo": tecnico,
+                                  "custo": float(body.get("valor_custo") or 0), "valorunit": float(body.get("valor_venda") or 0),
+                                  **({"infoadicional": body.get("descricao") or "{}"} if tecnico else {})})
+    _limpa()
+    return {"code": 200, "status": "success", "data": {"id": str(r["ID"])}}
+
+
+def _p_put(ext, body):
+    pid = _pid(ext)
+    atual = _req("GET", f"/produto/{pid}")
+    if (atual.get("DESCRICAO") or "").startswith("CONTROLE "):
+        _req("PUT", f"/produto/{pid}", {"infoadicional": body.get("descricao") or "{}"})
+        _limpa()
+        return {"code": 200, "status": "success", "data": {"id": ext}}
+    campos = {}
+    if body.get("valor_custo") not in (None, ""):
+        campos["custo"] = round(float(body["valor_custo"]), 4)
+    if body.get("valor_venda") not in (None, ""):
+        campos["valorunit"] = round(float(body["valor_venda"]), 2)
+    if body.get("nome") and body["nome"].strip() != (atual.get("DESCRICAO") or "").strip():
+        campos["descricao"] = body["nome"].strip()
+    if campos:
+        _req("PUT", f"/produto/{pid}", campos)
+    if "descricao" in body:
+        m = re.search(r"\[fardo=(\d+(?:[.,]\d+)?)\]", body.get("descricao") or "", re.I)
+        f = dict(_tec_ler("CONTROLE FARDOS"))
+        if m:
+            f[str(ext)] = int(float(m.group(1).replace(",", ".")))
+        else:
+            f.pop(str(ext), None)
+        _tec_grava("CONTROLE FARDOS", f)
+    if body.get("estoque") not in (None, ""):
+        delta = round(float(body["estoque"]) - float(atual.get("ESTOQUE") or 0), 4)
+        if abs(delta) >= 0.0005:
+            _req("POST", f"/produto/{pid}/estoque/movimentar", {"tipo": "entrada" if delta > 0 else "saida", "qtde": abs(delta),
+                                                                "obs": "Acerto de estoque pelo painel"})
+    _limpa()
+    return {"code": 200, "status": "success", "data": {"id": ext}}
+
+
+# ---- compras ----
+# A API do GestãoGPT não tem compra. Compra = entrada de estoque + conta(s) "Compra de nº X" + registro
+# no controle, que é o que o histórico da tela lê e o que permite desfazer.
+def _un_linha(p):
+    m = re.search(r"=\s*([\d.,]+)\s*un\b", p.get("detalhes") or "", re.I)
+    return float(m.group(1).replace(",", ".")) if m else float(p.get("quantidade") or 0)
+
+
+def _c_shape(k, j):
+    return {**j, "id": k, "produtos": [{"produto": x} for x in j.get("produtos") or []],
+            "pagamentos": [{"pagamento": x} for x in j.get("pagamentos") or []]}
+
+
+def _compras():
+    return [_c_shape(k, r["j"]) for k, r in _ctrl_ler().items() if r["t"] == "compra"]
+
+
+def _c_post(body):
+    cod, data = str(body.get("codigo") or ""), (body.get("data_emissao") or time.strftime("%Y-%m-%d"))[:10]
+    forn = str(body.get("fornecedor_id") or "")
+    nome_f = next((f["nome"] for f in _fornecedores() if str(f["id"]) == forn), "")
+    linhas, pags, nomes, erro = [], [], {}, None
+    try:
+        for w in body.get("produtos") or []:
+            p = w.get("produto", w)
+            un, vt = _un_linha(p), float(p.get("valor_total") or 0)
+            prod = _req("GET", f"/produto/{_pid(p['produto_id'])}")
+            _req("POST", f"/produto/{_pid(p['produto_id'])}/estoque/movimentar",
+                 {"tipo": "entrada", "qtde": un, "valor": round(vt / un, 4) if un else 0, "obs": f"Compra nº {cod}"[:60]})
+            linhas.append({"produto_id": str(p["produto_id"]), "nome_produto": (prod.get("DESCRICAO") or "").strip(), "quantidade": p.get("quantidade"),
+                           "valor_custo": p.get("valor_custo"), "valor_total": vt, "detalhes": p.get("detalhes") or ""})
+        for w in body.get("pagamentos") or []:
+            pg = w.get("pagamento", w)
+            _post("/pagamentos", {"descricao": f"Compra de nº {cod}", "valor": f"{float(pg.get('valor') or 0):.2f}", "data_vencimento": pg.get("data_vencimento") or data,
+                                  "data_competencia": data, "liquidado": pg.get("liquidado", "0"), "data_liquidacao": pg.get("data_liquidacao") or "",
+                                  "plano_contas_id": pg.get("plano_contas_id") or "33015669", "conta_bancaria_id": pg.get("conta_bancaria_id") or BANCO_GC,
+                                  "forma_pagamento_id": pg.get("forma_pagamento_id"), "fornecedor_id": forn, "nome_fornecedor": nome_f, "cadastrado_em": data})
+            pags.append({"nome_forma_pagamento": NOME_FORMA.get(str(pg.get("forma_pagamento_id")), ""), "valor": pg.get("valor")})
+    except Exception as e:
+        erro = str(e)[:150]
+    regs = dict(_ctrl_ler())
+    k = f"i{max([int(x[1:]) for x in regs] or [0]) + 1}"
+    regs[k] = {"t": "compra", "j": {"codigo": cod, "data_emissao": data, "fornecedor_id": forn, "nome_fornecedor": nome_f, "nome_situacao": "Confirmada",
+                                    "valor_total": body.get("valor_total"), "numero_nfe": body.get("numero_nfe") or "", "produtos": linhas, "pagamentos": pags}}
+    _ctrl_grava(regs)
+    if erro:
+        raise RuntimeError(f"a compra {cod} parou no meio ({erro}). Entrou o que está no histórico: confira antes de lançar de novo.")
+    return {"code": 200, "status": "success", "data": {"id": k, "codigo": cod}}
+
+
+def _c_delete(k):
+    regs = dict(_ctrl_ler())
+    r = regs.get(k)
+    if not r:
+        raise RuntimeError("compra não encontrada")
+    j = r["j"]
+    for x in j.get("produtos") or []:
+        _req("POST", f"/produto/{_pid(x['produto_id'])}/estoque/movimentar", {"tipo": "saida", "qtde": _un_linha(x), "obs": f"Desfaz compra nº {j.get('codigo')}"[:60]})
+    for p in _lista("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+        if p["descricao"] == f"Compra de nº {j.get('codigo')}":
+            _delete(p["id"])
+    regs = dict(_ctrl_ler())
+    regs.pop(k, None)
+    _ctrl_grava(regs)
+    return {"code": 200, "status": "success"}
+
+
+def _fornecedores():
+    return _tec_ler("CONTROLE FORNECEDORES").get("itens") or []
+
+
+def saidas_de_venda(desde):
+    """Unidades vendidas por produto desde a virada, pelas movimentações de estoque."""
+    out = []
+    for m in _guarda("movs", 300, lambda: _todas("/estoque/movimentacoes")):
+        dia, tipo = (m.get("DATA") or "")[:10], m.get("TIPOMOV")
+        if dia < max(desde, VIRADA) or "Venda" not in (m.get("ORIGEM") or "") or tipo not in ("Saida", "Estorno"):
+            continue
+        sinal = 1 if tipo == "Saida" else -1
+        q = float(m.get("QTDE") or 0)
+        out.append({"pid": _ext(m.get("ID_PRODUTO")), "dia": dia, "qtde": sinal * q, "valor": sinal * q * float(m.get("VALOR") or 0)})
+    return out
+
+
 def _rota(path):
     m = re.match(r"^(/pagamentos|/recebimentos)(?:/([^/?]+))?$", path)
     return (m.group(1), m.group(2)) if m else (None, None)
@@ -361,6 +551,12 @@ def _rota(path):
 def get(path, params=None):
     base, rid = _rota(path)
     if not base:
+        m = re.match(r"^/(produtos|compras)/([^/?]+)$", path)
+        if m and m.group(1) == "produtos":
+            return {"code": 200, "status": "success", "data": _p_shape(_req("GET", f"/produto/{_pid(m.group(2))}"))}
+        if m:
+            r = _ctrl_ler().get(m.group(2))
+            return {"code": 200, "status": "success", "data": _c_shape(m.group(2), r["j"]) if r else {}}
         return _gc.get(path, params)
     if rid:
         if rid.startswith("i"):
@@ -374,19 +570,35 @@ def get_all(path, params=None, hard_cap=5000):
     base, _ = _rota(path)
     if path == "/vendas":
         return _vendas(params)
+    if path == "/produtos":
+        return _produtos(params)
+    if path == "/compras":
+        return _compras()
+    if path == "/fornecedores":
+        return _fornecedores()
     return _lista(base, params) if base else _gc.get_all(path, params, hard_cap=hard_cap)
 
 
 def post(path, body):
+    if path == "/produtos":
+        return _p_post(body)
+    if path == "/compras":
+        return _c_post(body)
     base, _ = _rota(path)
     return _post(base, body) if base else _gc.post(path, body)
 
 
 def put(path, body):
+    m = re.match(r"^/(produtos|compras)/([^/?]+)$", path)
+    if m:       # compra: reabrir antes de excluir era coisa do GC, aqui não faz nada
+        return _p_put(m.group(2), body) if m.group(1) == "produtos" else {"code": 200, "status": "success"}
     base, rid = _rota(path)
     return _put(base, rid, body) if base else _gc.put(path, body)
 
 
 def delete(path):
+    m = re.match(r"^/compras/([^/?]+)$", path)
+    if m:
+        return _c_delete(m.group(1))
     base, rid = _rota(path)
     return _delete(rid) if base else _gc.delete(path)
