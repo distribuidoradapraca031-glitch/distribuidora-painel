@@ -2481,7 +2481,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       FECH_ESP=d; const e=g('f-esperado'); if(e) e.value='R$ '+fmt(d.esperado);
       const ab=g('f-abertura');
       if(ab){
-        if(d.abertura_gc){ ab.value=(+d.troco).toFixed(2); ab.readOnly=true; ab.title='Puxado do GestãoClick (Abertura de caixa do dia '+(d.data||'')+')'; ab.style.background='var(--surface)'; }
+        if(d.abertura_gc){ ab.value=(+d.troco).toFixed(2); ab.readOnly=true; ab.title='Puxado do sistema (abertura de caixa do dia '+(d.data||'')+')'; ab.style.background='var(--surface)'; }
         else { ab.readOnly=false; ab.title='Sem abertura lançada no sistema nesse dia — digite o troco que uso pra calcular.'; ab.style.background=''; }
       }
       renderFechLive();

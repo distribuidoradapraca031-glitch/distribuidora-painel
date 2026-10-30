@@ -1806,13 +1806,12 @@ def api_como_esta():
             elif d.startswith(RES_OUT_TAG): res -= v
             elif d.startswith(SOB_DEP_TAG): sob += v
             elif d.startswith(SOB_OUT_TAG): sob -= v
-        ab = _abertura_caixa(hoje)
-        din, saidas = _fech_calc(hoje)
+        ab, abriu, din, saidas = _fech_dia(hoje)
         moedas, _ = _fundo_moedas(hoje)
         gaveta = round((ab if ab is not None else 200.0) + moedas + din - saidas, 2)
         bancos = _saldos_bancos(pgs)
         lugares = [{"nome": "Gaveta", "valor": gaveta,
-                    "obs": "esperado agora" if ab is not None else "esperado (sem abertura lançada hoje)"},
+                    "obs": "esperado agora" if abriu else "esperado (sem abertura lançada hoje)"},
                    {"nome": "Dinheiro reserva", "valor": round(max(res, 0), 2), "obs": ""},
                    {"nome": "Sobra de caixa", "valor": round(max(sob, 0), 2), "obs": ""}]
         for b in BANCOS:
@@ -2915,6 +2914,20 @@ def api_hoje():
     """Vendas do balcão de hoje, ao vivo, com quebra por forma de pagamento."""
     def build():
         h = _hoje()
+        if h >= FECH_GGPT_DESDE:      # caixa do GestãoGPT; "outros" = pendurado no fiado
+            vendas = [p for p in _ggpt_todas(f"/pedido?pdv=sim&situacao=todos&data_de={h}&data_ate={h}")
+                      if p.get("EMITIDO") and (p.get("DATA") or "")[:10] == h]
+            ids = {p["ID"] for p in vendas}
+            f = {"dinheiro": 0.0, "pix": 0.0, "cartao": 0.0}
+            for p in _ggpt_todas("/conta-parcela?status=pago"):
+                k = p.get("CONTA") or {}
+                if k.get("ID_PEDIDO") in ids:
+                    nome = _sem_acento_up(p.get("FORMAPAGTO") or "")
+                    chave = "dinheiro" if "DINHEIRO" in nome else "pix" if "PIX" in nome else "cartao"
+                    f[chave] += _num(p.get("VALOR_PAGO"))
+            tot = sum(_num(p.get("TOTAL")) for p in vendas)
+            return {"n": len(vendas), "total": round(tot, 2), **{k: round(v, 2) for k, v in f.items()},
+                    "outros": round(tot - sum(f.values()), 2), "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
         vendas = gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": h, "data_fim": h})
         tot = dinheiro = pix = cartao = outros = 0.0
         for v in vendas:
@@ -3788,6 +3801,70 @@ def _fech_calc(data):
             saidas += _num(p.get("valor_total")) or _num(p.get("valor"))
     return round(din, 2), round(saidas, 2)
 
+# ---- fechamento depois da virada pro GestãoGPT (dono, 30/10/2026: "já migramos") ----
+# A gaveta é a conta corrente CAIXA PDV/DINHEIRO de lá. Abrir o caixa vira "PDV DIF. ABERTURA"
+# e fechar vira "PDV SANGRIA FECHAMENTO", sem hora: a ordem vem do número da conta. Dinheiro
+# de fiado recebido lá já entra aqui. Do GestãoClick ainda vêm, só lendo, o delivery em
+# dinheiro (o robô ainda lança lá) e o que sai pelo + Lançar, até essas partes migrarem.
+FECH_GGPT_DESDE = "2026-10-30"
+GGPT_CC_GAVETA = 2
+GGPT_CTRL_FECH = 405        # produto técnico inativo: a contagem de cada dia, em JSON (até 3.500 letras)
+FECH_AJUSTE_TAG = "FECHAMENTO "
+
+def _ggpt_gaveta_movs():
+    out = []
+    for p in _ggpt_todas(f"/conta-parcela?status=pago&id_conta_corrente={GGPT_CC_GAVETA}"):
+        dia, k = (p.get("DATA_PAGTO") or "")[:10], p.get("CONTA") or {}
+        if dia >= FECH_GGPT_DESDE:
+            out.append({"dia": dia, "id": k.get("ID") or 0, "tipo": k.get("TIPO"),
+                        "fatura": (k.get("FATURA") or "").upper(),
+                        "valor": round(_num(p.get("VALOR_PAGO")), 2)})
+    out.sort(key=lambda m: (m["dia"], m["id"]))
+    return out
+
+def _ggpt_gaveta_dia(data, movs):
+    """Saldo que veio do dia anterior + aberturas, dinheiro e saídas do dia. A sangria que
+    FECHOU o caixa (a última coisa do dia) fica de fora: é a retirada depois da contagem."""
+    sinal = lambda m: m["valor"] if m["tipo"] == "R" else -m["valor"]
+    anterior = sum(sinal(m) for m in movs if m["dia"] < data)
+    dia = [m for m in movs if m["dia"] == data]
+    marcos = [m for m in dia if "PDV DIF. ABERTURA" in m["fatura"] or "SANGRIA FECHAMENTO" in m["fatura"]]
+    final = marcos[-1] if marcos and "SANGRIA FECHAMENTO" in marcos[-1]["fatura"] else None
+    abertura, din, saidas = anterior, 0.0, 0.0
+    for m in dia:
+        if m is final or m["fatura"].startswith(FECH_AJUSTE_TAG):
+            continue
+        if "PDV DIF. ABERTURA" in m["fatura"]:
+            abertura += m["valor"]
+        elif m["tipo"] == "R":
+            din += m["valor"]
+        else:
+            saidas += m["valor"]
+    return {"abertura": round(abertura, 2), "dinheiro": round(din, 2), "saidas": round(saidas, 2),
+            "abriu": any("PDV DIF. ABERTURA" in m["fatura"] for m in dia)}
+
+def _ctrl_fech_ler():
+    import json as _json
+    try:
+        return _json.loads(_ggpt_req("GET", f"/produto/{GGPT_CTRL_FECH}").get("INFOADICIONAL") or "{}")
+    except ValueError:
+        return {}
+
+def _ctrl_fech_grava(reg):
+    import json as _json
+    reg = dict(sorted(reg.items())[-60:])     # 60 dias cabem no campo
+    _ggpt_req("PUT", f"/produto/{GGPT_CTRL_FECH}", {"infoadicional": _json.dumps(reg, separators=(",", ":"))})
+
+def _fech_dia(data):
+    """(troco, abriu, dinheiro, saidas) do dia, na fonte certa: até 29/10 o GestãoClick,
+    depois o caixa do GestãoGPT somado ao que ainda só existe no GestãoClick."""
+    din, saidas = _fech_calc(data)
+    if data < FECH_GGPT_DESDE:
+        ab = _abertura_caixa(data)
+        return (ab if ab is not None else None), ab is not None, din, saidas
+    g = _ggpt_gaveta_dia(data, _ggpt_gaveta_movs())
+    return g["abertura"], g["abriu"], round(g["dinheiro"] + din, 2), round(g["saidas"] + saidas, 2)
+
 @app.route("/api/fechamento-hoje")
 @login_required
 def api_fechamento_hoje():
@@ -3795,6 +3872,13 @@ def api_fechamento_hoje():
     = abertura + dinheiro que entrou − saídas em dinheiro, tudo daquele dia."""
     data = (request.args.get("data") or _hoje())[:10]
     def build():
+        if data >= FECH_GGPT_DESDE:
+            troco, abriu, din, saidas = _fech_dia(data)
+            moedas, moedas_desde = _fundo_moedas(data)
+            return {"data": data, "troco": round(troco, 2), "abertura_gc": True, "abriu": abriu,
+                    "dinheiro": din, "saidas": saidas, "moedas": moedas, "moedas_desde": moedas_desde,
+                    "esperado": round(troco + moedas + din - saidas, 2),
+                    "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
         ab = _abertura_caixa(data)                  # abertura real lançada no GC no dia
         troco = ab if ab is not None else (_num(request.args.get("troco")) or 200.0)
         din, saidas = _fech_calc(data)              # vendas em dinheiro + saídas DO DIA
@@ -3924,13 +4008,23 @@ def api_fechamentos():
                 if mm:
                     moedas[m.group(1)] = _num(mm.group(1))
         itens = []
+        movs = _ggpt_gaveta_movs() if fim >= FECH_GGPT_DESDE else []
+        ctrl = _ctrl_fech_ler() if fim >= FECH_GGPT_DESDE else {}
         for i in range(dias):
             d = (hoje - datetime.timedelta(days=dias - 1 - i)).isoformat()
             ab = aberturas.get(d, 200.0)
+            real = d in aberturas
+            if d >= FECH_GGPT_DESDE:      # do GestãoGPT, somando o que ainda só existe no GC
+                g = _ggpt_gaveta_dia(d, movs)
+                ab, real = g["abertura"], g["abriu"]
+                din[d] += g["dinheiro"]
+                saidas[d] += g["saidas"]
+                if d in ctrl:
+                    contados[d], moedas[d] = ctrl[d][0], ctrl[d][2] or None
             fundo, _fd = _fundo_moedas(d)
             esp = round(ab + fundo + din.get(d, 0) - saidas.get(d, 0), 2)
             c = contados.get(d)
-            itens.append({"data": d, "abertura": round(ab, 2), "abertura_real": d in aberturas,
+            itens.append({"data": d, "abertura": round(ab, 2), "abertura_real": real,
                           "fundo_moedas": fundo,
                           "dinheiro": round(din.get(d, 0), 2),
                           "saidas": round(saidas.get(d, 0), 2), "esperado": esp,
@@ -3951,6 +4045,8 @@ def api_fechamento():
     if data > _hoje():
         return jsonify({"ok": False, "erro": f"a data {data[8:10]}/{data[5:7]} ainda não "
                         "aconteceu — não dá pra fechar um dia no futuro. Confira o campo Dia."}), 400
+    if data >= FECH_GGPT_DESDE:
+        return _fechamento_ggpt(data, body)
     try:
         ab = _abertura_caixa(data, tolerante=False)  # usa a abertura real do GC
     except Exception:
@@ -4008,6 +4104,47 @@ def api_fechamento():
                         "ajuste_id": ajuste_id})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
+
+def _fechamento_ggpt(data, body):
+    """Fecha o dia no GestãoGPT: a contagem vai pro controle e a quebra vira um lançamento na
+    gaveta (de lá não aceita valor zero: caixa que bate não lança nada). Não grava no GC."""
+    contado = _num(body.get("contado"))
+    if body.get("contado") in (None, "") or contado <= 0:
+        return jsonify({"ok": False, "erro": "conte a gaveta primeiro — o valor contado não "
+                        "pode ficar em branco nem zerado."}), 400
+    try:
+        ctrl = _ctrl_fech_ler()
+        if data in ctrl:
+            return jsonify({"ok": False, "erro": f"o dia {data[8:10]}/{data[5:7]} já foi fechado com "
+                            f"R$ {ctrl[data][0]:.2f} contados. Não gravei de novo, pra não lançar a "
+                            "quebra duas vezes."}), 400
+        troco, abriu, din, saidas = _fech_dia(data)
+        fundo, _ = _fundo_moedas(data)
+    except Exception:
+        return jsonify({"ok": False, "erro": "o sistema não respondeu agora. NÃO gravei nada — "
+                        "espere um pouquinho e clique de novo."}), 502
+    if not abriu and din == 0 and saidas == 0 and not body.get("forcar_dia_vazio"):
+        return jsonify({"ok": False, "dia_vazio": True,
+                        "erro": f"o dia {data[8:10]}/{data[5:7]} não tem abertura de caixa nem "
+                                "nenhuma venda em dinheiro. Confira se a data está certa antes de fechar."}), 400
+    esperado = round(troco + fundo + din - saidas, 2)
+    quebra = round(contado - esperado, 2)
+    try:
+        if abs(quebra) >= 0.01:
+            r = _ggpt_req("POST", "/conta", {
+                "tipo": "receber" if quebra > 0 else "pagar", "origem": "OUT", "data_lanc": data,
+                "fatura": f"{FECH_AJUSTE_TAG}{data} {'SOBRA' if quebra > 0 else 'FALTA'} contado {contado:.2f} esperado {esperado:.2f}",
+                "parcelas": [{"data_venc": data, "valor": abs(quebra), "forma_pagto": "DINHEIRO",
+                              "id_conta_corrente": GGPT_CC_GAVETA}]})
+            _ggpt_req("POST", f"/conta/{r['ID']}/baixar", {"data_pagto": data, "id_conta_corrente": GGPT_CC_GAVETA})
+        ctrl[data] = [round(contado, 2), esperado, round(_num(body.get("moedas")), 2)]
+        _ctrl_fech_grava(ctrl)
+    except Exception as e:
+        return jsonify({"ok": False, "erro": "não terminei de gravar: " + str(e)[:150] +
+                        ". Me avise antes de fechar de novo."}), 502
+    _invalida("resumo", "fech_" + data, "fechamentos_12", "fechamentos_7", "fechamentos_31")
+    return jsonify({"ok": True, "esperado": esperado, "contado": round(contado, 2), "quebra": quebra,
+                    "dinheiro": din, "saidas": saidas, "ajuste_id": None})
 
 # nomes fixos que o dono quer ver SEMPRE no topo (mesmo zerados), na ordem
 RESUMO_FIXOS = ["PH Motoca", "Biel (Gabriel)", "Retirada Victor",
