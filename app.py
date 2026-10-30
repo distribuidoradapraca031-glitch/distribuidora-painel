@@ -5,7 +5,12 @@ protegido por senha. (Fase 1: login + leitura ao vivo.)"""
 import os, functools, time, re, calendar, datetime, threading
 from collections import defaultdict
 from flask import Flask, request, session, redirect, url_for, render_template, jsonify, abort
-import gclient as gcapi
+import gg_compat as gcapi     # GestãoGPT desde 30/10/2026 (o que falta migrar ainda passa pro gclient)
+
+# O GestãoClick venceu e saiu de uso. O que gravava nele fica desligado até migrar: baixa de garrafa,
+# baixa de tabacaria e varredura de NFC-e (a série é a mesma do GestãoGPT: daria nota duplicada).
+# Os gráficos seguem lendo o GC (só leitura, vendas até 29/10) até migrarem.
+GC_DESLIGADO = True
 
 # O servidor da nuvem roda em UTC: depois das 21h daqui já era "amanhã" pra ele, e o
 # fechamento da noite caía no dia seguinte. Tudo no painel usa a hora de Minas.
@@ -60,7 +65,7 @@ def _fetch_pages(path, params):
     out, vistos, page = [], set(), 1
     while True:
         p = dict(params); p["pagina"] = page; p["limite"] = 100
-        d = gcapi.get(path, p)
+        d = gcapi._gc.get(path, p)     # direto no GC: os gráficos ainda não migraram
         for r in d.get("data") or []:
             if isinstance(r, dict) and len(r) == 1:
                 r = next(iter(r.values()))
@@ -155,6 +160,8 @@ _drinks = {"rodando": False, "quando": None, "erro": None, "ultimo": None}
 _drinks_lock = threading.Lock()
 
 def _roda_baixa_drinks():
+    if GC_DESLIGADO:
+        return
     global _drinks
     try:
         import drinks
@@ -175,6 +182,8 @@ def _roda_baixa_drinks():
 
 def _baixa_drinks_do_dia():
     """Dispara a baixa em segundo plano, no máximo de hora em hora."""
+    if GC_DESLIGADO:
+        return
     agora = time.time()
     with _drinks_lock:
         if _drinks["rodando"]:
@@ -195,6 +204,8 @@ _tabaco = {"rodando": False, "quando": None, "erro": None, "ultimo": None}
 _tabaco_lock = threading.Lock()
 
 def _roda_baixa_tabacaria():
+    if GC_DESLIGADO:
+        return
     global _tabaco
     try:
         import tabacaria
@@ -214,6 +225,8 @@ def _roda_baixa_tabacaria():
 
 def _baixa_tabacaria_do_dia():
     """Dispara a baixa dos maços em segundo plano, no máximo de hora em hora."""
+    if GC_DESLIGADO:
+        return
     agora = time.time()
     with _tabaco_lock:
         if _tabaco["rodando"]:
@@ -232,6 +245,8 @@ _notas = {"rodando": False, "quando": None, "erro": None, "ultimo": None, "dia":
 _notas_lock = threading.Lock()
 
 def _roda_notas_delivery(dias=7):
+    if GC_DESLIGADO:
+        return
     global _notas
     try:
         import notas_delivery
@@ -248,6 +263,8 @@ def _roda_notas_delivery(dias=7):
 
 def _notas_do_dia(forcar=False):
     """Dispara a varredura em segundo plano, uma vez por dia."""
+    if GC_DESLIGADO:
+        return
     hoje = _hoje()
     with _notas_lock:
         if _notas["rodando"]:
@@ -3809,6 +3826,7 @@ def _fech_calc(data):
 FECH_GGPT_DESDE = "2026-10-30"
 GGPT_CC_GAVETA = 2
 GGPT_CTRL_FECH = 405        # produto técnico inativo: a contagem de cada dia, em JSON (até 3.500 letras)
+GGPT_CTRL_FECH_HIST = 420     # idem: os 14 dias antes da virada
 FECH_AJUSTE_TAG = "FECHAMENTO "
 
 def _ggpt_gaveta_movs():
@@ -3856,14 +3874,18 @@ def _ctrl_fech_grava(reg):
     _ggpt_req("PUT", f"/produto/{GGPT_CTRL_FECH}", {"infoadicional": _json.dumps(reg, separators=(",", ":"))})
 
 def _fech_dia(data):
-    """(troco, abriu, dinheiro, saidas) do dia, na fonte certa: até 29/10 o GestãoClick,
-    depois o caixa do GestãoGPT somado ao que ainda só existe no GestãoClick."""
-    din, saidas = _fech_calc(data)
-    if data < FECH_GGPT_DESDE:
-        ab = _abertura_caixa(data)
-        return (ab if ab is not None else None), ab is not None, din, saidas
+    """(troco, abriu, dinheiro, saidas) do dia, pelo caixa do GestãoGPT. Tudo que mexe na gaveta
+    (venda, delivery, fiado, + Lançar) já cai nessa conta corrente."""
     g = _ggpt_gaveta_dia(data, _ggpt_gaveta_movs())
-    return g["abertura"], g["abriu"], round(g["dinheiro"] + din, 2), round(g["saidas"] + saidas, 2)
+    return g["abertura"], g["abriu"], g["dinheiro"], g["saidas"]
+
+def _fech_historico():
+    """Dias antes da virada: foto tirada do GestãoClick em 30/10 (controle FECH HIST)."""
+    import json as _json
+    try:
+        return _json.loads(_ggpt_req("GET", f"/produto/{GGPT_CTRL_FECH_HIST}").get("INFOADICIONAL") or "{}")
+    except (ValueError, RuntimeError):
+        return {}
 
 @app.route("/api/fechamento-hoje")
 @login_required
@@ -3970,69 +3992,29 @@ def api_fechamentos():
     dias = max(1, min(31, int(request.args.get("dias") or 12)))
     def build():
         hoje = datetime.date.today()
-        ini = (hoje - datetime.timedelta(days=dias - 1)).isoformat()
-        fim = hoje.isoformat()
-        din = defaultdict(float)
-        for tipo in ("vendas_balcao", "produto"):
-            for v in gcapi.get_all("/vendas", {"tipo": tipo, "data_inicio": ini, "data_fim": fim}):
-                if tipo == "produto" and "ANOTA AI" not in (v.get("observacoes") or "").upper():
-                    continue  # em 'produto' só o delivery conta (o resto é saque/serviço)
-                d = (v.get("data") or v.get("data_venda") or "")[:10]
-                for w in (v.get("pagamentos") or []):
-                    p = w.get("pagamento", w)
-                    if "DINHEIRO" in (p.get("nome_forma_pagamento") or "").upper():
-                        din[d] += _num(p.get("valor"))
-        saidas = defaultdict(float)
-        for p in gcapi.get_all("/pagamentos", {"data_inicio": ini, "data_fim": fim}):
-            if str(p.get("liquidado")) != "1":
-                continue
-            d = (p.get("data_liquidacao") or "")[:10]
-            if not d or str(p.get("plano_contas_id")) == AJUSTE_CAIXA_PLANO:
-                continue
-            if _saiu_da_gaveta(p):
-                saidas[d] += _num(p.get("valor_total")) or _num(p.get("valor"))
-        aberturas, contados, moedas = {}, {}, {}
-        for r in (gcapi.get_all("/recebimentos", {"data_inicio": ini, "data_fim": fim})
-                  + gcapi.get_all("/pagamentos", {"data_inicio": ini, "data_fim": fim})):
-            desc = (r.get("descricao") or "")
-            d = (r.get("data_liquidacao") or r.get("data_vencimento") or "")[:10]
-            if "ABERTURA DE CAIXA" in desc.upper():
-                aberturas[d] = _num(r.get("valor_total")) or _num(r.get("valor"))
-            if _eh_entrada_gaveta(r):      # troca de PIX / pagamento de conta entram na gaveta
-                din[(r.get("data_liquidacao") or "")[:10]] += (_num(r.get("valor_total"))
-                                                               or _num(r.get("valor")))
-            m = re.search(r"FECHAMENTO (\d{4}-\d{2}-\d{2}).*?contado R\$ ?([\d.,]+)", desc, re.I)
-            if m:
-                contados[m.group(1)] = _num(m.group(2))
-                mm = re.search(r"moedas R\$ ?([\d.,]+)", desc, re.I)
-                if mm:
-                    moedas[m.group(1)] = _num(mm.group(1))
+        movs, ctrl, hist = _ggpt_gaveta_movs(), _ctrl_fech_ler(), _fech_historico()
         itens = []
-        movs = _ggpt_gaveta_movs() if fim >= FECH_GGPT_DESDE else []
-        ctrl = _ctrl_fech_ler() if fim >= FECH_GGPT_DESDE else {}
         for i in range(dias):
             d = (hoje - datetime.timedelta(days=dias - 1 - i)).isoformat()
-            ab = aberturas.get(d, 200.0)
-            real = d in aberturas
-            if d >= FECH_GGPT_DESDE:      # do GestãoGPT, somando o que ainda só existe no GC
-                g = _ggpt_gaveta_dia(d, movs)
-                ab, real = g["abertura"], g["abriu"]
-                din[d] += g["dinheiro"]
-                saidas[d] += g["saidas"]
-                if d in ctrl:
-                    contados[d], moedas[d] = ctrl[d][0], ctrl[d][2] or None
+            if d < FECH_GGPT_DESDE:
+                h = hist.get(d)
+                if h:
+                    c = h[4]
+                    itens.append({"data": d, "abertura": h[0], "abertura_real": True, "fundo_moedas": h[1],
+                                  "dinheiro": h[2], "saidas": h[3], "esperado": round(h[0] + h[1] + h[2] - h[3], 2),
+                                  "contado": c, "quebra": None if c is None else round(c - (h[0] + h[1] + h[2] - h[3]), 2),
+                                  "moedas": None})
+                continue
+            g = _ggpt_gaveta_dia(d, movs)
             fundo, _fd = _fundo_moedas(d)
-            esp = round(ab + fundo + din.get(d, 0) - saidas.get(d, 0), 2)
-            c = contados.get(d)
-            itens.append({"data": d, "abertura": round(ab, 2), "abertura_real": real,
-                          "fundo_moedas": fundo,
-                          "dinheiro": round(din.get(d, 0), 2),
-                          "saidas": round(saidas.get(d, 0), 2), "esperado": esp,
-                          "contado": c, "quebra": None if c is None else round(c - esp, 2),
-                          "moedas": moedas.get(d)})
+            esp = round(g["abertura"] + fundo + g["dinheiro"] - g["saidas"], 2)
+            c = ctrl[d][0] if d in ctrl else None
+            itens.append({"data": d, "abertura": g["abertura"], "abertura_real": g["abriu"], "fundo_moedas": fundo,
+                          "dinheiro": g["dinheiro"], "saidas": g["saidas"], "esperado": esp, "contado": c,
+                          "quebra": None if c is None else round(c - esp, 2),
+                          "moedas": (ctrl[d][2] or None) if d in ctrl else None})
         ult_moedas = next((x["moedas"] for x in reversed(itens) if x.get("moedas") is not None), None)
-        return {"itens": itens, "ultimas_moedas": ult_moedas,
-                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+        return {"itens": itens, "ultimas_moedas": ult_moedas, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
     return jsonify(cached(f"fechamentos_{dias}", 120, build))
 
 @app.route("/api/fechamento", methods=["POST"])
@@ -4045,8 +4027,9 @@ def api_fechamento():
     if data > _hoje():
         return jsonify({"ok": False, "erro": f"a data {data[8:10]}/{data[5:7]} ainda não "
                         "aconteceu — não dá pra fechar um dia no futuro. Confira o campo Dia."}), 400
-    if data >= FECH_GGPT_DESDE:
-        return _fechamento_ggpt(data, body)
+    if data < FECH_GGPT_DESDE:
+        return jsonify({"ok": False, "erro": "dias antes de 30/10 ficaram no GestãoClick, que saiu de uso."}), 400
+    return _fechamento_ggpt(data, body)
     try:
         ab = _abertura_caixa(data, tolerante=False)  # usa a abertura real do GC
     except Exception:
@@ -4652,22 +4635,14 @@ def api_saque():
     ganho = round(valor * 0.2 - taxa, 2)          # nosso lucro líquido
     data = _hoje()
     try:
-        pid = _saque_pid(valor)
-        venda = {
-            "tipo": "produto", "cliente_id": SAQUE_CLIENTE, "data": data,
-            "situacao_id": SAQUE_SITUACAO, "condicao_pagamento": "a_vista",
-            "observacoes": f"Saque R$ {valor} — cliente pagou R$ {total:.2f} no {tipo}"
-                           + (f" (PIX {banco})" if tipo == "pix" and banco else ""),
-            "produtos": [{"produto": {"produto_id": pid, "quantidade": 1,
-                                      "valor_venda": total, "detalhes": "Saque"}}],
-            "pagamentos": [{"pagamento": {"data_vencimento": data, "valor": total,
-                                          "forma_pagamento_id": SAQUE_FORMA[tipo],
-                                          "observacao": "Saque"}}],
-        }
-        rv = gcapi.post("/vendas", venda)
-        if rv.get("status") != "success":
-            return jsonify({"ok": False, "erro": str(rv.get("data") or rv)[:200]}), 502
-        vid = (rv.get("data") or {}).get("id")
+        # não é venda: entra o que o cliente passou (banco) e sai o dinheiro da gaveta
+        r = gcapi.post("/recebimentos", {
+            "descricao": f"SAQUE R$ {valor} — cliente pagou R$ {total:.2f} no {tipo}"
+                         + (f" (PIX {banco})" if tipo == "pix" and banco else ""),
+            "valor": f"{total:.2f}", "data_vencimento": data, "data_competencia": data,
+            "data_liquidacao": data, "liquidado": "1", "plano_contas_id": PLANO_AJUSTE_C,
+            "conta_bancaria_id": RESERVA_CONTA_ID, "forma_pagamento_id": SAQUE_FORMA[tipo]})
+        vid = (r.get("data") or {}).get("id")
         sangria = {
             "descricao": f"SANGRIA SAQUE R$ {valor} · lucro R$ {ganho:.2f} — dinheiro entregue ao cliente",
             "valor": f"{valor:.2f}", "data_vencimento": data, "data_competencia": data,

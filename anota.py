@@ -14,7 +14,8 @@ e a rotina do Mac pode continuar rodando junto sem lançar o mesmo pedido duas v
 import json, os, re, time, unicodedata, urllib.request, urllib.parse, urllib.error
 from datetime import datetime, timedelta, timezone
 
-import gclient as gcapi
+import gclient as gcapi     # só pra ler as credenciais do Anota
+import gg_compat as gg
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MAP_PATH = os.path.join(BASE_DIR, "anota_gc_map.json")
@@ -29,6 +30,9 @@ GC_LOJA = "529233"
 GC_CFOP_VENDA_BALCAO = "289"          # CFOP 5102, igual ao PDV
 GC_FORMAS = {"pix": "6055931", "dinheiro": "6055919",
              "credito": "6055920", "debito": "6055921"}
+GG_CONSUMIDOR = 1
+VIRADA = "2026-10-30"                 # pedido de antes disso ficou no GestãoClick
+GG_MAP = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ggpt_map.json")))
 DIAS_JANELA = 4                       # quantos dias de venda o dedupe olha no GC
 
 
@@ -108,123 +112,74 @@ def _hoje_brt():
 
 
 def ja_importados():
-    """Nºs de pedido do app que já viraram venda no GestãoClick (janela curta).
-
-    É o dedupe: a observação da venda guarda 'pedido #1234 (id do Anota)'.
-    """
+    """Nºs de pedido do app que já viraram pedido no GestãoGPT (o nº vai no REFBUSCA da conta)."""
     hoje = datetime.now(BRT).date()
     ini = (hoje - timedelta(days=DIAS_JANELA)).isoformat()
-    refs, oids = set(), set()
-    for v in gcapi.get_all("/vendas", {"tipo": "produto", "data_inicio": ini,
-                                       "data_fim": hoje.isoformat()}):
-        o = v.get("observacoes") or ""
-        if "ANOTA AI" not in o.upper():
-            continue
-        m = re.search(r"#(\d+)", o)
-        if m:
-            refs.add(m.group(1))
-        m2 = re.search(r"\(([0-9a-f]{16,})\)", o)
-        if m2:
-            oids.add(m2.group(1))
-    return refs, oids
-
-
-def _apaga_rascunho(nid):
-    """Rascunho que não virou nota some daqui: quem monta a nota definitiva (a que
-    espera o clique do dono) é a rotina das 9h, que registra o vínculo com a venda."""
-    try:
-        gcapi.delete(f"/notas_fiscais_consumidores/{nid}")
+    refs = set()
+    for k in gg._todas(f"/conta?tipo=receber&status=todos&data_venc_inicio={ini}"):
+        r = k.get("REFBUSCA") or ""
+        if r.startswith("ANOTA-"):
+            refs.add(r[6:])
+    try:      # o que entrou no GC antes da virada não pode entrar de novo
+        for v in gg._gc.get_all("/vendas", {"tipo": "produto", "data_inicio": ini, "data_fim": hoje.isoformat()}):
+            m = re.search(r"#(\d+)", v.get("observacoes") or "")
+            if m and "ANOTA AI" in (v.get("observacoes") or "").upper():
+                refs.add(m.group(1))
     except Exception:
         pass
+    return refs, set()
 
 
-def emit_nfce(venda_id, data_brt, forma_pagamento_id):
-    """Emite a NFC-e da venda espelhando o PDV: presencial, sem CPF, CFOP 5102.
-    A taxa de entrega fica fora da nota (a API do GC ignora o campo de frete)."""
+_CC_FORMA = {"6055919": (2, "DINHEIRO"), "6055931": (1, "DEPOSITO"), "6055920": (1, "CARTAO"), "6055921": (1, "CARTAO")}
+
+
+def _lanca_ggpt(ref, oid, det, produtos, descontos, frete, total, pagamentos):
+    """Pedido do app -> pedido emitido no GestãoGPT (baixa estoque e gera a conta) -> recebido.
+    Nunca repete: qualquer erro depois de criar deixa o nº no REFBUSCA e o pedido não volta."""
+    itens, resto = [], round(descontos, 2)
+    for w in produtos:
+        p = w["produto"]
+        gid = GG_MAP.get(str(p["produto_id"]))
+        if not gid:
+            raise RuntimeError(f"produto {p['produto_id']} não está no GestãoGPT")
+        q, u = p["quantidade"], p["valor_venda"]
+        corte = min(resto, round(q * u, 2))
+        resto = round(resto - corte, 2)
+        item = {"id_produto": gid, "qtde": q, "valorunit": u, "obs": p["detalhes"][:80]}
+        if corte > 0:
+            item["valorunit_desc"] = round((q * u - corte) / q, 4)
+        itens.append(item)
+    r = gg._req("POST", "/pedido", {"id_cliente": GG_CONSUMIDOR, "condpagto": "A VISTA", "pedidocliente": f"ANOTA-{ref}",
+                                    "valor_frete": round(frete, 2), "itens": itens,
+                                    "obs": f"Importado do Anota AI — pedido #{ref} ({oid}), canal {det.get('from')}/{det.get('salesChannel')}"})
     try:
-        v = gcapi.get(f"/vendas/{venda_id}").get("data") or {}
-        # unitário já arredondado em 2 casas — é assim que o GC grava na nota. Mandando o
-        # valor cheio, o total do pagamento nascia diferente do total da nota e a correção
-        # por PUT reprovava a nota na SEFAZ ("Rejeição 899: meio de pagamento incorreto").
-        prods, orfaos = [], []
-        for p in v.get("produtos", []):
-            q = p.get("produto", p)
-            if not str(q.get("produto_id") or "").strip():
-                # item do app sem produto cadastrado: o GC descarta a linha em silêncio
-                # e a nota sai valendo MENOS que a venda. Não emitir é o certo.
-                orfaos.append(q.get("detalhes") or q.get("nome_produto") or "item sem nome")
-                continue
-            prods.append({"produto_id": q["produto_id"],
-                          "quantidade": float(q["quantidade"]),
-                          "valor_venda": round(float(q["valor_venda"]), 2)})
-        if orfaos:
-            print(f"   NFC-e do pedido {venda_id}: NÃO emitida — item sem produto "
-                  f"cadastrado ({'; '.join(orfaos[:3])}). Cadastre e vincule no app.")
-            return None
-        if not prods:
-            return None
-        dt = datetime.strptime(data_brt, "%Y-%m-%d").strftime("%d/%m/%Y")
-        body = {
-            "loja_id": GC_LOJA, "pedido_id": str(venda_id), "tipo_atendimento": 1,
-            "tipo_nf": "1", "consumidor_final": 1, "natureza_operacao": "Venda balcão",
-            "cfop_id": GC_CFOP_VENDA_BALCAO, "produtos": prods,
-            # marca o número da venda DENTRO da nota: o GC apaga o pedido_id na emissão
-            # e sem isso a varredura das NFC-e não sabe que esta venda já tem nota — foi
-            # assim que saíram 41 notas repetidas entre 01/08 e 12/09/2026.
-            "informacoes_complementares": "Pedido " + str(venda_id),
-            "pagamento": [{"forma_pagamento_id": forma_pagamento_id,
-                           "valor_pagamento": round(sum(p["quantidade"] * p["valor_venda"]
-                                                        for p in prods), 2),
-                           "data_vencimento": dt}],
-        }
-        r = gcapi.post("/notas_fiscais_consumidores", body)
-        nid = (r.get("data") or {}).get("dados")
-        if not nid:
-            return None
-        n = gcapi.get(f"/notas_fiscais_consumidores/{nid}").get("data") or {}
-        tot = round(sum(float(p["valor_venda"]) for p in n.get("produtos", [])), 2)
-        if abs(tot - body["pagamento"][0]["valor_pagamento"]) > 0.001:
-            # nunca consertar com PUT (reprova na SEFAZ): apaga o rascunho e refaz
-            try:
-                gcapi.delete(f"/notas_fiscais_consumidores/{nid}")
-            except Exception:
-                pass
-            body["pagamento"][0]["valor_pagamento"] = tot
-            r = gcapi.post("/notas_fiscais_consumidores", body)
-            nid = (r.get("data") or {}).get("dados")
-            if not nid:
-                return None
-        # 02/09/2026 o GestãoClick TIROU a rota de emissão da API: qualquer URL de 3
-        # níveis passou a responder 404 "Controller class ... could not be found"
-        # (até 01/09 esta mesma chamada emitia — a última foi a NF 11594).
-        #
-        # Voltou a emitir em 12/09/2026.
-        #
-        # Se a emissão funcionar, ótimo: a nota sai na hora, como sempre foi. Se não, o
-        # rascunho é APAGADO de propósito e quem resolve é a varredura diária
-        # (notas_delivery.py), que monta a nota e guarda o vínculo venda->rascunho no
-        # produto de controle do GestãoClick.
-        try:
-            e = gcapi.post(f"/notas_fiscais_consumidores/emitir/{nid}", {})
-        except Exception as err:
-            print(f"   NFC-e do pedido {venda_id}: API não emite ({str(err)[:60]}) — "
-                  f"a varredura diária cuida disso")
-            _apaga_rascunho(nid)
-            return None
-        if (e.get("data") or {}).get("ok"):
-            n = gcapi.get(f"/notas_fiscais_consumidores/{nid}").get("data") or {}
-            return n.get("numero_nf") or nid
-        print(f"   NFC-e do pedido {venda_id}: não transmitiu — "
-              f"{json.dumps(e, ensure_ascii=False)[:100]}")
-        _apaga_rascunho(nid)
-        return None
-    except Exception as err:
-        print(f"   NFC-e do pedido {venda_id}: falhou — {str(err)[:120]}")
-        return None
+        gg._req("POST", f"/pedido/{r['ID']}/emitir", {})
+    except Exception:       # sem emitir não há conta com o nº: cancela, senão a próxima rodada duplica
+        gg._req("DELETE", f"/pedido/{r['ID']}")
+        raise
+    contas = gg._todas(f"/conta?tipo=receber&status=aberto&documento=ANOTA-{ref}")
+    conta = next(k for k in contas if k.get("ID_PEDIDO") == r["ID"])
+    parc = gg._req("GET", f"/conta/{conta['ID']}")["parcelas"][0]
+    hoje = datetime.now(BRT).strftime("%Y-%m-%d")
+    for i, w in enumerate(pagamentos):
+        pg = w["pagamento"]
+        cc, forma = _CC_FORMA.get(pg["forma_pagamento_id"], (1, "DEPOSITO"))
+        if i == 0:
+            campos = {"id_conta_corrente": cc, "forma_pagto": forma, "obsparcela": pg["observacao"][:50]}
+            if len(pagamentos) > 1:
+                campos["valor"] = pg["valor"]
+            gg._req("PUT", f"/conta-parcela/{parc['ID']}", campos)
+            gg._req("POST", f"/conta-parcela/{parc['ID']}/baixar", {"data_pagto": hoje, "id_conta_corrente": cc})
+        else:
+            n = gg._req("POST", f"/conta/{conta['ID']}/parcelas", {"data_venc": hoje, "valor": pg["valor"], "id_conta_corrente": cc,
+                                                                   "forma_pagto": forma, "obsparcela": pg["observacao"][:50]})
+            gg._req("POST", f"/conta-parcela/{n['ID']}/baixar", {"data_pagto": hoje, "id_conta_corrente": cc})
+    gg._limpa()
+    return r["ID"]
 
 
 def rodar(post=True, dias=3):
-    """Puxa a lista de pedidos do Anota AI e lança no GestãoClick o que ainda não entrou.
+    """Puxa a lista de pedidos do Anota AI e lança no GestãoGPT o que ainda não entrou.
     Devolve um resumo pro painel (não levanta exceção pro chamador)."""
     ini = time.time()
     res = {"quando": datetime.now(BRT).strftime("%d/%m/%Y %H:%M"), "novos": [],
@@ -246,7 +201,7 @@ def rodar(post=True, dias=3):
 
         refs, oids = ja_importados()
         pmap = mapa()
-        limite = (datetime.now(BRT).date() - timedelta(days=dias)).isoformat()
+        limite = max((datetime.now(BRT).date() - timedelta(days=dias)).isoformat(), VIRADA)
 
         for d in docs:
             oid = d.get("_id")
@@ -290,9 +245,6 @@ def rodar(post=True, dias=3):
             frete = float(det.get("deliveryFee") or 0)
             descontos = sum(float(x.get("amount") or x.get("value") or 0)
                             for x in det.get("discounts") or [])
-            if descontos:
-                produtos[0]["produto"]["tipo_desconto"] = "R$"
-                produtos[0]["produto"]["desconto_valor"] = round(descontos, 2)
             total = float(det.get("total") or 0)
             calc = round(soma + frete - descontos, 2)
             if abs(calc - total) > 0.02:
@@ -316,28 +268,18 @@ def rodar(post=True, dias=3):
             if pagamentos is None:
                 continue
 
-            venda = {"tipo": "produto", "cliente_id": GC_CLIENTE_DELIVERY, "data": data_brt,
-                     "situacao_id": GC_SITUACAO_CONCRETIZADA, "condicao_pagamento": "a_vista",
-                     "valor_frete": round(frete, 2),
-                     "observacoes": f"Importado do Anota AI — pedido #{ref} ({oid}), "
-                                    f"canal {det.get('from')}/{det.get('salesChannel')}",
-                     "pagamentos": pagamentos, "produtos": produtos}
             if not post:
                 res["novos"].append({"ref": ref, "data": data_brt, "total": total, "venda": None})
                 continue
             try:
-                r = gcapi.post("/vendas", venda)
+                vid = _lanca_ggpt(ref, oid, det, produtos, descontos, frete, total, pagamentos)
             except Exception as e:
                 res["erros"].append({"ref": ref, "erro": str(e)[:180]})
                 continue
-            if r.get("status") != "success":
-                res["erros"].append({"ref": ref, "erro": json.dumps(r, ensure_ascii=False)[:180]})
-                continue
-            vid = (r.get("data") or {}).get("id")
             refs.add(ref); oids.add(oid)
-            nf = emit_nfce(vid, data_brt, pagamentos[0]["pagamento"]["forma_pagamento_id"])
-            res["novos"].append({"ref": ref, "data": data_brt, "total": total,
-                                 "venda": vid, "nfce": nf, "forma": forma_nome})
+            # NFC-e: a API do GestãoGPT não emite. Fica pendente pra emitir na tela deles.
+            res["novos"].append({"ref": ref, "data": data_brt, "total": total, "venda": vid,
+                                 "nfce": None, "forma": forma_nome})
     except Exception as e:
         res["ok"] = False
         res["erros"].append({"ref": "-", "erro": str(e)[:200]})
