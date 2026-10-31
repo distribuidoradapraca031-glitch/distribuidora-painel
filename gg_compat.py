@@ -14,7 +14,7 @@ Registro só do painel ([RES±], [SOB±], [SALDO], [NI], [GELO…], valor zero) 
 senão aparece como conta a pagar na tela do dono: fica no controle (produtos técnicos inativos
 CONTROLE PAINEL n, um JSON cortado em pedaços de 2.400 letras), com id "i<numero>".
 """
-import json, os, re, threading, time, urllib.error, urllib.parse, urllib.request
+import base64, json, os, re, threading, time, urllib.error, urllib.parse, urllib.request, zlib
 import gclient as _gc
 from gclient import _tok   # noqa: F401 (o app usa gcapi._tok)
 
@@ -45,6 +45,7 @@ INTERNO = re.compile(r"^\[(RES\+|RES-|SOB\+|SOB-|SALDO|NI|NIX|GELO[^\]]*)\]")
 FORA_DA_LISTA = ("PDV DIF. ABERTURA", "PDV SANGRIA")   # abertura e fechamento: só a gaveta lê
 MARCA = re.compile(r"\s*(?:æ|\{\{)(\{.*?\})(?:ç|\}\})\s*$", re.S)
 CTRL_NOME = "CONTROLE PAINEL"
+HIST_NOME = "CONTROLE HIST GC"
 CTRL_MAX = 2400     # o gatilho de auditoria deles soma texto antigo + novo e estoura em 5.000 (erro 500)
 _memo, _memo_lock = {}, threading.Lock()
 _ctrl = {"ids": None}
@@ -310,17 +311,51 @@ def _delete(rid):
 VIRADA = "2026-10-30"
 
 
+# ---- histórico do GC, congelado aqui (scripts/gestaogpt_congela_hist.py) ----
+# O GC venceu: nada aqui pergunta mais pra ele. Um erro ao ler sobe de propósito, assim os
+# gráficos ficam com a última foto boa em vez de redesenhar o ano sem o histórico.
+def hist_ids():
+    q = urllib.parse.quote(HIST_NOME)
+    return sorted(p["ID"] for p in _todas(f"/produto?inativo=true&descricao={q}") if (p.get("DESCRICAO") or "").startswith(HIST_NOME))
+
+
+def hist_gc():
+    def ler():
+        txt = "".join(_req("GET", f"/produto/{pid}").get("INFOADICIONAL") or "" for pid in hist_ids())
+        return json.loads(zlib.decompress(base64.b64decode(txt)))
+    return _guarda("hist_gc", 21600, ler)
+
+
+def _hist_vendas(tipo, de, ate):
+    """Um registro por dia e tipo, no formato do GC; _n é quantas vendas ele resume e _cmv o custo delas."""
+    out = []
+    for g in hist_gc()["vendas"]:
+        if not de <= g["dia"] <= ate or (tipo and tipo != {"b": "vendas_balcao", "p": "produto"}[g["tp"]]):
+            continue
+        prods = [{"produto": {"produto_id": pid, "nome_produto": "", "quantidade": str(q), "valor_total": str(fat),
+                              "valor_venda": str(round(fat / q, 4) if q else 0)}} for pid, (q, fat) in g["it"].items()]
+        if g["sq"]:
+            prods.append({"produto": {"produto_id": "", "nome_produto": "SAQUE", "quantidade": "0", "valor_total": "0", "valor_venda": "0"}})
+        out.append({"id": f"h{g['dia']}{g['tp']}{g['sq']}", "data": g["dia"], "cadastrado_em": g["dia"] + " 12:00:00", "valor_total": str(g["t"]),
+                    "valor_produtos": str(g["vp"]), "valor_frete": str(g["f"]), "desconto_valor": str(g["d"]), "nome_situacao": "Concretizada",
+                    "observacoes": "Anota AI" if g["tp"] == "p" else "", "_n": g["n"], "_cmv": g["c"], "produtos": prods,
+                    "pagamentos": [{"pagamento": {"valor": str(v), "nome_forma_pagamento": k}} for k, v in g["pg"].items()]})
+    return out
+
+
+def pagamentos_com_hist(params):
+    """Contas de agora + as pagas antes de outubro, que ficaram só na cópia do GC."""
+    return _lista("/pagamentos", params) + hist_gc()["pagos"]
+
+
 def _vendas(params):
-    """Vendas no formato do GC. Sem produtos: isso exige abrir venda por venda, e quem precisa
-    (curva ABC) ainda vai migrar. Antes da virada, tenta o GC enquanto ele responder."""
+    """Vendas no formato do GC. Sem produtos: isso exige abrir venda por venda; quem precisa
+    (curva ABC, gráficos) soma as saídas de estoque em saidas_de_venda. Antes da virada, o histórico."""
     params = params or {}
     tipo, de, ate = params.get("tipo"), (params.get("data_inicio") or VIRADA), (params.get("data_fim") or "2999-12-31")
     out = []
     if de < VIRADA:
-        try:
-            out = _gc.get_all("/vendas", {**params, "data_fim": min(ate, "2026-10-29")})
-        except Exception:
-            out = []
+        out = _hist_vendas(tipo, de, min(ate, "2026-10-29"))
     if ate < VIRADA:
         return out
     ini = max(de, VIRADA)
@@ -341,6 +376,8 @@ def _vendas(params):
             continue
         out.append({"id": str(v["ID"]), "data": v["DATA"][:10], "cadastrado_em": v["DATA"][:19].replace("T", " "),
                     "valor_total": f"{float(v.get('TOTAL') or 0):.2f}", "nome_situacao": "Concretizada",
+                    "valor_produtos": f"{float(v.get('TOTAL') or 0) - float(v.get('VALOR_FRETE') or 0):.2f}",
+                    "valor_frete": f"{float(v.get('VALOR_FRETE') or 0):.2f}", "desconto_valor": "0",
                     "observacoes": f"Importado do Anota AI — pedido #{ref[6:]}" if anota else "", "produtos": [],
                     "pagamentos": [{"pagamento": {"valor": f"{float(p.get('VALOR') or 0):.2f}",
                                                   "nome_forma_pagamento": re.sub(r"^\d+-", "", p.get("FORMAPAGTO") or "")}} for p in ps]})
@@ -530,17 +567,53 @@ def _fornecedores():
     return _tec_ler("CONTROLE FORNECEDORES").get("itens") or []
 
 
+def _forn_post(body):
+    """A API de lá não cria fornecedor: o novo fica só na lista do painel, como os outros."""
+    nome = (body.get("nome") or "").strip().upper()
+    if not nome:
+        raise RuntimeError("fornecedor sem nome")
+    itens = list(_fornecedores())
+    achou = next((f for f in itens if (f.get("nome") or "").upper() == nome), None)
+    if achou:
+        return {"code": 200, "status": "success", "data": {"id": achou["id"], "nome": achou["nome"]}}
+    fid = "n" + str(1 + max([int(f["id"][1:]) for f in itens if str(f["id"]).startswith("n")] or [0]))
+    itens.append({"id": fid, "nome": nome, "ativo": "1"})
+    _tec_grava("CONTROLE FORNECEDORES", {"itens": itens})
+    return {"code": 200, "status": "success", "data": {"id": fid, "nome": nome}}
+
+
+def movs_venda():
+    """Saídas de venda (caixa e delivery) desde a virada, em ordem. Cancelou, entra negativo. A receita
+    sai como Saida da venda, entre a saída do composto e a "Entrada Produto Composto" dele: fica de fora."""
+    movs = sorted(_guarda("movs", 300, lambda: _todas("/estoque/movimentacoes")), key=lambda m: m["ID"])
+    ingrediente = set()
+    for i, m in enumerate(movs):
+        if m.get("ORIGEM") == "Produto Composto":
+            for j in range(i - 1, -1, -1):
+                if movs[j].get("ID_PRODUTO") == m.get("ID_PRODUTO"):
+                    break
+                ingrediente.add(movs[j]["ID"])
+    out = []
+    for m in movs:
+        dia, tipo = (m.get("DATA") or "")[:10], m.get("TIPOMOV")
+        if dia < VIRADA or "Venda" not in (m.get("ORIGEM") or "") or tipo not in ("Saida", "Estorno") or m["ID"] in ingrediente:
+            continue
+        q = (1 if tipo == "Saida" else -1) * float(m.get("QTDE") or 0)
+        out.append({"id": m["ID"], "pid": _ext(m.get("ID_PRODUTO")), "dia": dia, "qtde": q, "valor": q * float(m.get("VALOR") or 0)})
+    return out
+
+
 def saidas_de_venda(desde):
     """Unidades vendidas por produto desde a virada, pelas movimentações de estoque."""
-    out = []
-    for m in _guarda("movs", 300, lambda: _todas("/estoque/movimentacoes")):
-        dia, tipo = (m.get("DATA") or "")[:10], m.get("TIPOMOV")
-        if dia < max(desde, VIRADA) or "Venda" not in (m.get("ORIGEM") or "") or tipo not in ("Saida", "Estorno"):
-            continue
-        sinal = 1 if tipo == "Saida" else -1
-        q = float(m.get("QTDE") or 0)
-        out.append({"pid": _ext(m.get("ID_PRODUTO")), "dia": dia, "qtde": sinal * q, "valor": sinal * q * float(m.get("VALOR") or 0)})
-    return out
+    return [m for m in movs_venda() if m["dia"] >= desde]
+
+
+def receitas_status():
+    """Quantos copões, doses e combos já baixam a receita: a API não deixa marcar PRODUTO COMPOSTO."""
+    mapa = json.load(open(os.path.join(_DIR, "mapa_drinks.json")))
+    ids = {_pid(k) for k in mapa}
+    prods = [p for p in _guarda("prod_tipo", 300, lambda: _todas("/produto")) if p["ID"] in ids]
+    return {"total": len(ids), "ativas": sum(1 for p in prods if p.get("TIPO") == "PRODUTO COMPOSTO")}
 
 
 def _rota(path):
@@ -584,8 +657,12 @@ def post(path, body):
         return _p_post(body)
     if path == "/compras":
         return _c_post(body)
+    if path == "/fornecedores":
+        return _forn_post(body)
     base, _ = _rota(path)
-    return _post(base, body) if base else _gc.post(path, body)
+    if not base:
+        raise RuntimeError(f"gravação sem destino no GestãoGPT: {path}")   # nada grava mais no GC
+    return _post(base, body)
 
 
 def put(path, body):
@@ -593,7 +670,9 @@ def put(path, body):
     if m:       # compra: reabrir antes de excluir era coisa do GC, aqui não faz nada
         return _p_put(m.group(2), body) if m.group(1) == "produtos" else {"code": 200, "status": "success"}
     base, rid = _rota(path)
-    return _put(base, rid, body) if base else _gc.put(path, body)
+    if not base:
+        raise RuntimeError(f"gravação sem destino no GestãoGPT: {path}")
+    return _put(base, rid, body)
 
 
 def delete(path):
@@ -601,4 +680,6 @@ def delete(path):
     if m:
         return _c_delete(m.group(1))
     base, rid = _rota(path)
-    return _delete(rid) if base else _gc.delete(path)
+    if not base:
+        raise RuntimeError(f"exclusão sem destino no GestãoGPT: {path}")
+    return _delete(rid)

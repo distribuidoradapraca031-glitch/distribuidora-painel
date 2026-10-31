@@ -60,24 +60,10 @@ _graf = {"gerando": False, "quando": None, "erro": None}
 _graf_lock = threading.Lock()
 
 def _fetch_pages(path, params):
-    """Paginação para o módulo de gráficos, com dedupe por id: a lista do GC cresce
-    enquanto se pagina e página repetida entrava somando duas vezes."""
-    out, vistos, page = [], set(), 1
-    while True:
-        p = dict(params); p["pagina"] = page; p["limite"] = 100
-        d = gcapi._gc.get(path, p)     # direto no GC: os gráficos ainda não migraram
-        for r in d.get("data") or []:
-            if isinstance(r, dict) and len(r) == 1:
-                r = next(iter(r.values()))
-            rid = str(r.get("id")) if isinstance(r, dict) else None
-            if rid:
-                if rid in vistos:
-                    continue
-                vistos.add(rid)
-            out.append(r)
-        if not (d.get("meta") or {}).get("proxima_pagina"):
-            return out
-        page += 1
+    """O que os gráficos pedem: GestãoGPT + o histórico do GC congelado lá."""
+    if path == "/pagamentos":
+        return gcapi.pagamentos_com_hist(params)
+    return gcapi.get_all(path, params)
 
 def _monta_catalogo(produtos, old_cat):
     """Lista de produtos e fornecedores das telas de estoque, inventário e compra.
@@ -138,7 +124,8 @@ def _regera_graficos():
                  for p in (old.get("catalogo") or {}).get("produtos", []) if p.get("fardo")}
         novo = graficos.construir(vendas, produtos, pagamentos, old, fardo, hoje,
                                   categoria_fn=_categoria_dre, interno_fn=_eh_interno,
-                                  cats_dre=_categ_dre())
+                                  cats_dre=_categ_dre(),
+                                  saidas=gcapi.saidas_de_venda(graficos.YMD(hoje - datetime.timedelta(days=120))))
         novo["catalogo"] = _monta_catalogo(produtos, old.get("catalogo") or {})
         with open(PAINEL_JSON, "w", encoding="utf-8") as f:
             _json.dump(novo, f, ensure_ascii=False)
@@ -150,62 +137,16 @@ def _regera_graficos():
     finally:
         _graf["gerando"] = False
 
-# ---- baixa das garrafas dos copões, aqui na nuvem ----
-# Copão/dose/combo não movimentam estoque; quem sai é a GARRAFA, e só inteira (1 L a
-# cada 10 copos, 700/750 ml a cada 8 — regra do dono). O controle do que já foi baixado
-# NÃO pode ficar em disco: aqui o disco some a cada reinício e, sem ele, a rotina
-# reprocessaria venda já baixada e descontaria o estoque EM DOBRO. Por isso mora num
-# produto técnico do próprio GestãoClick, que o Mac e a nuvem leem juntos.
-_drinks = {"rodando": False, "quando": None, "erro": None, "ultimo": None}
-_drinks_lock = threading.Lock()
-
-def _roda_baixa_drinks():
-    if GC_DESLIGADO:
-        return
-    global _drinks
-    try:
-        import drinks
-        r = drinks.rodar(gcapi, aplicar=True, dias=10)
-        _drinks["ultimo"] = {"vendas": r["vendas_novas"], "itens": r["itens"],
-                             "garrafas": [{"nome": l["nome"], "baixado": l["baixado"],
-                                           "antes": l["antes"], "depois": l["depois"]}
-                                          for l in r["linhas"]],
-                             "saldo": r["saldo"][:15], "ate": r["ate"]}
-        _drinks["quando"] = time.strftime("%d/%m/%Y %H:%M")
-        _drinks["erro"] = None
-        if r["linhas"]:
-            _invalida("resumo", "catalogo", "abc")
-    except Exception as e:
-        _drinks["erro"] = str(e)[:200]
-    finally:
-        _drinks["rodando"] = False
-
-def _baixa_drinks_do_dia():
-    """Dispara a baixa em segundo plano, no máximo de hora em hora."""
-    if GC_DESLIGADO:
-        return
-    agora = time.time()
-    with _drinks_lock:
-        if _drinks["rodando"]:
-            return
-        if _drinks.get("_t") and agora - _drinks["_t"] < 3600:
-            return
-        _drinks["_t"] = agora
-        _drinks["rodando"] = True
-    threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
-
 # ---- baixa dos maços (cigarro avulso, fumo picado e seda), aqui na nuvem ----
 # Mesma história das garrafas: a porção não movimenta estoque, quem sai é o MAÇO —
 # 20 porções fecham 1 maço, 33 sedas fecham 1 caixa — e só sai inteiro. Até 15/09/2026
 # isso só rodava na mão no Mac (scripts/baixa_tabacaria.py), então os maços iam ficando
 # no sistema depois de vendidos. O controle do que já foi baixado mora num produto
-# técnico do GestãoClick, senão o reinício da nuvem faria a baixa em dobro.
+# técnico do GestãoGPT, senão o reinício da nuvem faria a baixa em dobro.
 _tabaco = {"rodando": False, "quando": None, "erro": None, "ultimo": None}
 _tabaco_lock = threading.Lock()
 
 def _roda_baixa_tabacaria():
-    if GC_DESLIGADO:
-        return
     global _tabaco
     try:
         import tabacaria
@@ -225,8 +166,6 @@ def _roda_baixa_tabacaria():
 
 def _baixa_tabacaria_do_dia():
     """Dispara a baixa dos maços em segundo plano, no máximo de hora em hora."""
-    if GC_DESLIGADO:
-        return
     agora = time.time()
     with _tabaco_lock:
         if _tabaco["rodando"]:
@@ -342,7 +281,6 @@ def logout():
 @login_required
 def home():
     _graficos_do_dia()      # snapshot velho? o servidor regenera sozinho, em segundo plano
-    _baixa_drinks_do_dia()  # garrafas dos copões vendidos: desconta o que ainda não passou
     _baixa_tabacaria_do_dia()  # maços do cigarro avulso/picado/seda: mesma ideia
     _pluggy_do_dia()        # extrato do Itaú e do Nubank pelo Open Finance: concilia sozinho
     with open(os.path.join(BASE_DIR, "templates", "painel.html"), encoding="utf-8") as f:
@@ -352,29 +290,8 @@ def home():
 @app.route("/api/drinks-status")
 @login_required
 def api_drinks_status():
-    """Como está a baixa das garrafas: saldo de copos, última rodada e o que baixou."""
-    def build():
-        import drinks
-        estado, pid = drinks.carrega_estado(gcapi)
-        saldo = drinks.saldo_legivel(drinks.carrega_mapa(), estado.get("saldo") or {})
-        return {"ate": estado.get("ate"), "saldo": saldo, "controle_id": pid,
-                "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
-    d = cached("drinks_status", 120, build)
-    return jsonify(dict(d, rodando=_drinks["rodando"], erro=_drinks["erro"],
-                        ultima_rodada=_drinks["quando"], ultimo=_drinks["ultimo"]))
-
-@app.route("/api/baixa-drinks", methods=["POST"])
-@login_required
-def api_baixa_drinks():
-    """Roda a baixa das garrafas agora (botão do painel)."""
-    with _drinks_lock:
-        if _drinks["rodando"]:
-            return jsonify({"ok": True, "ja_rodando": True})
-        _drinks["_t"] = time.time()
-        _drinks["rodando"] = True
-    threading.Thread(target=_roda_baixa_drinks, daemon=True).start()
-    _invalida("drinks_status")
-    return jsonify({"ok": True, "ja_rodando": False})
+    """Quantos copões, doses e combos já baixam a garrafa sozinhos, pela receita do GestãoGPT."""
+    return jsonify(cached("drinks_status", 300, gcapi.receitas_status))
 
 @app.route("/api/tabacaria-status")
 @login_required
@@ -1772,7 +1689,7 @@ def api_inicio():
         ant_tem_dias = any(k[:7] == mes_ant for k in vd)
 
         saidas = defaultdict(float)
-        for p in gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
+        for p in gcapi.pagamentos_com_hist({"data_inicio": "2026-01-01", "data_fim": "2027-12-31"}):
             if str(p.get("liquidado")) != "1":
                 continue
             d = (p.get("descricao") or "").strip()
@@ -2924,6 +2841,18 @@ def api_catalogo():
         fornecedores.sort(key=lambda x: (x["nome"] or "").upper())
         return {"produtos": produtos, "fornecedores": fornecedores}
     return jsonify(cached("catalogo", 120, build))
+
+@app.route("/api/fornecedor", methods=["POST"])
+@login_required
+def api_fornecedor():
+    """Fornecedor novo, direto da tela de compra."""
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        d = gcapi.post("/fornecedores", {"nome": body.get("nome")})["data"]
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:200]}), 400
+    _invalida("catalogo", "ext_fornecedores")
+    return jsonify({"ok": True, "id": str(d["id"]), "nome": d["nome"]})
 
 @app.route("/api/hoje")
 @login_required
@@ -5158,7 +5087,7 @@ def _sync_loop():
     volta = 0
     while True:
         volta += 1
-        for tarefa in (_sync_anota, _graficos_do_dia, _baixa_drinks_do_dia, _notas_do_dia):
+        for tarefa in (_sync_anota, _graficos_do_dia, _notas_do_dia):
             try:
                 tarefa()
             except Exception as e:     # uma tarefa quebrada não pode parar as outras

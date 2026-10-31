@@ -19,11 +19,10 @@ O cigarro avulso não diz a marca (o SKU é só o preço: "CIGARRO PICADO 2,00")
 ele é rateado entre as marcas de maço na proporção das COMPRAS dos últimos 90 dias:
 o que o dono repõe é o que a loja consome.
 
-ONDE FICA O CONTROLE: num produto técnico inativo do próprio GestãoClick
-("CONTROLE BAIXA TABACARIA"), no campo descrição. Não pode ser arquivo em disco: na
-nuvem o disco é apagado a cada reinício e, sem o registro, a rotina reprocessaria
-venda já baixada e descontaria o estoque EM DOBRO. O corte é o `cadastrado_em` da
-venda (traz hora), então venda lançada com data retroativa também entra.
+ONDE FICA O CONTROLE: num produto técnico inativo do GestãoGPT ("CONTROLE BAIXA
+TABACARIA"). Não pode ser arquivo em disco: na nuvem o disco é apagado a cada reinício
+e, sem o registro, a rotina reprocessaria venda já baixada e descontaria o estoque EM
+DOBRO. O corte é o nº da movimentação de estoque.
 """
 import datetime
 import json
@@ -57,66 +56,32 @@ MACOS_CIGARRO = ["84734030", "84578007", "88747811",              # Rothmans
 CONTROLE_NOME = "CONTROLE BAIXA TABACARIA"
 
 
-# ---------- estado (mora no GestãoClick, não em disco) ----------
-
-def _acha_controle(gc):
-    for p in gc.get_all("/produtos", {}):
-        if (p.get("nome") or "").upper() == CONTROLE_NOME:
-            return str(p.get("id"))
-    r = gc.post("/produtos", {"nome": CONTROLE_NOME, "movimenta_estoque": "0",
-                              "ativo": "0", "valor_custo": "0.00", "valor_venda": "0.00",
-                              "descricao": "{}"})
-    return str((r.get("data") or {}).get("dados") or (r.get("data") or {}).get("id"))
-
+# ---------- estado (mora no GestãoGPT, não em disco) ----------
 
 def carrega_estado(gc, controle_id=None):
-    """{'ate': 'AAAA-MM-DD HH:MM:SS', 'saldo': {maco_id: porções que sobraram}}"""
-    pid = controle_id or _acha_controle(gc)
-    d = gc.get(f"/produtos/{pid}").get("data") or {}
-    try:
-        e = json.loads(d.get("descricao") or "{}")
-    except ValueError:
-        e = {}
-    if not isinstance(e, dict):
-        e = {}
+    """{'ate': nº da última movimentação contada, 'saldo': {maco_id: porções que sobraram}}"""
+    e = dict(gc._tec_ler(CONTROLE_NOME))
     e.setdefault("ate", "")
     e.setdefault("saldo", {})
-    return e, pid
+    return e, CONTROLE_NOME
 
 
 def salva_estado(gc, estado, controle_id):
-    d = gc.get(f"/produtos/{controle_id}").get("data") or {}
     estado = {"ate": estado.get("ate") or "",
               "saldo": {k: round(float(v), 2) for k, v in (estado.get("saldo") or {}).items()
-                        if float(v) > 0}}
-    gc.put(f"/produtos/{controle_id}", {"nome": d.get("nome"),
-                                        "codigo_interno": d.get("codigo_interno"),
-                                        "descricao": json.dumps(estado, ensure_ascii=False)})
+                        if float(v)}}
+    gc._tec_grava(CONTROLE_NOME, estado)
     return estado
 
 
 # ---------- cálculo ----------
 
 def vendas_novas(gc, ate, dias=10, hoje=None):
-    """Vendas (balcão + delivery) cadastradas DEPOIS do último corte.
-
-    O delivery entra aqui: o app também vende cigarro avulso, e a versão antiga que
-    rodava na mão só olhava o balcão.
-    """
-    fim = hoje or datetime.date.today()
-    ini = fim - datetime.timedelta(days=dias)
-    out = []
-    for tipo in ("vendas_balcao", "produto"):
-        for v in gc.get_all("/vendas", {"tipo": tipo, "data_inicio": ini.isoformat(),
-                                        "data_fim": fim.isoformat()}):
-            if "cancel" in (v.get("nome_situacao") or "").lower():
-                continue
-            if tipo == "produto" and "ANOTA AI" not in (v.get("observacoes") or "").upper():
-                continue          # saque e afins não são venda de tabacaria
-            if ate and (v.get("cadastrado_em") or "") <= ate:
-                continue          # já contabilizada numa rodada anterior
-            out.append(v)
-    return out
+    """Saídas de venda (caixa + delivery) depois do último corte, que é o nº da movimentação
+    no GestãoGPT: as vendas de lá não trazem os produtos. Venda cancelada entra negativa."""
+    corte = int(ate or 0)
+    return [{"cadastrado_em": m["id"], "produtos": [{"produto_id": m["pid"], "quantidade": m["qtde"]}]}
+            for m in gc.movs_venda() if m["id"] > corte]
 
 
 def peso_compras(gc, desde):
@@ -171,12 +136,12 @@ def calcula(vendas, saldo, pesos):
     for maco, n in porcoes.items():
         rende = rende_de.get(maco, POR_MACO)
         total = novo_saldo.get(maco, 0.0) + n
-        cheios = int(total // rende)
+        cheios = max(0, int(total // rende))
         novo_saldo[maco] = round(total - cheios * rende, 4)
         detalhe[maco] = {"porcoes": n, "sobra": novo_saldo[maco], "por_maco": rende}
         if cheios:
             baixas[maco] = float(cheios)
-    return baixas, {k: v for k, v in novo_saldo.items() if v > 0}, vendidas, detalhe
+    return baixas, {k: v for k, v in novo_saldo.items() if v}, vendidas, detalhe
 
 
 def aplica(gc, baixas):
@@ -207,7 +172,7 @@ def rodar(gc, aplicar=False, dias=10, hoje=None):
     baixas, novo_saldo, vendidas, detalhe = calcula(vendas, estado.get("saldo"), pesos)
 
     # o novo corte é a venda mais recente que acabou de entrar na conta
-    maior = max((v.get("cadastrado_em") or "" for v in vendas), default="")
+    maior = max((v["cadastrado_em"] for v in vendas), default="")
     linhas = aplica(gc, baixas) if aplicar else []
     if aplicar:
         salva_estado(gc, {"ate": maior or estado.get("ate"), "saldo": novo_saldo},

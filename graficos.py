@@ -97,7 +97,7 @@ def baixar(fetch_pages, hoje, log=lambda *a: None):
 
 
 def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
-              categoria_fn=None, interno_fn=None, cats_dre=None):
+              categoria_fn=None, interno_fn=None, cats_dre=None, saidas=None):
     """Monta o dicionário dos gráficos. `old` é o pacote anterior (mantém o histórico
     de meses antes de PRIM_MES_VIVO e os blocos que não recalculamos)."""
     TODAY = hoje or date.today()
@@ -120,9 +120,9 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
             continue
         tot = num(v.get("valor_total"))
         dia[dt]["fat"] += tot
-        dia[dt]["n"] += 1
+        dia[dt]["n"] += v.get("_n", 1)
         mes[dt[:7]]["fat"] += tot
-        mes[dt[:7]]["n"] += 1
+        mes[dt[:7]]["n"] += v.get("_n", 1)
         if _venda_eh_saque(v):
             saque_mes[dt[:7]] += tot
         for wrap in v.get("pagamentos") or []:
@@ -158,8 +158,8 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
     fat7 = sum(num(v.get("valor_total")) for v in d7)
     kpis = {"fat30": round(fat30, 2), "fat7": round(fat7, 2),
             "media_dia7": round(fat7 / 7, 2), "be_dia": BE_DIA, "be_dia_retirada": BE_DIA_RET,
-            "vendas_dia7": round(len(d7) / 7, 1),
-            "ticket": round(fat30 / len(d30), 2) if d30 else 0.0}
+            "vendas_dia7": round(sum(v.get("_n", 1) for v in d7) / 7, 1),
+            "ticket": round(fat30 / sum(v.get("_n", 1) for v in d30), 2) if d30 else 0.0}
     mes_atual = {"mes": CURM, "fat_mtd": round(fat_mtd, 2), "dias": base_dias,
                  "media_dia": round(media_dia, 2), "proj": round(proj, 2),
                  "be_mes": BE_MES, "be_mes_sem_retirada": BE_MES_SR,
@@ -254,6 +254,22 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
                 sold7.add(pid)
             if dt >= lim15:
                 p15[pid] += q
+    # as vendas do GestãoGPT não trazem os produtos: vêm das saídas de estoque
+    for m in saidas or []:
+        if m["dia"] < lim30:
+            continue
+        nome = (prod_by_id.get(m["pid"], {}) or {}).get("nome") or "?"
+        if _eh_servico(nome):
+            continue
+        s = p30[m["pid"]]
+        s["un"] += m["qtde"]
+        s["fat"] += m["valor"]
+        s["nome"], s["pid"] = nome, m["pid"]
+        if m["dia"] >= lim7:
+            p7[m["pid"]] += m["qtde"]
+            sold7.add(m["pid"])
+        if m["dia"] >= lim15:
+            p15[m["pid"]] += m["qtde"]
 
     ranked = sorted(p30.values(), key=lambda x: -x["fat"])
     fattot = sum(x["fat"] for x in ranked) or 1.0
@@ -309,7 +325,7 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
                  "entradas": entradas, "conta": conta, "fechamentos": fechamentos,
                  "sugestoes": sugestoes, "parados": parados, "a_pagar": a_pagar,
                  "dre": monta_dre(vendas, pagamentos, categoria_fn, TODAY, interno_fn,
-                                  {k: v["custo"] for k, v in prod_by_id.items()}, cats_dre)})
+                                  {k: v["custo"] for k, v in prod_by_id.items()}, cats_dre, saidas)})
     return novo
 
 # ======================================================================
@@ -404,7 +420,7 @@ def _dre_venda_eh_saque(v):
 
 
 def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
-              custo_by_id=None, cats=None):
+              custo_by_id=None, cats=None, saidas=None):
     """Demonstração de lucros e perdas, mês a mês. Devolve também o que não soube
     classificar, pra perguntar ao dono em vez de enfiar em 'Outros' calado.
 
@@ -438,7 +454,8 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
         # custo do que SAIU da prateleira, pelo custo cadastrado de cada produto. Não
         # entra no quadro (o dono quer a nota do mês), serve pra conferir se sobrou
         # compra sem lançar: a margem real é ~27%, então mercadoria tem que dar ~73%.
-        if custo_by_id:
+        r["cmv_real"] += v.get("_cmv", 0.0)      # histórico do GC: custo já somado no dia
+        if custo_by_id and "_cmv" not in v:
             for w in v.get("produtos") or []:
                 q = w.get("produto", w)
                 r["cmv_real"] += num(q.get("quantidade")) * custo_by_id.get(
@@ -447,11 +464,16 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
         eh_deliv = "ANOTA AI" in (v.get("observacoes") or "").upper()
         r["delivery" if eh_deliv else "balcao"] += bruto
         r["desconto"] += num(v.get("desconto_valor"))
-        r["n"] += 1
+        r["n"] += v.get("_n", 1)
         for wrap in v.get("pagamentos") or []:
             p = wrap.get("pagamento", wrap)
             if _classifica_pgto(p.get("nome_forma_pagamento")) == "cartao":
                 r["cartao"] += num(p.get("valor"))
+
+    for m in saidas or []:
+        mk = m["dia"][:7]
+        if custo_by_id and mk >= DRE_INICIO:
+            receita[mk]["cmv_real"] += m["qtde"] * custo_by_id.get(m["pid"], 0.0)
 
     # ---- previsão que virou conta de verdade e ninguém apagou ----
     # O dono lança "[PREV] Aluguel" no começo do mês e depois a conta real entra pelo
