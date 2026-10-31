@@ -42,7 +42,7 @@ NOME_PLANO = {"33015669": "Compras", "33015682": "Ajuste de caixa", "33015635": 
               "33015684": "Vendas de produtos"}
 PLANO_PADRAO_PAGAR, PLANO_PADRAO_RECEBER = 106, 94
 INTERNO = re.compile(r"^\[(RES\+|RES-|SOB\+|SOB-|SALDO|NI|NIX|GELO[^\]]*)\]")
-FORA_DA_LISTA = ("PDV DIF. ABERTURA", "PDV SANGRIA")   # abertura e fechamento: só a gaveta lê
+FORA_DA_LISTA = ("PDV DIF.", "PDV SANGRIA")   # abertura e fechamento: só a gaveta lê
 MARCA = re.compile(r"\s*(?:æ|\{\{)(\{.*?\})(?:ç|\}\})\s*$", re.S)
 CTRL_NOME = "CONTROLE PAINEL"
 HIST_NOME = "CONTROLE HIST GC"

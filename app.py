@@ -3777,9 +3777,14 @@ def _ggpt_gaveta_dia(data, movs):
     dia = [m for m in movs if m["dia"] == data]
     marcos = [m for m in dia if "PDV DIF. ABERTURA" in m["fatura"] or "SANGRIA FECHAMENTO" in m["fatura"]]
     final = marcos[-1] if marcos and "SANGRIA FECHAMENTO" in marcos[-1]["fatura"] else None
+    # contado diferente do esperado na tela deles vira "PDV DIF. FECHAMENTO": a do último
+    # fechamento é depois da contagem, igual à sangria final. A de um turno anterior fica na conta.
+    desde = marcos[-2]["id"] if final and len(marcos) > 1 else 0
     abertura, din, saidas = anterior, 0.0, 0.0
     for m in dia:
         if m is final or m["fatura"].startswith(FECH_AJUSTE_TAG):
+            continue
+        if final and "PDV DIF. FECHAMENTO" in m["fatura"] and m["id"] > desde:
             continue
         if "PDV DIF. ABERTURA" in m["fatura"]:
             abertura += m["valor"]
