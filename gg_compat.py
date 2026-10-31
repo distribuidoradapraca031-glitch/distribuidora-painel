@@ -366,8 +366,12 @@ def _vendas(params):
         k = p.get("CONTA") or {}
         if k.get("ID_PEDIDO"):
             por.setdefault(k["ID_PEDIDO"], []).append(p)
+    saque = saque_por_pedido(peds)
     for v in peds:
         if not v.get("EMITIDO"):
+            continue
+        fora = saque.get(v["ID"], 0.0)      # dinheiro entregue não é venda: fica só o resto da compra
+        if fora and float(v.get("TOTAL") or 0) - fora < 0.01:
             continue
         ps = por.get(v["ID"]) or []
         ref = next(((p.get("CONTA") or {}).get("REFBUSCA") or "" for p in ps), "")
@@ -375,8 +379,8 @@ def _vendas(params):
         if (tipo == "vendas_balcao" and not v.get("PDV")) or (tipo == "produto" and not anota):
             continue
         out.append({"id": str(v["ID"]), "data": v["DATA"][:10], "cadastrado_em": v["DATA"][:19].replace("T", " "),
-                    "valor_total": f"{float(v.get('TOTAL') or 0):.2f}", "nome_situacao": "Concretizada",
-                    "valor_produtos": f"{float(v.get('TOTAL') or 0) - float(v.get('VALOR_FRETE') or 0):.2f}",
+                    "valor_total": f"{float(v.get('TOTAL') or 0) - fora:.2f}", "nome_situacao": "Concretizada",
+                    "valor_produtos": f"{float(v.get('TOTAL') or 0) - fora - float(v.get('VALOR_FRETE') or 0):.2f}",
                     "valor_frete": f"{float(v.get('VALOR_FRETE') or 0):.2f}", "desconto_valor": "0",
                     "observacoes": f"Importado do Anota AI — pedido #{ref[6:]}" if anota else "", "produtos": [],
                     "pagamentos": [{"pagamento": {"valor": f"{float(p.get('VALOR') or 0):.2f}",
@@ -599,13 +603,37 @@ def movs_venda():
         if dia < VIRADA or "Venda" not in (m.get("ORIGEM") or "") or tipo not in ("Saida", "Estorno") or m["ID"] in ingrediente:
             continue
         q = (1 if tipo == "Saida" else -1) * float(m.get("QTDE") or 0)
-        out.append({"id": m["ID"], "pid": _ext(m.get("ID_PRODUTO")), "dia": dia, "qtde": q, "valor": q * float(m.get("VALOR") or 0)})
+        out.append({"id": m["ID"], "pid": _ext(m.get("ID_PRODUTO")), "dia": dia, "qtde": q, "valor": q * float(m.get("VALOR") or 0),
+                    "nome": (m.get("DESCRICAO") or "").strip().upper(), "data": m.get("DATA") or ""})
     return out
 
 
 def saidas_de_venda(desde):
     """Unidades vendidas por produto desde a virada, pelas movimentações de estoque."""
-    return [m for m in movs_venda() if m["dia"] >= desde]
+    return [m for m in movs_venda() if m["dia"] >= desde and not _SAQUE.match(m["nome"])]
+
+
+# Produto SAQUE <valor> vendido no caixa (adiantamento pendurado no fiado ou troca no cartão):
+# o dinheiro sai da gaveta sem conta nenhuma na conta corrente dela.
+_SAQUE = re.compile(r"^SAQUE (\d+)")
+
+
+def saque_dinheiro_dia(dia):
+    """Quanto saiu da gaveta no dia em produto SAQUE: vale o número do nome, não o preço cobrado."""
+    return round(sum(m["qtde"] * int(_SAQUE.match(m["nome"]).group(1)) for m in movs_venda()
+                     if m["dia"] == dia and _SAQUE.match(m["nome"])), 2)
+
+
+def saque_por_pedido(peds):
+    """{pedido: valor cobrado em SAQUE}. A movimentação não diz o pedido: é o do caixa que acabou de sair."""
+    caixa = sorted((p for p in peds if p.get("PDV") and p.get("EMITIDO")), key=lambda p: p.get("DATA") or "")
+    out = {}
+    for m in movs_venda():
+        if m["qtde"] > 0 and _SAQUE.match(m["nome"]):
+            antes = [p for p in caixa if (p.get("DATA") or "") <= m["data"]]
+            if antes and antes[-1]["DATA"][:10] == m["dia"]:
+                out[antes[-1]["ID"]] = out.get(antes[-1]["ID"], 0.0) + m["valor"]
+    return out
 
 
 def receitas_status():

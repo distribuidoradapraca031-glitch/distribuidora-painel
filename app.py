@@ -2864,16 +2864,19 @@ def api_hoje():
             vendas = [p for p in _ggpt_todas(f"/pedido?pdv=sim&situacao=todos&data_de={h}&data_ate={h}")
                       if p.get("EMITIDO") and (p.get("DATA") or "")[:10] == h]
             ids = {p["ID"] for p in vendas}
+            saque = gcapi.saque_por_pedido(vendas)
             f = {"dinheiro": 0.0, "pix": 0.0, "cartao": 0.0}
             for p in _ggpt_todas("/conta-parcela?status=pago"):
                 k = p.get("CONTA") or {}
                 if k.get("ID_PEDIDO") in ids:
                     nome = _sem_acento_up(p.get("FORMAPAGTO") or "")
+                    if "CONTA" in nome:      # fiado pago no mesmo dia: a forma continua "Conta", não é cartão
+                        continue
                     chave = "dinheiro" if "DINHEIRO" in nome else "pix" if "PIX" in nome else "cartao"
                     f[chave] += _num(p.get("VALOR_PAGO"))
-            tot = sum(_num(p.get("TOTAL")) for p in vendas)
+            tot = sum(_num(p.get("TOTAL")) for p in vendas) - sum(saque.values())
             return {"n": len(vendas), "total": round(tot, 2), **{k: round(v, 2) for k, v in f.items()},
-                    "outros": round(tot - sum(f.values()), 2), "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+                    "outros": round(max(0.0, tot - sum(f.values())), 2), "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
         vendas = gcapi.get_all("/vendas", {"tipo": "vendas_balcao", "data_inicio": h, "data_fim": h})
         tot = dinheiro = pix = cartao = outros = 0.0
         for v in vendas:
@@ -3792,6 +3795,8 @@ def _ggpt_gaveta_dia(data, movs):
             din += m["valor"]
         else:
             saidas += m["valor"]
+    # adiantamento/saque vendido como produto só pesa no dia: a sangria de fechamento deles zera o resto
+    saidas += gcapi.saque_dinheiro_dia(data)
     return {"abertura": round(abertura, 2), "dinheiro": round(din, 2), "saidas": round(saidas, 2),
             "abriu": any("PDV DIF. ABERTURA" in m["fatura"] for m in dia)}
 
