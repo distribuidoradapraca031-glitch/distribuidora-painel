@@ -3773,17 +3773,17 @@ def _ggpt_gaveta_movs():
     return out
 
 def _ggpt_gaveta_dia(data, movs):
-    """Saldo que veio do dia anterior + aberturas, dinheiro e saídas do dia. A sangria que
-    FECHOU o caixa (a última coisa do dia) fica de fora: é a retirada depois da contagem."""
-    sinal = lambda m: m["valor"] if m["tipo"] == "R" else -m["valor"]
-    anterior = sum(sinal(m) for m in movs if m["dia"] < data)
+    """Aberturas, dinheiro e saídas do dia. A sangria que FECHOU o caixa (a última coisa do dia)
+    fica de fora: é a retirada depois da contagem. Nada passa de um dia pro outro: o dono tira
+    tudo da gaveta e abre só com o troco que lança no caixa (05/11). A sangria deles leva só o
+    que o caixa conhece, e o fiado pago e o delivery em dinheiro sobravam pro dia seguinte."""
     dia = [m for m in movs if m["dia"] == data]
     marcos = [m for m in dia if "PDV DIF. ABERTURA" in m["fatura"] or "SANGRIA FECHAMENTO" in m["fatura"]]
     final = marcos[-1] if marcos and "SANGRIA FECHAMENTO" in marcos[-1]["fatura"] else None
     # contado diferente do esperado na tela deles vira "PDV DIF. FECHAMENTO": a do último
     # fechamento é depois da contagem, igual à sangria final. A de um turno anterior fica na conta.
     desde = marcos[-2]["id"] if final and len(marcos) > 1 else 0
-    abertura, din, saidas = anterior, 0.0, 0.0
+    abertura, din, saidas = 0.0, 0.0, 0.0
     for m in dia:
         if m is final or m["fatura"].startswith(FECH_AJUSTE_TAG):
             continue
@@ -4061,7 +4061,9 @@ def _fechamento_ggpt(data, body):
         if abs(quebra) >= 0.01:
             r = _ggpt_req("POST", "/conta", {
                 "tipo": "receber" if quebra > 0 else "pagar", "origem": "OUT", "data_lanc": data,
-                "fatura": f"{FECH_AJUSTE_TAG}{data} {'SOBRA' if quebra > 0 else 'FALTA'} contado {contado:.2f} esperado {esperado:.2f}",
+                # o nome aceita só 50 letras (passou disso, volta 401 sem explicação): contado e esperado vão na OBS
+                "fatura": f"{FECH_AJUSTE_TAG}{data} {'SOBRA' if quebra > 0 else 'FALTA'} {abs(quebra):.2f}",
+                "obs": f"contado {contado:.2f} esperado {esperado:.2f}",
                 "parcelas": [{"data_venc": data, "valor": abs(quebra), "forma_pagto": "DINHEIRO",
                               "id_conta_corrente": GGPT_CC_GAVETA}]})
             _ggpt_req("POST", f"/conta/{r['ID']}/baixar", {"data_pagto": data, "id_conta_corrente": GGPT_CC_GAVETA})
@@ -4406,7 +4408,9 @@ def _ggpt_req(metodo, caminho, corpo=None):
             return _json.load(r)
     except urllib.error.HTTPError as e:
         try:
-            msg = _json.load(e).get("message")
+            j = _json.load(e)
+            msg = j.get("message") or (f"o sistema novo recusou o formato do que mandei pra {caminho.split('?')[0]}"
+                                       if j.get("type") == "validation" else None)
         except Exception:
             msg = None
         raise RuntimeError(msg or f"o sistema novo respondeu {e.code} em {caminho.split('?')[0]}") from None

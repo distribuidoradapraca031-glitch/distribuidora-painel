@@ -2428,6 +2428,16 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     const b=g('f-salvar'); if(b){ b.disabled=true; b.textContent='gravando…'; }
     const moedas = (window.MOEDAS_REPETIDAS>0) ? window.MOEDAS_REPETIDAS
                  : (window.somaMoedasDigitadas ? window.somaMoedasDigitadas() : 0);
+    // a tela pode ter ficado aberta horas (01/11: abriu 15h49, registrou 22h08 com a sobra
+    // velha na tela). Relê o dia antes de gravar; se mudou, mostra o novo e pede outro clique.
+    const espAntes = FECH_ESP ? FECH_ESP.esperado : null;
+    loadFechHoje(true).then(()=>{
+    if(espAntes!==null && FECH_ESP && Math.abs(FECH_ESP.esperado-espAntes)>=0.01){
+      if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; }
+      if(msg) msg.innerHTML='<span style="color:var(--warn)">⚠️ O dia mudou desde que a tela abriu: o esperado era R$ '+fmt(espAntes)+
+        ' e agora é R$ '+fmt(FECH_ESP.esperado)+'. Confira a diferença acima e clique de novo pra gravar.</span>';
+      return;
+    }
     post('/api/fechamento',{data:(g('f-data')&&g('f-data').value)||'',contado:cc,
                             troco:parseFloat((g('f-abertura')||{}).value)||0,
                             moedas:moedas, moedas_repetidas:(window.MOEDAS_REPETIDAS>0)}).then(res=>{
@@ -2440,6 +2450,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }).catch(()=>{ if(b){ b.disabled=false; b.textContent='✅ Registrar fechamento no sistema'; }
       if(msg) msg.innerHTML='<span style="color:var(--crit)">❌ não consegui falar com o sistema agora.</span>'+
         '<br><span class="note">Nada foi gravado e sua contagem de R$ '+fmt(cc)+' ficou guardada aqui no navegador (✍️ na tabela abaixo) — tente de novo em alguns segundos.</span>'; });
+    });
   };
   function loadFechHoje(f){
     const dv=(g('f-data')&&g('f-data').value)||'';
