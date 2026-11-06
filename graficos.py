@@ -548,6 +548,12 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
     # DRE (regra do dono: só o pago). Mas aí o lucro daquele mês fica otimista — então o
     # painel avisa quanto falta marcar, mês a mês.
     abertas = defaultdict(float)
+    # Pro LUCRO REAL (06/11/2026, dono: "o DRE está positivo e eu não vejo dinheiro"): a conta
+    # do mês que ficou em aberto também é custo do mês. Mercadoria fica de fora porque o lucro
+    # real já usa o custo do que saiu da prateleira; previsão que já tem a paga também.
+    # Mês corrente: só o que já venceu, senão o mês de 6 dias mostra o aluguel do dia 15.
+    abertas_custo = defaultdict(float)
+    hoje_s = YMD(TODAY)
     for p in pagamentos:
         if str(p.get("liquidado")) == "1":
             continue
@@ -558,7 +564,17 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
             continue
         mk = ((p.get("data_competencia") or p.get("data_vencimento") or "")[:7])
         if mk and DRE_INICIO <= mk:
-            abertas[mk] += num(p.get("valor_total")) or num(p.get("valor"))
+            v = num(p.get("valor_total")) or num(p.get("valor"))
+            abertas[mk] += v
+            chave = (categoria_fn(p) if categoria_fn else None) or (p.get("nome_plano_conta") or "")
+            if de_para.get(chave) == "@mercadoria":
+                continue
+            if d.startswith("[PREV]") and any(abs(vp - v) <= max(60.0, v * 0.10) for vp in
+                                              pagas.get(((categoria_fn(p) if categoria_fn else None) or "", mk), [])):
+                continue
+            if mk == curm and (p.get("data_vencimento") or "")[:10] > hoje_s:
+                continue
+            abertas_custo[mk] += v
 
     meses = sorted(set(receita) | {m for l in custo.values() for m in l})
     meses = [m for m in meses if DRE_INICIO <= m <= curm]
@@ -610,6 +626,23 @@ def monta_dre(vendas, pagamentos, categoria_fn=None, hoje=None, interno_fn=None,
         L("Impostos", imp, "normal", "DAS, parcelamento do Simples e taxas da prefeitura"),
         L("LUCRO LÍQUIDO", liquido, "total"),
     ]
+    # ---- LUCRO REAL: o lucro líquido acima só conta nota paga e conta paga ----
+    # Troca a nota paga pelo custo do que saiu da prateleira (margem medida ~27%) e tira a
+    # conta do mês que não foi paga. Só aparece quando há custo por produto pra medir.
+    if any(receita[m]["cmv_real"] > 0 for m in meses):
+        acerto_merc = mesdict(lambda m: (merc[m] - receita[m]["cmv_real"])
+                              if receita[m]["cmv_real"] > 0 else 0.0)
+        acerto_ab = mesdict(lambda m: -abertas_custo.get(m, 0.0))
+        linhas += [
+            L("Acerto: mercadoria vendida × nota lançada", acerto_merc, "normal",
+              "custo do que saiu da prateleira menos a nota paga · negativo = vendeu mercadoria "
+              "cuja compra não está lançada · positivo = comprou pra estoque"),
+            L("Acerto: contas do mês que não foram pagas", acerto_ab, "normal",
+              "luz, DAS, contabilidade... vencidas e em aberto na aba Contas (mercadoria fora: "
+              "já está no acerto de cima)"),
+            L("LUCRO REAL (estimado)", mesdict(lambda m: liquido[m] + acerto_merc[m] + acerto_ab[m]),
+              "total", "o que o mês ganhou de verdade, pago ou não · DAS sem guia lançada não entra"),
+        ]
 
     pend = [{"categoria": k, "valor": round(d["valor"], 2), "n": d["n"],
              "exemplo": d["exemplo"], "plano": d["plano"]}
