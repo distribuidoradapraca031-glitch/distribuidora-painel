@@ -399,7 +399,9 @@ DRE_DE_PARA = {
 
 # Lançamento que NÃO é despesa: é o dinheiro da gaveta indo pro cofre/conta.
 # Se entrar na conta, o mês inteiro vira prejuízo falso.
-DRE_IGNORAR = {"Ajuste de caixa", "Saque", "Transferência entre contas"}
+# Empréstimo também: quitar dívida tira dinheiro do banco, mas não é custo do mês (06/11/2026).
+DRE_IGNORAR = {"Ajuste de caixa", "Saque", "Transferência entre contas",
+               "Empréstimo bancário", "Empréstimo Bancários"}
 
 # A ordem exata em que as linhas aparecem, como na planilha.
 DRE_OPERACIONAIS = [

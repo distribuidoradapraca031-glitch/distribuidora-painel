@@ -773,6 +773,8 @@ CATEGORIAS_PREV = [
     ("Biel (Gabriel)", "33015660"),
     ("PH Motoca", "33015664"),
     ("Reparo da loja", "33015656"),
+    # dívida, não despesa: pagar é quitar (06/11/2026, empréstimo do Nubank). Fica fora do quadro de lucros.
+    ("Empréstimo (banco)", "90000047"),
 ]
 _PREV_PLANO = dict(CATEGORIAS_PREV)
 

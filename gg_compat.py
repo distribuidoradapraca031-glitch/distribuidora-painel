@@ -31,7 +31,8 @@ NOME_FORMA = {"6055919": "Dinheiro à Vista", "6780142": "Dinheiro guardado (res
 PLANO_GG = {"33015669": 102, "33015630": 80, "33015649": 71, "33015635": 117, "33015663": 101, "35981822": 7,
             "33015650": 10, "33015661": 104, "33015654": 101, "33015677": 118, "33015660": 78, "33015638": 56,
             "33015655": 114, "33015662": 106, "33015664": 103, "33015658": 118, "33015633": 112, "33015646": 79,
-            "33015656": 106, "33015682": 106, "33015692": 94, "33015685": 87, "33015684": 87, "33015690": 94}
+            "33015656": 106, "33015682": 106, "33015692": 94, "33015685": 87, "33015684": 87, "33015690": 94,
+            "90000047": 47}   # 90000047 = código só do painel (o GC não tinha): Empréstimo Bancários, passivo
 NOME_PLANO = {"33015669": "Compras", "33015682": "Ajuste de caixa", "33015635": "Contabilidade", "33015630": "Aluguel",
               "33015663": "Telefonia e internet", "33015649": "Energia elétrica + água", "35981822": "Impostos - DAS Simples Nacional",
               "33015660": "Remuneração funcionários", "33015638": "Distribuição de lucros", "33015655": "Limpeza",
@@ -39,7 +40,8 @@ NOME_PLANO = {"33015669": "Compras", "33015682": "Ajuste de caixa", "33015635": 
               "33015650": "Impostos - alvará", "33015633": "Combustivel e translados", "33015677": "Despesas bancárias",
               "33015646": "Encargos funcionários - INSS", "33015661": "Segurança", "33015654": "Licença ou aluguel de softwares",
               "33015656": "Manutenção equipamentos", "33015685": "Vendas no balcão", "33015692": "Ajuste de caixa",
-              "33015684": "Vendas de produtos"}
+              "33015684": "Vendas de produtos",
+              "90000047": "Empréstimo bancário"}
 PLANO_PADRAO_PAGAR, PLANO_PADRAO_RECEBER = 106, 94
 INTERNO = re.compile(r"^\[(RES\+|RES-|SOB\+|SOB-|SALDO|NI|NIX|GELO[^\]]*)\]")
 FORA_DA_LISTA = ("PDV DIF.", "PDV SANGRIA")   # abertura e fechamento: só a gaveta lê
