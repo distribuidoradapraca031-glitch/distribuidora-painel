@@ -92,8 +92,13 @@ def _txt(s):
 
 
 def _limpa():
+    # o controle só muda pelo _ctrl_grava, que já deixa a cópia nova na memória: apagar aqui obrigava a
+    # reler os 70 pedaços a cada gravação de conta ou produto (a compra relia 3 a 4 vezes)
     with _memo_lock:
+        ctrl = _memo.get("ctrl")
         _memo.clear()
+        if ctrl:
+            _memo["ctrl"] = ctrl
 
 
 def _guarda(chave, ttl, fn):
@@ -108,8 +113,11 @@ def _guarda(chave, ttl, fn):
 
 
 # ---- controle: registros só do painel ----
-def _ctrl_ids():
-    if _ctrl["ids"] is None:
+def _ctrl_ids(fresco=False):
+    # a lista de pedaços é relida a cada leitura: o worker do gunicorn nasce de um fork do processo
+    # principal e herdava a lista velha dele (68 pedaços quando já eram 70). Lendo só 68, o JSON vinha
+    # cortado e toda tela que usa o controle quebrava (compra, reserva, contas; 10/11/2026)
+    if _ctrl["ids"] is None or fresco:
         q = urllib.parse.quote(CTRL_NOME)
         _ctrl["ids"] = sorted(p["ID"] for p in _todas(f"/produto?inativo=true&descricao={q}")
                               if (p.get("DESCRICAO") or "").startswith(CTRL_NOME))
@@ -119,11 +127,22 @@ def _ctrl_ids():
 def _ctrl_ler():
     """Os registros são um JSON só, cortado em pedaços de 2.400 letras, um por produto técnico."""
     def ler():
-        txt = ""
-        for pid in _ctrl_ids():
-            _ctrl_txt[pid] = _req("GET", f"/produto/{pid}").get("INFOADICIONAL") or ""
-            txt += _ctrl_txt[pid]
-        return json.loads(_txt(txt), strict=False) if txt.strip() else {}
+        from concurrent.futures import ThreadPoolExecutor
+        for tentativa in range(2):
+            ids = _ctrl_ids(fresco=True)
+            # 70 pedaços um atrás do outro levavam 19 s; somando as releituras da compra, passava dos
+            # 120 s do gunicorn e o worker morria no meio (compra 811058, 10/11/2026). Em paralelo: ~3 s
+            with ThreadPoolExecutor(6) as ex:
+                txts = list(ex.map(lambda pid: _req("GET", f"/produto/{pid}").get("INFOADICIONAL") or "", ids))
+            for pid, t in zip(ids, txts):
+                _ctrl_txt[pid] = t
+            txt = "".join(txts)
+            try:
+                return json.loads(_txt(txt), strict=False) if txt.strip() else {}
+            except ValueError:
+                if tentativa:
+                    raise RuntimeError("o controle do painel veio quebrado do GestãoGPT; tente de novo em 1 minuto")
+                time.sleep(3)    # alguém pode estar no meio de uma gravação
     return _guarda("ctrl", 120, ler)
 
 
@@ -131,7 +150,7 @@ def _ctrl_grava(regs):
     """Só regrava o pedaço que mudou; cria produto técnico novo quando não cabe."""
     txt = json.dumps(dict(sorted(regs.items(), key=lambda kv: int(kv[0][1:]))), ensure_ascii=False, separators=(",", ":"))
     pedacos = [txt[i:i + CTRL_MAX] for i in range(0, len(txt), CTRL_MAX)]
-    ids = _ctrl_ids()
+    ids = _ctrl_ids(fresco=True)     # lista velha criaria pedaço repetido
     while len(ids) < len(pedacos):
         r = _req("POST", "/produto", {"descricao": f"{CTRL_NOME} {len(ids) + 1}", "codfiscal": f"CTRL-PAINEL-{len(ids) + 1}",
                                       "tipo": "SERVIÇO", "unidmed": "UN", "inativo": True, "infoadicional": ""})
@@ -142,6 +161,8 @@ def _ctrl_grava(regs):
             _req("PUT", f"/produto/{pid}", {"infoadicional": t})
             _ctrl_txt[pid] = t
     _limpa()
+    with _memo_lock:     # acabei de gravar: já sei o que está lá, não precisa reler os 70 pedaços
+        _memo["ctrl"] = (time.time(), json.loads(txt))
 
 
 def _ctrl_novo(tipo, body):
