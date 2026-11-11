@@ -289,6 +289,25 @@ details.ajuda>p{margin-top:6px}
 .secao{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:10px 2px -6px;font-weight:700}
 #view-fiado,#view-delivery{display:flex;flex-direction:column;gap:16px}
 /* ---- placar da semana ---- */
+.fx-bars{display:flex;align-items:flex-end;gap:2px;height:64px;margin:14px 0 4px}
+.fx-bars i{flex:1;border-radius:3px 3px 0 0;background:var(--series-1);min-height:3px}
+.fx-bars i.neg{background:var(--crit)}.fx-bars i.conta{background:var(--warn)}
+.fx-eixo{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted)}
+.fx-msg{font-size:.95rem;line-height:1.45;padding:10px 12px;border-radius:10px;background:var(--good-bg)}
+.fx-msg.ruim{background:var(--crit-bg)}.fx-msg.aviso{background:var(--warn-bg);margin-top:8px;font-size:.84rem}
+.fx-sem summary{cursor:pointer;display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.86rem;font-variant-numeric:tabular-nums;list-style:none}
+.fx-sem summary::-webkit-details-marker{display:none}
+.fx-sem summary span:not(:first-child){text-align:right}
+.fx-cab{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:8px;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-top:14px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.fx-cab span:not(:first-child){text-align:right}
+.fx-it{display:flex;justify-content:space-between;gap:10px;font-size:.8rem;color:var(--muted);padding:4px 0 4px 10px}
+.pd-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.pd-row:last-child{border-bottom:0}
+.pd-n{min-width:38px;text-align:center;font-weight:800;font-size:1.05rem;background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:5px 4px}
+.pd-txt{flex:1;font-size:.86rem;line-height:1.35}.pd-txt b{display:block}
+.pd-txt span{color:var(--muted);font-size:.8rem}
+.mg-tag{display:inline-block;font-size:.66rem;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.mg-tag.prej{background:var(--crit-bg);color:var(--crit)}.mg-tag.baixa{background:var(--warn-bg);color:var(--warn)}
 .pl-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .pl-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
 .pl-val{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:2px}
@@ -359,6 +378,11 @@ details.ajuda>p{margin-top:6px}
 </section>
 <section class="card ini-avisos" id="ini-avisos" hidden aria-live="polite"></section>
 <section class="ini-cards" id="ini-cards"><div class="ini-card"><div class="sub">carregando…</div></div></section>
+<section class="card" id="card-pend" hidden>
+  <div class="eyebrow">Pra os números valerem</div>
+  <h2>🧹 O que falta lançar ou conferir</h2>
+  <div id="pd-box" style="margin-top:8px"></div>
+</section>
 <section class="card" id="card-placar">
   <div class="head-row" style="align-items:baseline">
     <div><div class="eyebrow" id="pl-periodo">Placar da semana</div><h2>🎯 Placar da semana</h2></div>
@@ -366,6 +390,14 @@ details.ajuda>p{margin-top:6px}
   </div>
   <div id="pl-box" style="margin-top:10px"><p class="note">carregando…</p></div>
   <details class="ajuda"><summary>Como funciona</summary><p class="note">Toda segunda, olhe estes números e anote 1 ou 2 ações pra semana. A <b>meta</b> (R$ 14.500 por semana) é vender como em outubro, o que paga o mês e o plano do atrasado. O <b>empate</b> (R$ 11.550 por semana, uns R$ 50 mil no mês) é o mínimo pra loja não fechar no vermelho. A semana vai de segunda a domingo; o dia de hoje entra até agora.</p></details>
+</section>
+<section class="card" id="card-fluxo">
+  <div class="head-row" style="align-items:baseline">
+    <div><div class="eyebrow">Caixa · o que vem pela frente</div><h2>📅 Próximos 30 dias</h2></div>
+    <span class="note" id="fx-stamp" style="margin:0"></span>
+  </div>
+  <div id="fx-box" style="margin-top:10px"><p class="note">carregando…</p></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Parte do dinheiro que tem hoje (gaveta, reserva, sobra e bancos). <b>Entra</b> é previsão: a média de venda de cada dia da semana nas últimas 4 semanas. <b>Contas lançadas</b> são as do mapa de contas, na data do vencimento. <b>Reposição e dia a dia</b> é estimativa do que ainda não tem conta lançada: mercadoria pra repor o que vender, imposto, taxa de cartão, pessoal e motoboy. O <b>atrasado não entra</b> nessa conta: ele aparece separado, pra você ver quanto sobra pra abater.</p></details>
 </section>
 <section class="card">
   <div class="eyebrow">Movimentações do mês</div>
@@ -599,6 +631,14 @@ details.ajuda>p{margin-top:6px}
   <div id="saque-resumo-box" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"></div>
 </section>
 
+<section class="card" id="card-margens">
+  <div class="head-row" style="align-items:baseline">
+    <div><div class="eyebrow">Preço · atenção</div><h2>🏷️ Produtos com margem apertada</h2></div>
+    <span class="note" id="mg-stamp" style="margin:0"></span>
+  </div>
+  <div id="mg-box" style="margin-top:8px"><p class="note">carregando…</p></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Só entra o que vendeu nos últimos 30 dias. <b>Margem</b> = (preço − custo) ÷ preço, com o custo do cadastro. O <b>sugerido</b> é o preço que leva a margem a 25%, arredondado pra cima de 50 em 50 centavos: é conta, não ordem. Antes de mexer, olhe o preço do concorrente. Cigarro é preço de tabela e só aparece se estiver no prejuízo. Copões, doses e combos ficam de fora porque o custo deles vem da receita.</p></details>
+</section>
 <div class="grid2">
 <section class="card">
   <div class="eyebrow">Vendas · destaque</div>
@@ -2879,9 +2919,56 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     .catch(()=>{ const b=g('cl-lista'); if(b&&!CL) b.innerHTML='<p class="note">Não consegui ler a lista de clientes agora.</p>'; }); }
   document.querySelectorAll('#tab-clientes,[data-aba="clientes"]').forEach(b=>b.addEventListener('click',()=>loadClientes()));
 
+  /* ---------- GESTÃO (11/11/2026): próximos 30 dias, margem apertada e pendências ---------- */
+  function pintaFluxo(d){
+    const box=g('fx-box'); if(!box) return;
+    g('fx-stamp').textContent='atualizado às '+String(d.gerado_em||'').slice(11);
+    const neg=d.primeiro_negativo, mn=d.menor||{saldo:0,data:d.hoje};
+    let h='<div class="fx-msg'+(neg?' ruim':'')+'">'+(neg
+      ? '⚠️ No ritmo de agora, <b>o caixa fica negativo em '+dbr(neg)+'</b>. O ponto mais fundo é '+dbr(mn.data)+', faltando <b>R$ '+fmt0(-mn.saldo)+'</b>. Dá tempo de negociar prazo ou segurar compra antes.'
+      : '✅ <b>O caixa fecha os próximos 30 dias.</b> O dia mais apertado é '+dbr(mn.data)+', com R$ '+fmt0(mn.saldo)+' em caixa.')+'</div>';
+    if((d.saldo_velho||[]).length) h+='<div class="fx-msg aviso">O saldo do '+d.saldo_velho.map(x=>esc(x.nome)+(x.data?' é de '+dbr(x.data):' nunca foi informado')).join(' e o do ')+'. Atualize na aba Caixa pra essa conta valer.</div>';
+    const card=(l,v,sb,c)=>'<div class="ini-card"><div class="lbl">'+l+'</div><div class="val"'+(c?' style="color:'+c+'"':'')+'>'+v+'</div><div class="sub">'+sb+'</div></div>';
+    const sf=d.saldo_final;
+    h+='<div class="pl-grid">'+card('Tem hoje','R$ '+fmt0(d.saldo_hoje),'gaveta, reserva, sobra e bancos')
+      +card('Daqui a 30 dias',(sf<0?'−':'')+'R$ '+fmt0(Math.abs(sf)),'vendendo uns R$ '+fmt0(d.venda_media_dia)+' por dia',sf<0?'var(--crit)':'')
+      +card('Atrasado (fora da conta)','R$ '+fmt0(d.atrasado),sf>0?'o que sobrar abate daqui':'sem sobra pra abater agora',d.atrasado>0?'var(--warn)':'')+'</div>';
+    const top=Math.max(...d.dias.map(x=>Math.abs(x.saldo)),1);
+    h+='<div class="fx-bars" role="img" aria-label="Saldo previsto dia a dia">'+d.dias.map(x=>'<i class="'+(x.saldo<0?'neg':(x.contas>0?'conta':''))+'" style="height:'+Math.max(5,Math.round(Math.abs(x.saldo)/top*100))+'%" title="'+dbr(x.data)+': saldo R$ '+fmt0(x.saldo)+(x.contas?' · vence R$ '+fmt0(x.contas):'')+'"></i>').join('')+'</div>'
+      +'<div class="fx-eixo"><span>'+dbr(d.dias[0].data)+'</span><span>saldo previsto por dia · laranja = dia com conta vencendo</span><span>'+dbr(d.dias[d.dias.length-1].data)+'</span></div>';
+    h+='<div class="fx-cab"><span>Semana</span><span>Entra</span><span>Sai</span><span>Saldo no fim</span></div>';
+    h+=d.semanas.map(w=>'<details class="fx-sem"><summary><span>'+dbr(w.de)+' a '+dbr(w.ate)+(w.itens.length?' ▾':'')+'</span><span>R$ '+fmt0(w.entra)+'</span><span>R$ '+fmt0(w.contas+w.estimado)+'</span><span style="font-weight:700'+(w.saldo<0?';color:var(--crit)':'')+'">'+(w.saldo<0?'−':'')+'R$ '+fmt0(Math.abs(w.saldo))+'</span></summary>'
+      +w.itens.map(c=>'<div class="fx-it"><span>'+dbr(c.data)+' · '+esc(c.cat||'')+(c.nota?' · '+esc(c.nota):'')+'</span><span>R$ '+fmt(c.valor)+'</span></div>').join('')
+      +'<div class="fx-it"><span>Reposição de mercadoria e dia a dia (estimado)</span><span>R$ '+fmt0(w.estimado)+'</span></div></details>').join('');
+    box.innerHTML=h;
+  }
+  function loadFluxo(f){ return fetch('/api/fluxo'+qf(f)).then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(pintaFluxo)
+    .catch(()=>{ const b=g('fx-box'); if(b) b.innerHTML='<p class="note">Não consegui montar os próximos 30 dias agora. Clique em Atualizar daqui a pouco.</p>'; }); }
+  function loadPend(f){ return fetch('/api/pendencias'+qf(f)).then(r=>r.json()).then(d=>{
+    const c=g('card-pend'), its=d.itens||[]; if(!c) return; c.hidden=!its.length;
+    g('pd-box').innerHTML=its.map(x=>'<div class="pd-row"><div class="pd-n">'+x.n+'</div><div class="pd-txt"><b>'+esc(x.titulo)+'</b><span>'+esc(x.texto)+'</span></div><button class="btn-copy" data-pd="'+esc(x.aba)+'">Abrir</button></div>').join('');
+    g('pd-box').querySelectorAll('[data-pd]').forEach(b=>b.addEventListener('click',()=>{ window.selAba&&window.selAba(b.dataset.pd); window.scrollTo(0,0); }));
+  }).catch(()=>{}); }
+  function loadMargens(f){ if(!g('mg-box')) return; return fetch('/api/margens'+qf(f)).then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>{
+    g('mg-stamp').textContent='atualizado às '+String(d.gerado_em||'').slice(11);
+    const a=d.apertados||[]; let h='';
+    if(!a.length) h='<p class="note">✅ Nenhum produto vendendo com margem abaixo de '+d.alvo+'%.</p>';
+    else{
+      h='<p class="pl-msg"><b>'+d.n_apertados+' produto'+(d.n_apertados>1?'s':'')+'</b> vende'+(d.n_apertados>1?'m':'')+' com margem abaixo de '+d.alvo+'%.'+(d.ganho_total>0?' No preço sugerido, entram uns <b>R$ '+fmt0(d.ganho_total)+' a mais por mês</b> vendendo a mesma quantidade.':'')+'</p>'
+       +'<div class="tblwrap" id="mg-tbl"><table><thead><tr><th>Produto</th><th class="num">Custo</th><th class="num">Preço</th><th class="num">Margem</th><th class="num">Sugerido</th><th class="num">Vende/mês</th><th class="num">Ganho/mês</th></tr></thead><tbody>'
+       +a.map(x=>'<tr><td>'+esc(x.nome)+(x.nivel==='prejuizo'?'<span class="mg-tag prej">prejuízo</span>':(x.nivel==='baixa'?'<span class="mg-tag baixa">baixa</span>':''))+'</td><td class="num">'+fmt(x.custo)+'</td><td class="num">'+fmt(x.preco)+'</td><td class="num"'+(x.margem<d.minimo?' style="color:var(--crit);font-weight:700"':'')+'>'+fmt(x.margem)+'%</td><td class="num">'+(x.sugerido?'<b>'+fmt(x.sugerido)+'</b>':'tabela')+'</td><td class="num">'+fmt0(x.vendeu30)+'</td><td class="num">'+(x.ganho_mes?'R$ '+fmt0(x.ganho_mes):'—')+'</td></tr>').join('')+'</tbody></table></div>';
+    }
+    const sc=d.sem_custo||[];
+    if(sc.length) h+='<p class="note" style="margin-top:10px"><b>Sem custo cadastrado ('+d.n_sem_custo+'):</b> '+sc.map(x=>esc(x.nome)).join(', ')+'. Sem o custo não dá pra saber a margem.</p>';
+    g('mg-box').innerHTML=h;
+    if(window.limitaLinhas&&g('mg-tbl')) window.limitaLinhas(g('mg-tbl'),10);
+  }).catch(()=>{ g('mg-box').innerHTML='<p class="note">Não consegui ler as margens agora.</p>'; }); }
+  loadMargens();
+  document.querySelectorAll('#tab-acomp,[data-aba="acomp"]').forEach(b=>b.addEventListener('click',()=>loadMargens()));
+
   function loadInicio(f){
     const q=qf(f);
-    loadPlacar(f);
+    loadPlacar(f); loadFluxo(f); loadPend(f);
     const p1=fetch('/api/inicio'+q).then(r=>r.json()).then(d=>{ INI.dados=d; pintaCards(); desenhaMov(); desenhaSobra(); }).catch(()=>{ const b=g('ini-cards'); if(b) b.innerHTML='<div class="ini-card"><div class="sub">Não consegui ler o mês agora. Clique em Atualizar daqui a pouco.</div></div>'; });
     const p2=fetch('/api/como-esta'+q).then(r=>r.json()).then(c=>{ INI.como=c; pintaCards(); pintaContas(); pintaAvisos(); }).catch(()=>{});
     const p3=fetch('/api/gelo'+q).then(r=>r.ok?r.json():null).then(pintaGelo).catch(()=>pintaGelo(null));

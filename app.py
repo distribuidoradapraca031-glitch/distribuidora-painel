@@ -5361,6 +5361,196 @@ def api_placar_acao():
     return jsonify({"ok": True, "semana": sem, "acoes": acoes})
 
 
+# ---- GESTÃO (11/11/2026): o que vem pela frente, preço que não paga e o que falta lançar ----
+# Três quadros pedidos pelo dono depois de revisar o painel: o caixa dos próximos 30 dias, os
+# produtos com margem apertada e a lista do que deixa os números tortos. Só leem; nada grava.
+MARGEM_MIN, MARGEM_ALVO = 0.15, 0.25
+_MARGEM_FORA = ("SAQUE", "TAXA", "CONTROLE ", "COPAO", "COPÃO", "DOSE ", "COMBO", "DRINK")
+
+
+def _eh_tabaco(p):
+    t = _sem_acento_up((p.get("nome_grupo") or "") + " " + (p.get("nome") or ""))
+    return any(k in t for k in ("TABAC", "CIGARR", "MACO ", "PICADO", "PALHEIRO", "PAIOL"))
+
+
+def _preco_redondo(v):
+    """Preço de prateleira: sobe pro próximo múltiplo de 50 centavos."""
+    import math
+    return math.ceil(v * 2 - 1e-9) / 2.0
+
+
+@app.route("/api/fluxo")
+@login_required
+def api_fluxo():
+    """Caixa dos próximos 30 dias, dia a dia. O que vence é o lançado no mapa de contas. O que
+    entra é ESTIMATIVA: a média de venda de cada dia da semana nas últimas 4 semanas. Reposição
+    de mercadoria e gastos do dia a dia que ainda não têm conta lançada também são estimados (o
+    mesmo modelo do ponto de empate), sem contar duas vezes o que já está no mapa."""
+    def build():
+        import graficos
+        hoje = _hoje()
+        d0 = datetime.date.fromisoformat(hoje)
+        ce = _json_rota(api_como_esta)
+        ini = _json_rota(api_inicio)
+        mapa = _json_rota(api_mapa)
+        # venda média por dia da semana (últimos 28 dias fechados)
+        vend = {x["data"]: _num(x.get("entradas")) for x in (ini.get("dias_ant") or []) + (ini.get("dias") or [])}
+        soma, qtd = [0.0] * 7, [0] * 7
+        for i in range(1, 29):
+            d = d0 - datetime.timedelta(days=i)
+            if vend.get(d.isoformat(), 0) > 0:     # dia zerado = loja fechada ou foto sem o dia: não entra na média
+                soma[d.weekday()] += vend[d.isoformat()]
+                qtd[d.weekday()] += 1
+        media = [round(soma[i] / qtd[i], 2) if qtd[i] else 0.0 for i in range(7)]
+        dias = [(d0 + datetime.timedelta(days=i)) for i in range(1, 31)]
+        venda = {d.isoformat(): media[d.weekday()] for d in dias}
+        tot_venda = sum(venda.values())
+        # contas lançadas que vencem na janela
+        fim = dias[-1].isoformat()
+        contas, merc_ag, fixo_ag = {}, 0.0, 0.0
+        for l in mapa.get("linhas") or []:
+            for it in l.get("itens") or []:
+                v, venc = _num(it.get("valor")), (it.get("venc") or "")[:10]
+                if it.get("atrasado") or not (hoje <= venc <= fim):
+                    continue
+                alvo = venc if venc > hoje else dias[0].isoformat()
+                contas.setdefault(alvo, []).append({"cat": l.get("cat"), "nota": (it.get("nota") or it.get("fornecedor") or "")[:60], "valor": v})
+                if l.get("cat") == MERCADORIA_CAT:
+                    merc_ag += v
+                else:
+                    fixo_ag += v
+        # o que não tem conta lançada: reposição (acompanha a venda) e dia a dia (pessoal, motoboy…)
+        var_resto = max(0.0, tot_venda * graficos.R_VAR - merc_ag)
+        fix_resto = max(0.0, graficos.fixos_do_mes(hoje[:7]) - fixo_ag)
+        saldo = _num(ce.get("total"))
+        linhas, menor = [], None
+        for d in dias:
+            k = d.isoformat()
+            entra = venda[k]
+            cs = contas.get(k, [])
+            sai_c = sum(c["valor"] for c in cs)
+            sai_e = (var_resto * entra / tot_venda if tot_venda else 0.0) + fix_resto / 30.0
+            saldo = saldo + entra - sai_c - sai_e
+            linhas.append({"data": k, "entra": round(entra, 2), "contas": round(sai_c, 2), "estimado": round(sai_e, 2),
+                           "saldo": round(saldo, 2), "itens": sorted(cs, key=lambda c: -c["valor"])})
+            if menor is None or saldo < menor["saldo"]:
+                menor = {"data": k, "saldo": round(saldo, 2)}
+        semanas = []
+        for i in range(0, 30, 7):
+            bl = linhas[i:i + 7]
+            semanas.append({"de": bl[0]["data"], "ate": bl[-1]["data"], "entra": round(sum(x["entra"] for x in bl), 2),
+                            "contas": round(sum(x["contas"] for x in bl), 2), "estimado": round(sum(x["estimado"] for x in bl), 2),
+                            "saldo": bl[-1]["saldo"], "itens": sorted((dict(c, data=x["data"]) for x in bl for c in x["itens"]),
+                                                                    key=lambda c: (c["data"], -c["valor"]))})
+        velhos = [{"nome": l["nome"], "data": l.get("data")} for l in ce.get("lugares") or []
+                  if l.get("nome") in BANCOS and (not l.get("data") or l["data"] < (d0 - datetime.timedelta(days=3)).isoformat())]
+        primeiro_neg = next((x["data"] for x in linhas if x["saldo"] < 0), None)
+        return {"hoje": hoje, "saldo_hoje": round(_num(ce.get("total")), 2), "lugares": ce.get("lugares"),
+                "saldo_velho": velhos, "atrasado": ce.get("atrasado") or 0.0, "venda_media_dia": round(tot_venda / 30.0, 2),
+                "dias": linhas, "semanas": semanas, "menor": menor, "primeiro_negativo": primeiro_neg,
+                "saldo_final": linhas[-1]["saldo"], "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("fluxo", 120, build))
+
+
+def _margens_dados():
+    abc = _json_rota(api_abc)
+    v30 = {str(x["pid"]): x for x in abc.get("sugestoes") or []}
+    apertados, sem_custo, n_ok = [], [], 0
+    for p in gcapi.get_all("/produtos"):
+        if str(p.get("ativo")) != "1":
+            continue
+        nome = p.get("nome") or ""
+        if any(k in _sem_acento_up(nome) for k in map(_sem_acento_up, _MARGEM_FORA)):
+            continue
+        x = v30.get(str(p.get("id")))
+        if not x or x["vendeu30"] <= 0:
+            continue
+        custo, preco = _num(p.get("valor_custo")), _num(p.get("valor_venda"))
+        if preco <= 0:
+            continue
+        if custo <= 0:
+            sem_custo.append({"nome": nome, "preco": preco, "vendeu30": x["vendeu30"], "fat30": x["fat30"]})
+            continue
+        m = (preco - custo) / preco
+        tab = _eh_tabaco(p)
+        if m >= MARGEM_ALVO or (tab and m >= 0):
+            n_ok += 1
+            continue
+        sug = max(_preco_redondo(custo / (1 - MARGEM_ALVO)), preco + 0.5)
+        apertados.append({"nome": nome, "custo": round(custo, 2), "preco": preco, "margem": round(m * 100, 1),
+                          "vendeu30": x["vendeu30"], "classe": x.get("classe"), "tabela": tab,
+                          "nivel": "prejuizo" if m < 0 else ("baixa" if m < MARGEM_MIN else "apertada"),
+                          "sugerido": None if tab else sug,
+                          "ganho_mes": 0.0 if tab else round((sug - preco) * x["vendeu30"], 2)})
+    apertados.sort(key=lambda a: (a["nivel"] != "prejuizo", -a["ganho_mes"]))
+    sem_custo.sort(key=lambda a: -a["fat30"])
+    return {"apertados": apertados[:60], "n_apertados": len(apertados), "n_ok": n_ok,
+            "sem_custo": sem_custo[:40], "n_sem_custo": len(sem_custo),
+            "ganho_total": round(sum(a["ganho_mes"] for a in apertados), 2),
+            "alvo": int(MARGEM_ALVO * 100), "minimo": int(MARGEM_MIN * 100),
+            "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+
+
+@app.route("/api/margens")
+@login_required
+def api_margens():
+    """Produtos que venderam nos últimos 30 dias com margem abaixo do alvo, e os sem custo cadastrado.
+    Cigarro é preço de tabela: aparece só se estiver no prejuízo, sem sugestão de preço."""
+    return jsonify(cached("margens", 900, _margens_dados))
+
+
+@app.route("/api/pendencias")
+@login_required
+def api_pendencias():
+    """O que falta lançar ou conferir pra os números do painel valerem."""
+    def build():
+        hoje = _hoje()
+        d0 = datetime.date.fromisoformat(hoje)
+        itens = []
+        def add(chave, n, titulo, texto, aba, peso):
+            if n:
+                itens.append({"chave": chave, "n": n, "titulo": titulo, "texto": texto, "aba": aba, "peso": peso})
+        try:
+            fe = cached("fechamentos_14", 120, lambda: _fechamentos_dados(14))
+            sem = [x["data"] for x in fe["itens"] if FECH_GGPT_DESDE <= x["data"] < hoje and x.get("contado") is None]
+            add("fech", len(sem), "dia(s) sem fechamento de caixa",
+                "Sem contar a gaveta não dá pra saber se faltou dinheiro: " + ", ".join(f"{d[8:10]}/{d[5:7]}" for d in sem[-6:]) + ".", "loja", 3)
+        except Exception:
+            pass
+        try:
+            ce = _json_rota(api_como_esta)
+            lim = (d0 - datetime.timedelta(days=3)).isoformat()
+            for l in ce.get("lugares") or []:
+                if l.get("nome") in BANCOS and (not l.get("data") or l["data"] < lim):
+                    quando = f"é de {l['data'][8:10]}/{l['data'][5:7]}" if l.get("data") else "nunca foi informado"
+                    add("banco_" + l["nome"], 1, f"saldo do {l['nome']} desatualizado",
+                        f"O saldo que o painel usa {quando}. O caixa dos próximos 30 dias parte dele.", "loja", 5)
+            ni = ce.get("nao_ident") or {}
+            add("ni", ni.get("n") or 0, "gasto(s) do banco sem dizer o que foi",
+                "Somam R$ " + f"{_num(ni.get('total')):.2f}".replace(".", ",") + ". Enquanto não tiver categoria, ficam fora do lucro.", "contas", 2)
+        except Exception:
+            pass
+        try:
+            abc = _json_rota(api_abc)
+            _fora = [_sem_acento_up(k) for k in _MARGEM_FORA]     # copão, dose e combo ficam negativos por causa da receita, não de nota
+            neg = sorted((x for x in abc.get("sugestoes") or [] if x["estoque"] < 0
+                          and not any(k in _sem_acento_up(x["nome"]) for k in _fora)), key=lambda x: -x["fat30"])
+            add("neg", abc.get("negativos") or 0, "produto(s) com estoque negativo",
+                "Vendeu mais do que entrou: quase sempre é nota de compra que não foi lançada. Os que mais vendem: "
+                + ", ".join(x["nome"].title() for x in neg[:4]) + ".", "estoque", 4)
+        except Exception:
+            pass
+        try:
+            mg = cached("margens", 900, _margens_dados)
+            add("custo", mg["n_sem_custo"], "produto(s) que vendem sem custo cadastrado",
+                "Sem custo o painel não sabe o lucro deles: " + ", ".join(x["nome"].title() for x in mg["sem_custo"][:4]) + ".", "acomp", 2)
+        except Exception:
+            pass
+        itens.sort(key=lambda x: -x["peso"])
+        return {"itens": itens, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("pendencias", 120, build))
+
+
 if anota is not None and os.environ.get("SYNC_ANOTA", "1") == "1":
     threading.Thread(target=_sync_loop, daemon=True).start()
 else:
