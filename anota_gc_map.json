@@ -1392,8 +1392,8 @@
  "GUARANA ANTARCTICA 2L": {
   "anota_title": "Guaraná Antarctica 2lts",
   "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
-  "gc_id": "84578027",
-  "gc_nome": "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
+  "gc_id": "84578026",
+  "gc_nome": "REFRI GUARANÁ ANTARCTICA PET 2L",
   "candidatos": [
    [
     1.1,
@@ -1407,9 +1407,9 @@
    ]
   ],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "REFRI GUARANÁ ANTARCTICA ZERO PET 2L",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "REFRI GUARANÁ ANTARCTICA PET 2L",
+  "manual": true
  },
  "GUARANA ANTARCTICA ZERO 2L": {
   "anota_title": "Guaraná Antarctica Zero 2lts",
@@ -1441,8 +1441,8 @@
  "SPRITE 2L": {
   "anota_title": "Sprite 2lts",
   "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
-  "gc_id": "84659015",
-  "gc_nome": "REFRI SPRITE ZERO  2LT",
+  "gc_id": "84659013",
+  "gc_nome": "REFRI SPRITE 2LT",
   "candidatos": [
    [
     1.1,
@@ -1456,9 +1456,9 @@
    ]
   ],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "REFRI SPRITE ZERO  2LT",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "REFRI SPRITE 2LT",
+  "manual": true
  },
  "FANTA LARANJA 2L": {
   "anota_title": "Fanta Laranja 2L",
@@ -5598,6 +5598,380 @@
   "mult": 1,
   "score": 1.0,
   "sugestao": "SKOL BEATS PINK LEMONADE LATA 269 ML",
+  "manual": true
+ },
+ "COPAO CHANCELER": {
+  "anota_title": "Copão Chanceler",
+  "categoria": "Copão Whisky",
+  "gc_id": "85750259",
+  "gc_nome": "COPAO WHISKY CHANCELER",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY CHANCELER",
+  "manual": true
+ },
+ "COPAO WHITE HORSE CAVALINHO": {
+  "anota_title": "Copão White Horse (Cavalinho)",
+  "categoria": "Copão Whisky",
+  "gc_id": "84577963",
+  "gc_nome": "COPAO WHITE HORSE CAVALINHO",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHITE HORSE CAVALINHO",
+  "manual": true
+ },
+ "COPAO RED LABEL": {
+  "anota_title": "Copão Red Label",
+  "categoria": "Copão Whisky",
+  "gc_id": "84577962",
+  "gc_nome": "COPAO RED LABEL",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO RED LABEL",
+  "manual": true
+ },
+ "COPAO JACK DANIEL S 07": {
+  "anota_title": "Copão Jack Daniel´s 07",
+  "categoria": "Copão Whisky",
+  "gc_id": "95541464",
+  "gc_nome": "COPAO WHISKY JACK DANIELS N7",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS N7",
+  "manual": true
+ },
+ "COPAO JACK DANIEL S MEL": {
+  "anota_title": "Copão Jack Daniel´s Mel",
+  "categoria": "Copão Whisky",
+  "gc_id": "95404680",
+  "gc_nome": "COPAO WHISKY JACK DANIELS HONEY",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS HONEY",
+  "manual": true
+ },
+ "COPAO JACK DANIEL S MACA": {
+  "anota_title": "Copão Jack Daniel´s Maça",
+  "categoria": "Copão Whisky",
+  "gc_id": "95404682",
+  "gc_nome": "COPAO WHISKY JACK DANIELS APPLE",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS APPLE",
+  "manual": true
+ },
+ "COPAO JACK DANIEL S BLACKBERRY": {
+  "anota_title": "Copão Jack Daniel´s Blackberry",
+  "categoria": "Copão Whisky",
+  "gc_id": "95404684",
+  "gc_nome": "COPAO WHISKY JACK DANIELS BLACKBERRY",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS BLACKBERRY",
+  "manual": true
+ },
+ "COPAO BUCHANAN S DELUXE 12 ANOS": {
+  "anota_title": "Copão Buchanan´s Deluxe 12 Anos",
+  "categoria": "Copão Whisky",
+  "gc_id": "85750275",
+  "gc_nome": "COPAO WHISKY BUCHANANS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY BUCHANANS",
+  "manual": true
+ },
+ "COPAO INTENCION MELANCIA": {
+  "anota_title": "Copão Intencion Melancia",
+  "categoria": "Copão Gin",
+  "gc_id": "85750245",
+  "gc_nome": "COPÃO DE GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN INTENCION",
+  "manual": true
+ },
+ "COPAO INTENCION MORANGO": {
+  "anota_title": "Copão Intencion Morango",
+  "categoria": "Copão Gin",
+  "gc_id": "85750245",
+  "gc_nome": "COPÃO DE GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN INTENCION",
+  "manual": true
+ },
+ "COPAO INTENCION MORANGO E PESSEGO": {
+  "anota_title": "Copão Intencion Morango e Pessêgo",
+  "categoria": "Copão Gin",
+  "gc_id": "85750245",
+  "gc_nome": "COPÃO DE GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN INTENCION",
+  "manual": true
+ },
+ "COPAO INTENCION TROPICAL": {
+  "anota_title": "Copão Intencion Tropical",
+  "categoria": "Copão Gin",
+  "gc_id": "85750245",
+  "gc_nome": "COPÃO DE GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN INTENCION",
+  "manual": true
+ },
+ "COPAO ROCK S MACA VERDE": {
+  "anota_title": "Copão Rock´s Maça Verde",
+  "categoria": "Copão Gin",
+  "gc_id": "97906598",
+  "gc_nome": "COPÃO DE GIN ROCK´S",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN ROCK´S",
+  "manual": true
+ },
+ "COPAO ROCK S MELANCIA": {
+  "anota_title": "Copão Rock´s Melancia",
+  "categoria": "Copão Gin",
+  "gc_id": "97906598",
+  "gc_nome": "COPÃO DE GIN ROCK´S",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN ROCK´S",
+  "manual": true
+ },
+ "COPAO ROCK S MORANGO": {
+  "anota_title": "Copão Rock´s Morango",
+  "categoria": "Copão Gin",
+  "gc_id": "97906598",
+  "gc_nome": "COPÃO DE GIN ROCK´S",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN ROCK´S",
+  "manual": true
+ },
+ "COPAO ROCK S TRADICIONAL": {
+  "anota_title": "Copão Rock´s Tradicional",
+  "categoria": "Copão Gin",
+  "gc_id": "97906598",
+  "gc_nome": "COPÃO DE GIN ROCK´S",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN ROCK´S",
+  "manual": true
+ },
+ "COPAO GORDON S TRADICIONAL": {
+  "anota_title": "Copão Gordon´s Tradicional",
+  "categoria": "Copão Gin",
+  "gc_id": "85750239",
+  "gc_nome": "COPÃO DE GIN GORDONS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN GORDONS",
+  "manual": true
+ },
+ "COPAO BEEFEATER TRADICIONAL": {
+  "anota_title": "Copão Beefeater Tradicional",
+  "categoria": "Copão Gin",
+  "gc_id": "95404671",
+  "gc_nome": "COPÃO DE GIN BEEFEATER",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN BEEFEATER",
+  "manual": true
+ },
+ "COPAO TANQUERAY": {
+  "anota_title": "Copão Tanqueray",
+  "categoria": "Copão Gin",
+  "gc_id": "85750235",
+  "gc_nome": "COPÃO DE GIN TANQUERAY",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPÃO DE GIN TANQUERAY",
+  "manual": true
+ },
+ "STELLA PURE GOLD 473ML": {
+  "anota_title": "Stella Pure Gold 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "98853410",
+  "gc_nome": "STELLA PURE GOLD LT 473 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "STELLA PURE GOLD LT 473 ML",
+  "manual": true
+ },
+ "CARACU LATA 350ML": {
+  "anota_title": "Caracu lata 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577944",
+  "gc_nome": "CARACU LT 350 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CARACU LT 350 ML",
+  "manual": true
+ },
+ "HEINEKEN ULTIMATE LATA 350ML": {
+  "anota_title": "Heineken Ultimate lata 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "96941242",
+  "gc_nome": "HEINEKEN ULTRA LT 350 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "HEINEKEN ULTRA LT 350 ML",
+  "manual": true
+ },
+ "HEINEKEN ULTIMATE LONG NECK": {
+  "anota_title": "Heineken Ultimate long neck",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "96338924",
+  "gc_nome": "HEINEKEN ULTRA LONG NECK 330 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "HEINEKEN ULTRA LONG NECK 330 ML",
+  "manual": true
+ },
+ "SKOL BEATS GREEN MIX 296ML": {
+  "anota_title": "Skol Beats Green Mix 296ml",
+  "categoria": "Drink's",
+  "gc_id": "88750737",
+  "gc_nome": "SKOL BEATS GREEN MIX LATA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SKOL BEATS GREEN MIX LATA",
+  "manual": true
+ },
+ "ENERGETICO RED BULL ZERO ACUCAR 250ML": {
+  "anota_title": "Energético Red Bull zero açucar 250ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577970",
+  "gc_nome": "ENERGY  REDBULL LT 250 ML SABORES",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "ENERGY  REDBULL LT 250 ML SABORES",
+  "manual": true
+ },
+ "ENERGETICO BALY ENERGY DRINK MELANCIA 473ML": {
+  "anota_title": "Energético Baly Energy Drink Melancia 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577969",
+  "gc_nome": "ENERGY  BALY LT 473 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "ENERGY  BALY LT 473 ML",
+  "manual": true
+ },
+ "ENERGETICO BALY ENERGY DRINK MACA VENDE 473ML": {
+  "anota_title": "Energético Baly Energy Drink Maça Vende 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577969",
+  "gc_nome": "ENERGY  BALY LT 473 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "ENERGY  BALY LT 473 ML",
+  "manual": true
+ },
+ "COMBO BUCHANAN S 1L": {
+  "anota_title": "COMBO Buchanan´s 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799799",
+  "gc_nome": "COMBO WHISKY BUCHANANS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO WHISKY BUCHANANS",
+  "manual": true
+ },
+ "COMBO BUSCA BRISA 1L": {
+  "anota_title": "COMBO Busca Brisa 1L",
+  "categoria": "Whiskys",
+  "gc_id": "98400540",
+  "gc_nome": "COMBO BUSCA BRISA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO BUSCA BRISA",
+  "manual": true
+ },
+ "COMBO GIN ROCK S 1L": {
+  "anota_title": "COMBO GIN Rock´s 1L",
+  "categoria": "Gin",
+  "gc_id": "97906587",
+  "gc_nome": "COMBO DE GIN ROCKS TRADICIONAL",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN ROCKS TRADICIONAL",
+  "manual": true
+ },
+ "GELO CUBO FILTRADO 20KG": {
+  "anota_title": "Gelo Cubo Filtrado 20kg",
+  "categoria": "Carvão / Gelo",
+  "gc_id": "84577977",
+  "gc_nome": "GELO 20 KG",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "GELO 20 KG",
+  "manual": true
+ },
+ "CHEETOS REQUEIJAO 90G": {
+  "anota_title": "Cheetos requeijão 90g",
+  "categoria": "Petiscos",
+  "gc_id": "84577951",
+  "gc_nome": "CHIPS CHEETOS GRA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHIPS CHEETOS GRA",
+  "manual": true
+ },
+ "GELEIA DE MOCOTO": {
+  "anota_title": "geleia de mocoto",
+  "categoria": "Petiscos",
+  "gc_id": "98321749",
+  "gc_nome": "GELÉIA DE MOCOTÓ",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "GELÉIA DE MOCOTÓ",
+  "manual": true
+ },
+ "CERVEJA PRAYA 3 POR 21,90": {
+  "anota_title": "Cerveja PRAYA 3 por 21,90",
+  "categoria": "Promoções",
+  "gc_id": "96338922",
+  "gc_nome": "PRAYA LONG NECK 330 ML",
+  "candidatos": [],
+  "mult": 3,
+  "score": 1.0,
+  "sugestao": "PRAYA LONG NECK 330 ML",
   "manual": true
  }
 }
