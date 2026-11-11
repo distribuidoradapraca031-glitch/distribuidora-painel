@@ -1716,6 +1716,7 @@ def api_inicio():
         resumo = lambda L: {"entradas": tot(L, "entradas"), "saidas": tot(L, "saidas"),
                             "sobrou": round(tot(L, "entradas") - tot(L, "saidas"), 2)}
         return {"hoje": hoje, "mes": mes, "mes_ant": mes_ant, "dias": cur,
+                "dias_ant": ant_todo if ant_tem_dias else [],     # o placar da semana atravessa a virada do mês
                 "atual": resumo(cur), "ant_mesmo_periodo": resumo(ant_mesmo) if ant_tem_dias else None,
                 "ant_mes_inteiro": resumo(ant_todo) if ant_tem_dias else None,
                 "ant_total_vendas": next((x.get("fat") for x in (snap.get("meses") or [])
@@ -3780,6 +3781,14 @@ def _ggpt_gaveta_dia(data, movs):
     tudo da gaveta e abre só com o troco que lança no caixa (05/11). A sangria deles leva só o
     que o caixa conhece, e o fiado pago e o delivery em dinheiro sobravam pro dia seguinte."""
     dia = [m for m in movs if m["dia"] == data]
+    # caixa da noite fechado só na manhã seguinte (07/11: a sangria de 715 do dia 06 saiu com data 07,
+    # antes da abertura). Esse dinheiro era do dia anterior: contar como saída de hoje derrubava o
+    # esperado (07/11 dava 410 em vez de 1.125). Fica de fora a sangria de fechamento que vem antes
+    # da primeira abertura do dia (e a diferença de fechamento que vem junto com ela).
+    _abs = [m["id"] for m in dia if "PDV DIF. ABERTURA" in m["fatura"]]
+    if _abs:
+        dia = [m for m in dia if not (m["id"] < min(_abs) and ("SANGRIA FECHAMENTO" in m["fatura"]
+                                                               or "PDV DIF. FECHAMENTO" in m["fatura"]))]
     marcos = [m for m in dia if "PDV DIF. ABERTURA" in m["fatura"] or "SANGRIA FECHAMENTO" in m["fatura"]]
     final = marcos[-1] if marcos and "SANGRIA FECHAMENTO" in marcos[-1]["fatura"] else None
     # contado diferente do esperado na tela deles vira "PDV DIF. FECHAMENTO": a do último
@@ -3937,32 +3946,35 @@ def api_fechamentos():
     isso derrubava o esperado pra negativo.
     """
     dias = max(1, min(31, int(request.args.get("dias") or 12)))
-    def build():
-        hoje = datetime.date.today()
-        movs, ctrl, hist = _ggpt_gaveta_movs(), _ctrl_fech_ler(), _fech_historico()
-        itens = []
-        for i in range(dias):
-            d = (hoje - datetime.timedelta(days=dias - 1 - i)).isoformat()
-            if d < FECH_GGPT_DESDE:
-                h = hist.get(d)
-                if h:
-                    c = h[4]
-                    itens.append({"data": d, "abertura": h[0], "abertura_real": True, "fundo_moedas": h[1],
-                                  "dinheiro": h[2], "saidas": h[3], "esperado": round(h[0] + h[1] + h[2] - h[3], 2),
-                                  "contado": c, "quebra": None if c is None else round(c - (h[0] + h[1] + h[2] - h[3]), 2),
-                                  "moedas": None})
-                continue
-            g = _ggpt_gaveta_dia(d, movs)
-            fundo, _fd = _fundo_moedas(d)
-            esp = round(g["abertura"] + fundo + g["dinheiro"] - g["saidas"], 2)
-            c = ctrl[d][0] if d in ctrl else None
-            itens.append({"data": d, "abertura": g["abertura"], "abertura_real": g["abriu"], "fundo_moedas": fundo,
-                          "dinheiro": g["dinheiro"], "saidas": g["saidas"], "esperado": esp, "contado": c,
-                          "quebra": None if c is None else round(c - esp, 2),
-                          "moedas": (ctrl[d][2] or None) if d in ctrl else None})
-        ult_moedas = next((x["moedas"] for x in reversed(itens) if x.get("moedas") is not None), None)
-        return {"itens": itens, "ultimas_moedas": ult_moedas, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
-    return jsonify(cached(f"fechamentos_{dias}", 120, build))
+    return jsonify(cached(f"fechamentos_{dias}", 120, lambda: _fechamentos_dados(dias)))
+
+
+def _fechamentos_dados(dias):
+    """Os últimos `dias` fechamentos (a aba Caixa e o placar da semana leem daqui)."""
+    hoje = datetime.date.today()
+    movs, ctrl, hist = _ggpt_gaveta_movs(), _ctrl_fech_ler(), _fech_historico()
+    itens = []
+    for i in range(dias):
+        d = (hoje - datetime.timedelta(days=dias - 1 - i)).isoformat()
+        if d < FECH_GGPT_DESDE:
+            h = hist.get(d)
+            if h:
+                c = h[4]
+                itens.append({"data": d, "abertura": h[0], "abertura_real": True, "fundo_moedas": h[1],
+                              "dinheiro": h[2], "saidas": h[3], "esperado": round(h[0] + h[1] + h[2] - h[3], 2),
+                              "contado": c, "quebra": None if c is None else round(c - (h[0] + h[1] + h[2] - h[3]), 2),
+                              "moedas": None})
+            continue
+        g = _ggpt_gaveta_dia(d, movs)
+        fundo, _fd = _fundo_moedas(d)
+        esp = round(g["abertura"] + fundo + g["dinheiro"] - g["saidas"], 2)
+        c = ctrl[d][0] if d in ctrl else None
+        itens.append({"data": d, "abertura": g["abertura"], "abertura_real": g["abriu"], "fundo_moedas": fundo,
+                      "dinheiro": g["dinheiro"], "saidas": g["saidas"], "esperado": esp, "contado": c,
+                      "quebra": None if c is None else round(c - esp, 2),
+                      "moedas": (ctrl[d][2] or None) if d in ctrl else None})
+    ult_moedas = next((x["moedas"] for x in reversed(itens) if x.get("moedas") is not None), None)
+    return {"itens": itens, "ultimas_moedas": ult_moedas, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
 
 @app.route("/api/fechamento", methods=["POST"])
 @login_required
@@ -5103,7 +5115,7 @@ def _sync_loop():
     volta = 0
     while True:
         volta += 1
-        for tarefa in (_sync_anota, _graficos_do_dia, _notas_do_dia):
+        for tarefa in (_sync_anota, _clientes_do_dia, _graficos_do_dia, _notas_do_dia):
             try:
                 tarefa()
             except Exception as e:     # uma tarefa quebrada não pode parar as outras
@@ -5160,6 +5172,193 @@ def api_sync_status():
                     "pendentes": u.get("pendentes") or [], "erros": u.get("erros") or [],
                     "na_lista": u.get("na_lista"), "rodando": _sync["rodando"],
                     "faz_min": round((time.time() - _sync["em"]) / 60) if _sync["em"] else None})
+
+
+# ---- CLIENTES DO DELIVERY (11/11/2026) ----
+# O Anota apaga o detalhe do pedido com ~7 dias: o motor guarda o cliente de cada pedido do app
+# (nome, telefone, quantas vezes pediu, quando foi a última) no GestãoGPT. Ver clientes.py.
+try:
+    import clientes as clientes_mod
+except Exception:
+    clientes_mod = None
+_cli = {"em": 0.0, "ultimo": None}
+
+
+def _clientes_do_dia():
+    if anota is None or clientes_mod is None or time.time() - _cli["em"] < 1800:
+        return
+    _cli["em"] = time.time()
+    _cli["ultimo"] = clientes_mod.atualiza(anota)
+    _invalida("clientes", "placar")
+
+
+@app.route("/api/clientes")
+@login_required
+def api_clientes():
+    if clientes_mod is None:
+        return jsonify({"erro": "a lista de clientes não carregou"}), 500
+    return jsonify(cached("clientes", 120, clientes_mod.resumo))
+
+
+# ---- PLACAR DA SEMANA (11/11/2026) ----
+# Ideia do vídeo de gestão que o dono mandou: toda segunda, poucos números contra uma meta e 1 ou 2
+# ações pra semana. Meta e empate saem do lucro real de outubro: vendeu ~R$ 62 mil e sobraram ~R$ 3
+# mil; com ~25% de margem, a loja empata perto de R$ 50 mil por mês.
+META_SEMANA = 14500.0
+EMPATE_SEMANA = 11550.0
+PLACAR_TEC = "CONTROLE PLACAR"
+PLACAR_MAX = 2300
+
+
+def _placar_ler():
+    try:
+        d = gcapi._tec_ler(PLACAR_TEC) or {}
+    except Exception:
+        d = {}
+    d.setdefault("s", {})
+    return d
+
+
+def _placar_grava(d):
+    import json as _json
+    semanas = sorted(d["s"])
+    while True:      # cabe num pedaço só: as semanas mais velhas saem primeiro
+        txt = _json.dumps(d, ensure_ascii=True, separators=(",", ":"))
+        if len(txt) <= PLACAR_MAX or len(semanas) <= 2:
+            break
+        d["s"].pop(semanas.pop(0))
+    gcapi._req("PUT", f"/produto/{gcapi._tec_id(PLACAR_TEC, True)}", {"infoadicional": txt})
+    gcapi._limpa()
+    _invalida("placar")
+
+
+@app.route("/api/placar")
+@login_required
+def api_placar():
+    def build():
+        hoje = datetime.date.fromisoformat(_hoje())
+        seg = hoje - datetime.timedelta(days=hoje.weekday())
+        dom = seg + datetime.timedelta(days=6)
+        seg_ant, dom_ant = seg - datetime.timedelta(days=7), seg - datetime.timedelta(days=1)
+        S, SA, H = seg.isoformat(), seg_ant.isoformat(), hoje.isoformat()
+        aviso = []
+
+        # vendas: o mesmo dia a dia do Início (foto + ao vivo)
+        ini = _json_rota(api_inicio)
+        vd = {x["data"]: x["entradas"] for x in (ini.get("dias_ant") or []) + (ini.get("dias") or [])}
+        soma = lambda a, b: round(sum(v for d, v in vd.items() if a <= d <= b), 2)
+        v_sem, v_ant = soma(S, H), soma(SA, dom_ant.isoformat())
+        dias_rest = (dom - hoje).days + 1
+        por_dia = [{"data": (seg + datetime.timedelta(days=i)).isoformat(),
+                    "valor": round(vd.get((seg + datetime.timedelta(days=i)).isoformat(), 0.0), 2)}
+                   for i in range(7)]
+
+        # delivery: pedidos do app que entraram no GestãoGPT
+        dlv = {"sem": [0, 0.0], "ant": [0, 0.0]}
+        try:
+            for k in gcapi._todas(f"/conta?tipo=receber&status=todos&data_venc_inicio={SA}"):
+                if not (k.get("REFBUSCA") or "").startswith("ANOTA-"):
+                    continue
+                d = (k.get("DATA_EMIS") or "")[:10]
+                lado = "sem" if d >= S else ("ant" if d >= SA else None)
+                if lado:
+                    dlv[lado][0] += 1
+                    dlv[lado][1] += _num(k.get("VALOR"))
+        except Exception as e:
+            aviso.append(f"delivery: {str(e)[:80]}")
+        cli = {}
+        try:
+            r = clientes_mod.resumo(S) if clientes_mod else {}
+            cli = {"novos": r.get("n_novos", 0), "voltaram": r.get("n_voltaram", 0), "desde": r.get("desde")}
+        except Exception as e:
+            aviso.append(f"clientes: {str(e)[:80]}")
+
+        # quebra de caixa nos dias contados da semana
+        fe = cached("fechamentos_14", 120, lambda: _fechamentos_dados(14))
+        qs = [x for x in fe.get("itens") or [] if x["data"] >= S and x.get("quebra") is not None]
+        qa = [x for x in fe.get("itens") or [] if SA <= x["data"] < S and x.get("quebra") is not None]
+
+        # contas que vencem nos próximos 7 dias × dinheiro de hoje
+        mp, ce = _json_rota(api_mapa), _json_rota(api_como_esta)
+        ate = (hoje + datetime.timedelta(days=6)).isoformat()
+        prox = [dict(it, cat=L["cat"]) for L in mp.get("linhas") or [] for it in L.get("itens") or []
+                if not it.get("atrasado") and it.get("venc") and H <= it["venc"] <= ate]
+        prox.sort(key=lambda x: x["venc"])
+        atr = round(_num(ce.get("atrasado")), 2)
+
+        # o que foi combinado pra semana + o atrasado de segunda (pra ver a dívida descendo)
+        st = _placar_ler()
+        sem_reg = st["s"].get(S) or {}
+        if "atr" not in sem_reg and "atrasado" in ce:
+            sem_reg["atr"] = atr
+            st["s"][S] = sem_reg
+            try:
+                _placar_grava(st)
+            except Exception as e:
+                aviso.append(f"placar: {str(e)[:80]}")
+        ant_reg = st["s"].get(SA) or {}
+        return {"hoje": H, "semana": [S, dom.isoformat()], "semana_ant": [SA, dom_ant.isoformat()],
+                "meta": META_SEMANA, "empate": EMPATE_SEMANA,
+                "vendas": {"semana": v_sem, "ant": v_ant, "dias_rest": dias_rest, "por_dia": por_dia},
+                "delivery": {"pedidos": dlv["sem"][0], "valor": round(dlv["sem"][1], 2),
+                             "pedidos_ant": dlv["ant"][0], "valor_ant": round(dlv["ant"][1], 2), **cli},
+                "quebra": {"total": round(sum(x["quebra"] for x in qs), 2), "dias": len(qs),
+                           "total_ant": round(sum(x["quebra"] for x in qa), 2), "dias_ant": len(qa)},
+                "contas7": {"total": round(sum(x["valor"] for x in prox), 2), "n": len(prox), "ate": ate,
+                            "itens": [{"cat": x["cat"], "nota": x.get("nota"), "venc": x["venc"], "valor": x["valor"]}
+                                      for x in prox[:6]]},
+                "dinheiro": round(_num(ce.get("total")), 2),
+                "atrasado": {"agora": atr, "segunda": sem_reg.get("atr")},
+                "acoes": sem_reg.get("a") or [], "acoes_ant": ant_reg.get("a") or [],
+                "avisos": aviso, "gerado_em": time.strftime("%d/%m/%Y %H:%M")}
+    return jsonify(cached("placar", 60, build))
+
+
+def _json_rota(rota):
+    """Reaproveita a resposta de outra rota do painel (mesma sessão, mesmo cache)."""
+    r = rota()
+    return r.get_json() if hasattr(r, "get_json") else (r[0].get_json() if isinstance(r, tuple) else r)
+
+
+@app.route("/api/placar/acao", methods=["POST"])
+@login_required
+def api_placar_acao():
+    """Ações da semana: anotar, marcar como feita e apagar."""
+    b = request.get_json(force=True, silent=True) or {}
+    hoje = datetime.date.fromisoformat(_hoje())
+    seg = hoje - datetime.timedelta(days=hoje.weekday())
+    semanas = (seg.isoformat(), (seg - datetime.timedelta(days=7)).isoformat())
+    sem = b.get("semana") or semanas[0]
+    if sem not in semanas:
+        return jsonify({"ok": False, "erro": "só dá pra mexer nas ações desta semana e da passada"}), 400
+    op = b.get("op")
+    st = _placar_ler()
+    reg = st["s"].setdefault(sem, {})
+    acoes = reg.setdefault("a", [])
+    if op == "add":
+        t = " ".join(str(b.get("texto") or "").split())[:70]
+        if not t:
+            return jsonify({"ok": False, "erro": "escreva a ação"}), 400
+        if len(acoes) >= 5:
+            return jsonify({"ok": False, "erro": "no máximo 5 ações por semana: foco em poucas"}), 400
+        acoes.append([t, 0])
+    elif op in ("ok", "del"):
+        try:
+            i = int(b.get("i"))
+            acoes[i]
+        except (TypeError, ValueError, IndexError):
+            return jsonify({"ok": False, "erro": "ação não encontrada"}), 400
+        if op == "ok":
+            acoes[i][1] = 0 if acoes[i][1] else 1
+        else:
+            acoes.pop(i)
+    else:
+        return jsonify({"ok": False, "erro": "operação desconhecida"}), 400
+    try:
+        _placar_grava(st)
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)[:150]}), 500
+    return jsonify({"ok": True, "semana": sem, "acoes": acoes})
 
 
 if anota is not None and os.environ.get("SYNC_ANOTA", "1") == "1":

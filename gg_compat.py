@@ -407,8 +407,31 @@ def _vendas(params):
                     "valor_frete": f"{float(v.get('VALOR_FRETE') or 0):.2f}", "desconto_valor": "0",
                     "observacoes": f"Importado do Anota AI — pedido #{ref[6:]}" if anota else "", "produtos": [],
                     "pagamentos": [{"pagamento": {"valor": f"{float(p.get('VALOR') or 0):.2f}",
-                                                  "nome_forma_pagamento": re.sub(r"^\d+-", "", p.get("FORMAPAGTO") or "")}} for p in ps]})
+                                                  "nome_forma_pagamento": _forma_parcela(p)}} for p in ps]})
     return out
+
+
+def _forma_parcela(p):
+    """Nome da forma de pagamento de uma parcela. A do caixa vem em FORMAPAGTO ("1-Dinheiro"). A do
+    delivery, que o robô lança pela API, vem com FORMAPAGTO vazio: o que o cliente escolheu no app
+    fica na observação ("Anota AI: card"). Sem isso o painel mostrava todo pedido como "Outros"."""
+    f = re.sub(r"^\d+-", "", p.get("FORMAPAGTO") or "")
+    if f:
+        return f
+    obs = (p.get("OBSPARCELA") or "").lower()
+    if obs.startswith("anota ai:"):
+        c = obs[9:]
+        if "pix" in c:
+            return "PIX"
+        if "money" in c or "cash" in c or "dinheiro" in c:
+            return "Dinheiro"
+        if "debit" in c or "débito" in c or "debito" in c:
+            return "Cartão de Débito"
+        if "card" in c or "credit" in c or "cart" in c:
+            return "Cartão (maquininha na entrega)"
+        return "PIX / pago no app"      # nupay e outros pagos online: o robô lança como PIX
+    m = (p.get("METODO_PAGTO") or "").upper()
+    return "Dinheiro" if "DINHEIRO" in m else ("Cartão" if "CART" in m else "")
 
 
 # ---- produtos ----

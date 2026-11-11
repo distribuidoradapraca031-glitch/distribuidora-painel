@@ -14,11 +14,20 @@ from datetime import date, timedelta
 
 # ---- modelo financeiro (reconstruído do snapshot e conferido centavo a centavo) ----
 R_VAR      = 0.749     # custo variável (mercadoria+DAS+cartão) sobre a venda
-FIXOS      = 11333.0   # custos fixos/mês (v2, JÁ com a retirada de R$1.500)
-BE_DIA     = 1306
-BE_DIA_RET = 1505
-BE_MES     = 45152
-BE_MES_SR  = 39175
+FIXOS      = 11333.0   # custos fixos/mês (v2 de julho, JÁ com a retirada de R$1.500)
+# 11/11/2026: a folha subiu (salários de ~R$ 3,2 mil em julho pra ~R$ 6,1 mil em outubro). Pelo lucro
+# real de outubro (vendeu ~62 mil, sobraram ~3 mil), o fixo de outubro em diante fica em ~12,6 mil e a
+# loja empata perto de R$ 50 mil por mês. Os meses de antes continuam com o fixo de julho.
+FIXOS_OUT  = 12600.0
+FIXOS_DESDE = "2026-10"
+BE_DIA     = 1650
+BE_DIA_RET = 1650
+BE_MES     = 50200
+BE_MES_SR  = 50200
+
+
+def fixos_do_mes(mk):
+    return FIXOS_OUT if mk >= FIXOS_DESDE else FIXOS
 CARTAO_FEE = 0.0068    # ~0,68% líquido do cartão
 TROCO      = 200.0     # troco/abertura padrão da gaveta (aprox., p/ o esperado)
 
@@ -146,7 +155,7 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
     fat_fech = sum(dia[d]["fat"] for d in dias_fech) or fat_mtd
     media_dia = fat_fech / base_dias if base_dias else 0.0
     proj = media_dia * dim
-    gastos_proj = proj * R_VAR + FIXOS
+    gastos_proj = proj * R_VAR + fixos_do_mes(CURM)
     resultado_proj = proj - gastos_proj
 
     # ---------- KPIs ----------
@@ -173,11 +182,11 @@ def construir(vendas, produtos, pagamentos, old, fardo_by_nome=None, hoje=None,
     meses = [m for m in old.get("meses", []) if m["mes"] < PRIM_MES_VIVO]
     for mk in sorted(m for m in mes if PRIM_MES_VIVO <= m < CURM):
         mfat = mes[mk]["fat"]
-        mgastos = mfat * R_VAR + FIXOS
-        meses.append({"mes": mk, "fat": round(mfat, 2), "proj": None, "fixos": FIXOS,
+        mgastos = mfat * R_VAR + fixos_do_mes(mk)
+        meses.append({"mes": mk, "fat": round(mfat, 2), "proj": None, "fixos": fixos_do_mes(mk),
                       "gastos": round(mgastos, 2), "resultado": round(mfat - mgastos, 2)})
     meses.append({"mes": CURM, "fat": round(fat_mtd, 2), "proj": round(proj, 2),
-                  "fixos": FIXOS, "gastos": round(gastos_proj, 2),
+                  "fixos": fixos_do_mes(CURM), "gastos": round(gastos_proj, 2),
                   "resultado": round(resultado_proj, 2)})
 
     # ---------- dia a dia do mês ----------

@@ -279,6 +279,49 @@ body.lc-aberto{overflow:hidden}
   .toast{bottom:100px}
 }
 .btn-tema{font:inherit;font-size:.95rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 10px;border-radius:9px;cursor:pointer}
+/* ---- arrumação de 11/11/2026: explicação longa fica fechada em "Como funciona" ---- */
+details.ajuda{margin-top:10px}
+details.ajuda>summary{cursor:pointer;font-size:.78rem;font-weight:600;color:var(--muted);list-style:none;display:inline-flex;align-items:center;gap:6px}
+details.ajuda>summary::-webkit-details-marker{display:none}
+details.ajuda>summary::before{content:"ⓘ";font-size:.92rem;color:var(--accent)}
+details.ajuda[open]>summary{color:var(--accent)}
+details.ajuda>p{margin-top:6px}
+.secao{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:10px 2px -6px;font-weight:700}
+#view-fiado,#view-delivery{display:flex;flex-direction:column;gap:16px}
+/* ---- placar da semana ---- */
+.pl-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.pl-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.pl-val{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:2px}
+.pl-val small{font-size:.95rem;color:var(--muted);font-weight:600}
+.pl-bar{position:relative;height:14px;border-radius:8px;background:var(--surface2);margin:14px 0 26px}
+.pl-bar>.f{height:100%;border-radius:8px;max-width:100%}
+.pl-mk{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.5}
+.pl-mk span{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:.68rem;color:var(--muted);white-space:nowrap}
+.pl-msg{font-size:.9rem;line-height:1.45}
+.pl-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
+.pl-dia{background:var(--surface2);border-radius:8px;padding:6px 4px;text-align:center;font-size:.7rem;color:var(--muted)}
+.pl-dia b{display:block;font-size:.8rem;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:1px}
+.pl-dia.hoje{outline:2px solid var(--accent)}
+.pl-dia.fut b{color:var(--muted);font-weight:500}
+.pl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px}
+.pl-grid .ini-card .val{font-size:1.25rem}
+.pl-acoes{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.pl-acao{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.pl-acao:last-child{border-bottom:0}
+.pl-acao input{width:18px;height:18px;flex:none;accent-color:var(--good);cursor:pointer}
+.pl-acao .t{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.pl-acao.ok .t{text-decoration:line-through;color:var(--muted)}
+.pl-nova{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pl-nova input{flex:1 1 220px;font:inherit;font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.pl-nova input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* ---- clientes do delivery ---- */
+.cl-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.cl-row:last-child{border-bottom:0}
+.cl-row .q{font-weight:700;font-size:.9rem}
+.cl-row .m{font-size:.74rem;color:var(--muted);margin-top:2px}
+.cl-wa{font:inherit;font-size:.78rem;font-weight:700;text-decoration:none;white-space:nowrap;border-radius:8px;padding:7px 11px;background:var(--good-bg);color:var(--good);border:1px solid var(--good)}
+.cl-wa:hover{filter:brightness(1.05)}
+.cl-wa:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -292,13 +335,11 @@ body.lc-aberto{overflow:hidden}
     <div class="toolbar">
       <div class="toggle" role="tablist" aria-label="Escolher visão">
         <button id="tab-inicio" class="on" role="tab" aria-selected="true">🏠 Início</button>
-        <button id="tab-loja" role="tab" aria-selected="false">🏪 Loja</button>
-        <button id="tab-acomp" role="tab" aria-selected="false">📊 Acompanhamento</button>
-        <button id="tab-estoque" role="tab" aria-selected="false">📦 Estoque</button>
+        <button id="tab-loja" role="tab" aria-selected="false">💵 Caixa</button>
         <button id="tab-contas" role="tab" aria-selected="false">🧾 Contas</button>
-        <button id="tab-financeiro" role="tab" aria-selected="false">💰 Financeiro</button>
-        <button id="tab-fiado" role="tab" aria-selected="false">📒 Fiado</button>
-        <button id="tab-deliv" role="tab" aria-selected="false">🛵 Delivery</button>
+        <button id="tab-acomp" role="tab" aria-selected="false">📊 Resultados</button>
+        <button id="tab-estoque" role="tab" aria-selected="false">📦 Estoque</button>
+        <button id="tab-clientes" role="tab" aria-selected="false">👥 Clientes</button>
       </div>
       <button class="btn-refresh" id="btn-refresh" title="Recarrega a versão mais recente do painel">
         <span class="ic">↻</span> Atualizar
@@ -318,6 +359,14 @@ body.lc-aberto{overflow:hidden}
 </section>
 <section class="card ini-avisos" id="ini-avisos" hidden aria-live="polite"></section>
 <section class="ini-cards" id="ini-cards"><div class="ini-card"><div class="sub">carregando…</div></div></section>
+<section class="card" id="card-placar">
+  <div class="head-row" style="align-items:baseline">
+    <div><div class="eyebrow" id="pl-periodo">Placar da semana</div><h2>🎯 Placar da semana</h2></div>
+    <span class="note" id="pl-stamp" style="margin:0"></span>
+  </div>
+  <div id="pl-box" style="margin-top:10px"><p class="note">carregando…</p></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Toda segunda, olhe estes números e anote 1 ou 2 ações pra semana. A <b>meta</b> (R$ 14.500 por semana) é vender como em outubro, o que paga o mês e o plano do atrasado. O <b>empate</b> (R$ 11.550 por semana, uns R$ 50 mil no mês) é o mínimo pra loja não fechar no vermelho. A semana vai de segunda a domingo; o dia de hoje entra até agora.</p></details>
+</section>
 <section class="card">
   <div class="eyebrow">Movimentações do mês</div>
   <h2>Quanto entrou e quanto saiu, dia a dia</h2>
@@ -352,100 +401,17 @@ body.lc-aberto{overflow:hidden}
 </div>
 </div><!-- /view-inicio -->
 
-<!-- ============ VISÃO LOJA (balcão) ============ -->
+<!-- ============ CAIXA (era "Loja"; a chave continua "loja") ============ -->
 <div id="view-loja" hidden>
 <div id="live-wrap"></div>
-<section class="kpis" id="kpis"></section>
-
-<section class="card" id="card-como">
-  <div class="eyebrow">Agora · tudo que a loja tem e deve</div>
-  <h2>📍 Como está a loja</h2>
-  <div id="ce-box" style="margin-top:8px"><p class="note">carregando…</p></div>
-  <details style="margin-top:12px">
-    <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">✏️ Atualizar o saldo do banco</summary>
-    <div class="fform" style="margin-top:8px">
-      <label>Banco<select id="ce-banco" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)"><option value="" selected disabled>escolha…</option><option>Itaú</option><option>Nubank</option></select></label>
-      <label>Saldo (R$)<input type="number" step="0.01" inputmode="decimal" id="ce-valor" placeholder="0,00" style="width:140px"></label>
-      <label>Dia<input type="date" id="ce-data"></label>
-      <button id="ce-salvar" type="button">Guardar saldo</button>
-    </div>
-    <p class="note">O saldo também se atualiza quando você confere o extrato no <b>＋ Lançar → Conferir extrato</b>.</p>
-    <div class="fres" id="ce-msg"></div>
-  </details>
-</section>
-
-<section class="card" id="card-reserva">
-  <div class="eyebrow">Caixa · dinheiro reserva</div>
-  <h2>💰 Dinheiro reserva</h2>
-  <div id="reserva-saldo-box" style="margin:8px 0"></div>
-  <p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Quando você paga alguma coisa escolhendo <strong>Dinheiro reserva</strong>, eu desconto daqui sozinho.</p>
-  <div class="lc-atalho" style="margin-top:8px"><button class="lc-btn mini" data-lc="mover" type="button">🔁 Guardar ou tirar dinheiro daqui</button><span class="note" style="margin:0">pelo botão <b>＋ Lançar → Mover dinheiro</b></span></div>
-  <div class="fbox" style="margin-top:10px">
-    <strong style="font-size:.9rem">🧮 Contei o cofre</strong>
-    <div class="fform" style="margin-top:6px">
-      <label>Total contado (R$)<input type="number" step="0.01" inputmode="decimal" id="res-valor" placeholder="0,00" style="width:140px"></label>
-      <label>Data<input type="date" id="res-data"></label>
-      <button id="res-set" title="deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
-    </div>
-    <div class="fres" id="res-msg"></div>
-  </div>
-  <div class="tblwrap" id="tbl-reserva" style="margin-top:10px"></div>
-</section>
-
-<section class="card" id="card-sobra">
-  <div class="eyebrow">Caixa · sobra de caixa</div>
-  <h2>💵 Sobra de caixa</h2>
-  <div id="sobra-saldo-box" style="margin:8px 0"></div>
-  <p class="note">O <strong>outro monte de dinheiro</strong> que você guarda, separado da reserva, pra pagar as <strong>contas menores</strong> do dia a dia. Também fica <strong>fora da gaveta</strong>. Quando você paga escolhendo <strong>Sobra de caixa</strong>, eu desconto daqui sozinho.</p>
-  <div class="lc-atalho" style="margin-top:8px"><button class="lc-btn mini" data-lc="mover" type="button">🔁 Guardar ou tirar dinheiro daqui</button><span class="note" style="margin:0">pelo botão <b>＋ Lançar → Mover dinheiro</b></span></div>
-  <div class="fbox" style="margin-top:10px">
-    <strong style="font-size:.9rem">🧮 Contei a sobra</strong>
-    <div class="fform" style="margin-top:6px">
-      <label>Total contado (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-valor" placeholder="0,00" style="width:140px"></label>
-      <label>Data<input type="date" id="sob-data"></label>
-      <button id="sob-set" title="deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
-    </div>
-    <details style="margin-top:8px">
-      <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar as notas da sobra</summary>
-      <div style="margin-top:8px">
-        <div id="sob-notas" class="dengrid"></div>
-        <div id="sob-tot" style="margin-top:8px;font-size:.9rem;font-weight:700"></div>
-        <p class="note" style="margin-top:4px">Digite <strong>quantas notas</strong> de cada valor você tem. Eu somo e jogo no total contado; daí é só <strong>Já contei: é esse o total</strong>.</p>
-      </div>
-    </details>
-    <div class="fres" id="sob-msg"></div>
-  </div>
-  <div class="tblwrap" id="tbl-sobra" style="margin-top:10px"></div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Lançamentos · tudo num lugar só</div>
-  <div class="lc-atalho"><button class="lc-btn" data-lc="entrada" type="button">↑ Saque, troca de PIX, fiado</button><button class="lc-btn ghost" data-lc="saida" type="button">↓ Gasto ou conta</button>
-  <span class="note" style="margin:0">Tudo que antes ficava aqui agora está no botão <b>＋ Lançar</b>, no canto da tela, em qualquer aba.</span></div>
-</section>
-
-<section class="card" id="card-moedas">
-  <div class="eyebrow">Caixa · moedas</div>
-  <h2>🪙 Moedas na gaveta</h2>
-  <div id="moedas-box" style="margin:8px 0"></div>
-  <p class="note">O <strong>troco miúdo</strong> que fica na gaveta o tempo todo. Ele <strong>não entra na abertura</strong> que você lança no PDV, então eu somo esse valor no <strong>esperado do caixa</strong> todo dia — e você conta as moedas junto com as notas no fechamento. Conte uma vez por semana e atualize aqui; eu repito o valor nos outros dias.</p>
-  <div class="fbox">
-    <div class="fform">
-      <label>Tenho de moedas (R$)<input type="number" step="0.01" inputmode="decimal" id="mo-valor" placeholder="0,00" style="width:140px"></label>
-      <label>Contei em<input type="date" id="mo-data"></label>
-      <button id="mo-salvar">Salvar contagem de moedas</button>
-    </div>
-    <div class="fres" id="mo-msg"></div>
-  </div>
-</section>
 
 <section class="card">
   <div class="eyebrow">Caixa · últimos fechamentos</div>
   <h2>Fechamentos de caixa</h2>
-  <p class="note">Esperado = troco inicial + vendas em dinheiro − saídas em dinheiro. <strong>Contado</strong> é o que você conferiu na gaveta no fim do dia. Lembrete: digitar o CONTADO no PDV, não o valor da tela.</p>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Esperado = troco inicial + vendas em dinheiro − saídas em dinheiro. <strong>Contado</strong> é o que você conferiu na gaveta no fim do dia. Lembrete: digitar o CONTADO no PDV, não o valor da tela.</p></details>
   <div class="fbox">
     <strong style="font-size:.9rem">✍️ Anotar o fechamento de hoje</strong>
-    <p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada que eu somo sozinho e já jogo no <strong>Contado</strong>. A <strong>abertura vem do sistema</strong> (o troco que você lançou ao abrir o caixa). Quando terminar, clique <strong>Registrar fechamento no sistema</strong> que eu <strong>gravo direto no GestãoGPT</strong> (lanço o ajuste pra o caixa bater) — não precisa mandar no chat.</p>
+    <details class="ajuda"><summary>Como contar a gaveta</summary><p class="note" style="margin-top:2px">Conte a gaveta <strong>todo dia</strong> — cédula e moeda. Vá digitando quantas de cada que eu somo sozinho e já jogo no <strong>Contado</strong>. A <strong>abertura vem do sistema</strong> (o troco que você lançou ao abrir o caixa). Quando terminar, clique <strong>Registrar fechamento no sistema</strong> que eu <strong>gravo direto no GestãoGPT</strong> (lanço o ajuste pra o caixa bater) — não precisa mandar no chat.</p></details>
     <div class="fform">
       <label>Dia<input type="date" id="f-data" max=""></label>
       <label>Abertura / troco (R$)<input type="number" step="0.01" inputmode="decimal" id="f-abertura" placeholder="0,00"></label>
@@ -472,14 +438,131 @@ body.lc-aberto{overflow:hidden}
   </div>
   <div class="tblwrap" id="tbl-fech"></div>
 </section>
+
+<section class="card" id="card-como">
+  <div class="eyebrow">Agora · tudo que a loja tem e deve</div>
+  <h2>📍 Como está a loja</h2>
+  <div id="ce-box" style="margin-top:8px"><p class="note">carregando…</p></div>
+  <details style="margin-top:12px">
+    <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">✏️ Atualizar o saldo do banco</summary>
+    <div class="fform" style="margin-top:8px">
+      <label>Banco<select id="ce-banco" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)"><option value="" selected disabled>escolha…</option><option>Itaú</option><option>Nubank</option></select></label>
+      <label>Saldo (R$)<input type="number" step="0.01" inputmode="decimal" id="ce-valor" placeholder="0,00" style="width:140px"></label>
+      <label>Dia<input type="date" id="ce-data"></label>
+      <button id="ce-salvar" type="button">Guardar saldo</button>
+    </div>
+    <p class="note">O saldo também se atualiza quando você confere o extrato no <b>＋ Lançar → Conferir extrato</b>.</p>
+    <div class="fres" id="ce-msg"></div>
+  </details>
+</section>
+
+<div class="grid2">
+<section class="card" id="card-reserva">
+  <div class="eyebrow">Caixa · dinheiro reserva</div>
+  <h2>💰 Dinheiro reserva</h2>
+  <div id="reserva-saldo-box" style="margin:8px 0"></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">O dinheiro que você tira das <strong>sobras do caixa</strong> e guarda à parte. Fica <strong>fora da gaveta</strong> (não conta no fechamento). Quando você paga alguma coisa escolhendo <strong>Dinheiro reserva</strong>, eu desconto daqui sozinho.</p></details>
+  <div class="lc-atalho" style="margin-top:8px"><button class="lc-btn mini" data-lc="mover" type="button">🔁 Guardar ou tirar dinheiro daqui</button><span class="note" style="margin:0">pelo botão <b>＋ Lançar → Mover dinheiro</b></span></div>
+  <div class="fbox" style="margin-top:10px">
+    <strong style="font-size:.9rem">🧮 Contei o cofre</strong>
+    <div class="fform" style="margin-top:6px">
+      <label>Total contado (R$)<input type="number" step="0.01" inputmode="decimal" id="res-valor" placeholder="0,00" style="width:140px"></label>
+      <label>Data<input type="date" id="res-data"></label>
+      <button id="res-set" title="deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
+    </div>
+    <div class="fres" id="res-msg"></div>
+  </div>
+  <div class="tblwrap" id="tbl-reserva" style="margin-top:10px"></div>
+</section>
+
+<section class="card" id="card-sobra">
+  <div class="eyebrow">Caixa · sobra de caixa</div>
+  <h2>💵 Sobra de caixa</h2>
+  <div id="sobra-saldo-box" style="margin:8px 0"></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">O <strong>outro monte de dinheiro</strong> que você guarda, separado da reserva, pra pagar as <strong>contas menores</strong> do dia a dia. Também fica <strong>fora da gaveta</strong>. Quando você paga escolhendo <strong>Sobra de caixa</strong>, eu desconto daqui sozinho.</p></details>
+  <div class="lc-atalho" style="margin-top:8px"><button class="lc-btn mini" data-lc="mover" type="button">🔁 Guardar ou tirar dinheiro daqui</button><span class="note" style="margin:0">pelo botão <b>＋ Lançar → Mover dinheiro</b></span></div>
+  <div class="fbox" style="margin-top:10px">
+    <strong style="font-size:.9rem">🧮 Contei a sobra</strong>
+    <div class="fform" style="margin-top:6px">
+      <label>Total contado (R$)<input type="number" step="0.01" inputmode="decimal" id="sob-valor" placeholder="0,00" style="width:140px"></label>
+      <label>Data<input type="date" id="sob-data"></label>
+      <button id="sob-set" title="deixa o saldo EXATAMENTE no valor contado">Já contei: é esse o total</button>
+    </div>
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🪙 Contar as notas da sobra</summary>
+      <div style="margin-top:8px">
+        <div id="sob-notas" class="dengrid"></div>
+        <div id="sob-tot" style="margin-top:8px;font-size:.9rem;font-weight:700"></div>
+        <p class="note" style="margin-top:4px">Digite <strong>quantas notas</strong> de cada valor você tem. Eu somo e jogo no total contado; daí é só <strong>Já contei: é esse o total</strong>.</p>
+      </div>
+    </details>
+    <div class="fres" id="sob-msg"></div>
+  </div>
+  <div class="tblwrap" id="tbl-sobra" style="margin-top:10px"></div>
+</section>
+</div>
+
+<section class="card" id="card-moedas">
+  <div class="eyebrow">Caixa · moedas</div>
+  <h2>🪙 Moedas na gaveta</h2>
+  <div id="moedas-box" style="margin:8px 0"></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">O <strong>troco miúdo</strong> que fica na gaveta o tempo todo. Ele <strong>não entra na abertura</strong> que você lança no PDV, então eu somo esse valor no <strong>esperado do caixa</strong> todo dia — e você conta as moedas junto com as notas no fechamento. Conte uma vez por semana e atualize aqui; eu repito o valor nos outros dias.</p></details>
+  <div class="fbox">
+    <div class="fform">
+      <label>Tenho de moedas (R$)<input type="number" step="0.01" inputmode="decimal" id="mo-valor" placeholder="0,00" style="width:140px"></label>
+      <label>Contei em<input type="date" id="mo-data"></label>
+      <button id="mo-salvar">Salvar contagem de moedas</button>
+    </div>
+    <div class="fres" id="mo-msg"></div>
+  </div>
+</section>
 </div><!-- /view-loja -->
 
-<!-- ============ ACOMPANHAMENTO DE LOJA ============ -->
+<!-- ============ CONTAS (+ recurso próprio, que era a aba Financeiro) ============ -->
+<div id="view-contas" hidden>
+<section class="card">
+  <div class="eyebrow">Contas a pagar · mapa até dezembro</div>
+  <h2>Tudo que falta pagar — mês a mês</h2>
+  <div id="mapa-kpis" style="margin:8px 0"></div>
+  <div class="lc-atalho" style="margin-bottom:4px"><button class="lc-btn" data-lc="saida:pago" type="button">↓ Lançar gasto já pago</button><button class="lc-btn ghost" data-lc="saida:apagar" type="button">Conta a pagar (pode repetir ou parcelar)</button><button class="lc-btn ghost" data-lc="extrato" type="button">🏦 Conferir extrato</button></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Uma tabela só com <strong>tudo que ainda não foi pago</strong>: cada linha é uma categoria — inclusive <strong>Mercadoria (notas)</strong>, que são as notas de compra e os boletos do DDA que você me passa — e cada coluna é um mês, <strong>até dezembro</strong>. A primeira coluna, em vermelho, é o que já está <strong>atrasado</strong>; a coluna do mês de agora vem destacada.</p></details>
+  <details class="ajuda"><summary>Como pagar uma conta</summary><p class="note"><strong>Clique na linha</strong> pra abrir os itens e pagar: confira o campo <strong>"pago R$"</strong> (já vem com o previsto — se teve juros ou veio diferente, é só ajustar), escolha <strong>de onde saiu o dinheiro</strong> e clique <strong>paguei</strong>. Ele sai daqui na hora, com o valor real, e entra no <strong>total gasto no mês</strong> logo abaixo. O <strong>✕</strong> exclui item lançado errado ou boleto de golpe.</p></details>
+  <div class="tblwrap" id="tbl-mapa"></div>
+  <span class="stamp" id="mapa-stamp"></span>
+</section>
+
+<section class="card" id="card-gasto-mes">
+  <div class="eyebrow">Fechamento do mês · o que já saiu</div>
+  <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
+  <div id="gasto-mes-topo" style="margin:8px 0"></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra), saque e <strong>o que você paga com recurso próprio</strong> (esse fica no quadro <strong>Pago com recurso próprio</strong>, logo abaixo).</p></details>
+</section>
+
+<section class="card" id="card-recurso-proprio">
+  <div class="eyebrow">Recurso próprio · dinheiro do Victor</div>
+  <h2>Pago com recurso próprio — <span id="rp-mes"></span></h2>
+  <div id="rp-total-box" style="margin:8px 0"></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Pagamentos que você fez com o <strong>seu dinheiro</strong>. Fica <strong>separado de propósito</strong>: NÃO entra no caixa, nem no banco, nem no "Total gasto no mês" da loja (quadro de cima) — é só pra você saber quanto colocou do bolso. <strong>Só no painel</strong> (não criei nada no GestãoGPT).</p></details>
+  <div class="tblwrap" id="tbl-rp" style="margin:8px 0"></div>
+  <div class="lc-atalho" style="margin-top:10px"><button class="lc-btn mini" data-lc="saida:pago" type="button">↓ Lançar pagamento do meu bolso</button>
+  <span class="note" style="margin:0">no <b>＋ Lançar → Saída</b>, escolha "Do meu bolso" em <b>de onde saiu</b>.</span></div>
+</section>
+
+<section class="card" id="card-ultima-atualizacao">
+  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
+  <div id="ua-box">
+    <div class="note" style="margin:0">carregando…</div>
+  </div>
+</section>
+</div><!-- /view-contas -->
+
+<!-- ============ RESULTADOS (era "Acompanhamento"; a chave continua "acomp") ============ -->
 <div id="view-acomp" hidden>
+<section class="kpis" id="kpis"></section>
 <section class="card">
   <div class="eyebrow">Resultado · mês a mês</div>
   <h2>Demonstração de lucros e perdas</h2>
-  <p class="note">Quanto entrou, quanto saiu e <strong>o que sobrou</strong> em cada mês, na mesma ordem da sua planilha. Os custos vêm da aba <strong>Contas</strong> e só entram aqui <strong>depois de marcados como pagos</strong> — conta em aberto continua lá pra você gerenciar. A retirada de sócio conta como custo: o lucro embaixo já é o que sobrou <strong>depois</strong> de vocês se pagarem. O mês em curso está pela metade — está marcado.</p>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Quanto entrou, quanto saiu e <strong>o que sobrou</strong> em cada mês, na mesma ordem da sua planilha. Os custos vêm da aba <strong>Contas</strong> e só entram aqui <strong>depois de marcados como pagos</strong> — conta em aberto continua lá pra você gerenciar. A retirada de sócio conta como custo: o lucro embaixo já é o que sobrou <strong>depois</strong> de vocês se pagarem. O mês em curso está pela metade — está marcado.</p></details>
   <div class="tblwrap" id="tbl-dre"></div>
   <div id="dre-avisos" style="margin-top:10px"></div>
 </section>
@@ -487,7 +570,7 @@ body.lc-aberto{overflow:hidden}
 <section class="card">
   <div class="eyebrow">Vendas · mês atual (balcão + delivery)</div>
   <h2>Faturamento por dia — <span id="fatdia-mes"></span></h2>
-  <p class="note">Dia a dia do mês, <strong>balcão + delivery somados</strong>. Linha tracejada = ponto de equilíbrio (R$ 1.306/dia sem retirada de sócio). Toque nas barras para ver o valor. O dia de hoje aparece parcial até o painel atualizar de novo.</p>
+  <p class="note">Dia a dia do mês, <strong>balcão + delivery somados</strong>. Linha tracejada = empate (uns R$ 1.650 por dia, R$ 50 mil no mês). Toque nas barras para ver o valor. O dia de hoje aparece parcial até o painel atualizar de novo.</p>
   <div id="chart"><div id="tip"></div></div>
 </section>
 
@@ -499,7 +582,7 @@ body.lc-aberto{overflow:hidden}
   </div>
   <div id="pane-fatgastos">
     <h2>Faturamento × Gastos, mês a mês</h2>
-    <p class="note">Barras douradas = faturamento (balcão + delivery); barras azuis = gastos (mercadoria + DAS + cartão ≈ 74,9% da venda, mais custos fixos do mês). O número em cima é o <strong>resultado</strong>. O mês atual usa a projeção (barras listradas). Este modelo bateu com a conferência real: maio +2,5 mil ✓, junho empate ✓.</p>
+    <details class="ajuda"><summary>Como funciona</summary><p class="note">Barras douradas = faturamento (balcão + delivery); barras azuis = gastos (mercadoria + DAS + cartão ≈ 74,9% da venda, mais custos fixos do mês: R$ 11,3 mil até setembro e R$ 12,6 mil de outubro em diante, porque a folha subiu). O número em cima é o <strong>resultado</strong>. O mês atual usa a projeção (barras listradas). É uma estimativa: o lucro de verdade está no quadro de cima.</p></details>
     <div id="chart-anual" style="margin-top:12px;position:relative"><div id="tip2" style="position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 8px;font-size:.72rem;display:none;white-space:nowrap;z-index:5"></div></div>
     <div style="display:flex;gap:14px;margin-top:8px;font-size:.75rem;color:var(--muted)">
       <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px"></span>Faturamento</span>
@@ -509,8 +592,9 @@ body.lc-aberto{overflow:hidden}
   </div>
   <div id="pane-entrou" hidden>
     <h2>Todo dinheiro que entrou — mês atual, dia a dia</h2>
-    <p class="note">Aqui não é o faturado — é o que <strong>de fato entrou</strong>: o que caiu (ou vai cair) na <strong>conta</strong> (PIX + cartão) e o que entrou em <strong>dinheiro</strong> na gaveta. Confira com o extrato do banco e a contagem da gaveta: se entrou mais ou menos que o faturado, é aqui que aparece dinheiro solto ou saída sem justificativa.</p>
+    <details class="ajuda"><summary>Como funciona</summary><p class="note">Aqui não é o faturado — é o que <strong>de fato entrou</strong>: o que caiu (ou vai cair) na <strong>conta</strong> (PIX + cartão) e o que entrou em <strong>dinheiro</strong> na gaveta. Confira com o extrato do banco e a contagem da gaveta: se entrou mais ou menos que o faturado, é aqui que aparece dinheiro solto ou saída sem justificativa.</p></details>
     <div class="tblwrap" id="tbl-entrou"></div>
+    <details style="margin-top:10px"><summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--accent)">ver PIX e cartão separados (últimos 10 dias)</summary><p class="note">PIX e cartão caem na conta (o líquido já desconta ~0,68% do cartão; crédito cai no dia seguinte); dinheiro é o que entrou na gaveta.</p><div class="tblwrap" id="tbl-conta"></div></details>
   </div>
   <div id="saque-resumo-box" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"></div>
 </section>
@@ -529,108 +613,24 @@ body.lc-aberto{overflow:hidden}
   <div class="tblwrap" id="tbl-parados"></div>
 </section>
 </div>
-<section class="card">
-  <div class="eyebrow">Entradas · aproximado</div>
-  <h2>Quanto deve ter entrado — conta e dinheiro</h2>
-  <p class="note">Só os números do que deveria ter entrado: <strong>PIX</strong> e <strong>cartão</strong> caem na conta (líquido já desconta ~0,68% do cartão; crédito pode cair D+1); <strong>dinheiro</strong> é o que entrou na gaveta. Confira com o banco e a contagem da gaveta.</p>
-  <div class="tblwrap" id="tbl-conta"></div>
-</section>
 </div><!-- /view-acomp -->
 
 <!-- ============ ESTOQUE ============ -->
 <div id="view-estoque" hidden>
+<section class="kpis" id="estoque-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))"></section>
 <section class="card">
   <div class="eyebrow">Compras · para segunda/terça</div>
   <h2>Sugestão de compra (curva ABC)</h2>
-  <p class="note">Três alvos por produto pela velocidade de venda: <strong>7</strong>, <strong>15</strong> e <strong>30 dias</strong>. A ideia é comprar o <strong>mês (30d)</strong> do que der; no que não couber no caixa, cai pra 15 ou 7 dias. Classe A = produtos que fazem 80% do faturamento. Do lado do 30d tem o <strong>estoque atual</strong> (do sistema) e um campo <strong>Contei</strong> pra você lançar a contagem física quando precisar.</p>
-  <div class="banner">✅ Inventário geral feito em 07/09/2026: <strong>nenhum item com estoque negativo</strong> (eram 123, R$ 49 mil de estoque fantasma). Agora a coluna <strong>Estoque</strong> vale de verdade — dá pra confiar nela pra decidir a compra. Pra continuar assim, o que importa é <strong>lançar as notas de compra</strong>; item que voltar a ficar negativo é sinal de nota que não entrou.</div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Três alvos por produto pela velocidade de venda: <strong>7</strong>, <strong>15</strong> e <strong>30 dias</strong>. A ideia é comprar o <strong>mês (30d)</strong> do que der; no que não couber no caixa, cai pra 15 ou 7 dias. Classe A = produtos que fazem 80% do faturamento. Do lado do 30d tem o <strong>estoque atual</strong> (do sistema) e um campo <strong>Contei</strong> pra você lançar a contagem física quando precisar.</p></details>
   <div class="tblwrap tall" id="tbl-compras"></div>
   <span class="stamp" id="abc-stamp"></span>
   <div id="inv-resumo-box"></div>
 </section>
 
-<section class="card" id="card-gelo">
-  <div class="eyebrow">Estoque · freezer consignado</div>
-  <h2>🧊 Gelo do freezer</h2>
-  <p class="note">Você paga <strong>R$ 300 por mês</strong> pelo freezer e esse valor vira <strong>crédito em gelo</strong>. Toda vez que chegar gelo, lance aqui: eu <strong>desconto do crédito</strong> e <strong>dou entrada no estoque</strong> já com o custo. O crédito <strong>zera todo mês</strong> — o que não usar, não passa pro mês seguinte.</p>
-  <div id="gl-resumo"></div>
-  <div class="fbox">
-    <div class="fform">
-      <label style="flex:1 1 180px">Chegou gelo
-        <select id="gl-prod" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%"></select></label>
-      <label>Quantos sacos<input type="number" step="1" min="1" inputmode="numeric" id="gl-qtd" placeholder="0" style="width:100px"></label>
-      <label>R$ por saco<input type="number" step="0.01" inputmode="decimal" id="gl-unit" placeholder="0,00" style="width:100px"></label>
-      <label>Dia<input type="date" id="gl-data"></label>
-      <button id="gl-add">Dar entrada</button>
-    </div>
-    <div class="fres" id="gl-msg"></div>
-  </div>
-  <div class="tblwrap" id="gl-itens" style="margin-top:12px"></div>
-  <div class="fbox">
-    <div class="fform">
-      <label>Paguei o freezer (R$)<input type="number" step="0.01" inputmode="decimal" id="gl-pg-valor" value="300" style="width:110px"></label>
-      <label>De onde saiu
-        <select id="gl-pg-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:190px">
-          <option value="" selected disabled>escolha…</option><option value="PIX Itaú">PIX Itaú</option><option value="PIX Nubank">PIX Nubank</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Victor">Recurso próprio (Victor)</option>
-        </select></label>
-      <label>Dia<input type="date" id="gl-pg-data"></label>
-      <button id="gl-pg-add">Lançar pagamento</button>
-    </div>
-    <div class="fres" id="gl-pg-msg"></div>
-  </div>
-  <span class="stamp" id="gl-stamp"></span>
-</section>
-
-<section class="card" id="card-drinks">
-  <div class="eyebrow">Estoque · copão, dose e combo</div>
-  <h2>🥃 Baixa das garrafas</h2>
-  <p class="note">A garrafa sai sozinha, <strong>na hora da venda</strong>, pela receita de cada item no GestãoGPT. <strong>Copão</strong>: garrafa de 1 litro a cada 10 copos e de 700/750 ml a cada 8, mais 1 gelo, 1 copo e 400 ml de Jack Power. <strong>Dose</strong>: só a garrafa. <strong>Combo</strong>: a garrafa inteira e os extras. Por isso o estoque de garrafa pode aparecer quebrado (11,30 = 11 fechadas e 30% da aberta).</p>
-  <p class="note" id="dk-stamp" style="margin:0"></p>
-</section>
-
-<section class="card" id="card-tabaco">
-  <div class="eyebrow">Estoque · cigarro avulso, picado e seda</div>
-  <h2>🚬 Baixa dos maços</h2>
-  <p class="note">Mesma regra do whisky, só que com o <strong>maço</strong>: cigarro avulso, fumo picado e seda não saem do estoque sozinhos — quem sai é o maço, e só <strong>inteiro</strong>: <strong>20 porções fecham 1 maço</strong> e <strong>33 sedas fecham 1 caixa</strong>. O que ainda não fechou fica guardado aqui embaixo e entra na próxima. O avulso não diz a marca, então ele é <strong>dividido entre as marcas na proporção do que você compra</strong> (últimos 90 dias). Roda sozinho quando você abre o painel, de hora em hora — balcão <strong>e</strong> delivery.</p>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-    <button id="tb-rodar">Descontar agora</button>
-    <span class="note" id="tb-stamp" style="margin:0"></span>
-  </div>
-  <div id="tb-msg"></div>
-  <div class="tblwrap" id="tb-saldo"></div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Estoque · acertar no sistema</div>
-  <h2>📦 Inventário (salvar contagem)</h2>
-  <p class="note">Escolha o produto, veja quanto o sistema tem e digite quanto você <strong>contou</strong>. Ao salvar, o estoque do sistema passa a ser exatamente o que você contou — grava na hora.</p>
-  <div class="fbox">
-    <div class="fform">
-      <label style="flex:1 1 220px">Produto<input list="dl-produtos" id="iv-prod" placeholder="digite pra buscar..." style="width:100%"></label>
-      <label>No sistema<input type="text" id="iv-sistema" readonly placeholder="—" style="width:100px"></label>
-      <label>Contei<input type="number" step="1" inputmode="numeric" id="iv-contei" placeholder="0" style="width:100px"></label>
-      <button id="iv-salvar">Salvar no sistema</button>
-    </div>
-    <div class="fres" id="iv-msg"></div>
-  </div>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Notas de compra · toda segunda</div>
-  <h2>Notas &amp; custos</h2>
-  <p class="note">O que entrou de nota de fornecedor, os <strong>custos que mudaram</strong> e as <strong>sugestões de aumento</strong> esperando seu OK. Lembrete: o XML da nota você me manda e eu lanço aqui.</p>
-  <div class="banner" id="nt-vazio" style="display:none"></div>
-  <div id="nt-alertas"></div>
-  <div class="tblwrap" id="nt-notas"></div>
-  <div id="nt-custos"></div>
-  <div id="nt-sug"></div>
-  <span class="stamp" id="nt-stamp"></span>
-</section>
-
 <section class="card">
   <div class="eyebrow">Compras · sem nota (direto pelo painel)</div>
   <h2>🧾 Gerar compra</h2>
-  <p class="note">Pra compra <strong>sem nota fiscal</strong> (à vista, PIX, etc.). Escolha o fornecedor, vá adicionando os itens (produto, quantidade e se é caixa/fardo/dúzia) e o <strong>valor por unidade</strong> — o <strong>total é calculado sozinho</strong> (ou digite o total, que eu acho o unitário). Assim não tem erro de valor. O <strong>pagamento</strong> diz de onde saiu o dinheiro: <strong>Caixa</strong> = gaveta do dia · <strong>Dinheiro</strong> = reserva (notas altas/sobras que você tira do caixa) · <strong>PIX/Cartão</strong> = conta · <strong>Boleto</strong> = a pagar. No fim, <strong>Gerar compra</strong>: entra no estoque, atualiza custo/média e baixa do lugar certo.</p>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Pra compra <strong>sem nota fiscal</strong> (à vista, PIX, etc.). Escolha o fornecedor, vá adicionando os itens (produto, quantidade e se é caixa/fardo/dúzia) e o <strong>valor por unidade</strong> — o <strong>total é calculado sozinho</strong> (ou digite o total, que eu acho o unitário). Assim não tem erro de valor. O <strong>pagamento</strong> diz de onde saiu o dinheiro: <strong>Caixa</strong> = gaveta do dia · <strong>Dinheiro</strong> = reserva (notas altas/sobras que você tira do caixa) · <strong>PIX/Cartão</strong> = conta · <strong>Boleto</strong> = a pagar. No fim, <strong>Gerar compra</strong>: entra no estoque, atualiza custo/média e baixa do lugar certo.</p></details>
   <div class="fbox">
     <div class="fform">
       <label style="flex:1 1 220px">Fornecedor
@@ -686,9 +686,9 @@ body.lc-aberto{overflow:hidden}
       <div class="tblwrap" id="tbl-compras-hist"></div>
       <span class="stamp" id="cph-stamp"></span>
     </div>
-    <div style="border-top:1px dashed var(--line);margin-top:14px;padding-top:10px">
-      <p class="note" style="margin:0">
-        <strong>Como preencher (leia se bater dúvida):</strong><br>
+    <details class="ajuda" style="border-top:1px dashed var(--line);margin-top:14px;padding-top:10px"><summary>Como preencher</summary>
+      <p class="note">
+
         • <strong>Qtd</strong> = quantos <strong>fardos/caixas</strong> você comprou (não o total de garrafas).<br>
         • <strong>Un. por fardo</strong> = quantas unidades vêm dentro. Eu preencho com o que está
           <strong>gravado no sistema</strong> pra esse produto; se estiver errado, <strong>corrija aqui</strong>
@@ -699,63 +699,83 @@ body.lc-aberto{overflow:hidden}
           outro (e o total também). Depois de gravar, eu <strong>confiro o estoque</strong> e digo exatamente
           quanto entrou — se o sistema aplicar uma conversão diferente, eu acerto na hora.
       </p>
-    </div>
+    </details>
   </div>
+</section>
+
+<section class="card">
+  <div class="eyebrow">Estoque · acertar no sistema</div>
+  <h2>📦 Inventário (salvar contagem)</h2>
+  <p class="note">Escolha o produto, veja quanto o sistema tem e digite quanto você <strong>contou</strong>. Ao salvar, o estoque do sistema passa a ser exatamente o que você contou — grava na hora.</p>
+  <div class="fbox">
+    <div class="fform">
+      <label style="flex:1 1 220px">Produto<input list="dl-produtos" id="iv-prod" placeholder="digite pra buscar..." style="width:100%"></label>
+      <label>No sistema<input type="text" id="iv-sistema" readonly placeholder="—" style="width:100px"></label>
+      <label>Contei<input type="number" step="1" inputmode="numeric" id="iv-contei" placeholder="0" style="width:100px"></label>
+      <button id="iv-salvar">Salvar no sistema</button>
+    </div>
+    <div class="fres" id="iv-msg"></div>
+  </div>
+</section>
+
+<section class="card" id="card-gelo">
+  <div class="eyebrow">Estoque · freezer consignado</div>
+  <h2>🧊 Gelo do freezer</h2>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Você paga <strong>R$ 300 por mês</strong> pelo freezer e esse valor vira <strong>crédito em gelo</strong>. Toda vez que chegar gelo, lance aqui: eu <strong>desconto do crédito</strong> e <strong>dou entrada no estoque</strong> já com o custo. O crédito <strong>zera todo mês</strong> — o que não usar, não passa pro mês seguinte.</p></details>
+  <div id="gl-resumo"></div>
+  <div class="fbox">
+    <div class="fform">
+      <label style="flex:1 1 180px">Chegou gelo
+        <select id="gl-prod" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%"></select></label>
+      <label>Quantos sacos<input type="number" step="1" min="1" inputmode="numeric" id="gl-qtd" placeholder="0" style="width:100px"></label>
+      <label>R$ por saco<input type="number" step="0.01" inputmode="decimal" id="gl-unit" placeholder="0,00" style="width:100px"></label>
+      <label>Dia<input type="date" id="gl-data"></label>
+      <button id="gl-add">Dar entrada</button>
+    </div>
+    <div class="fres" id="gl-msg"></div>
+  </div>
+  <div class="tblwrap" id="gl-itens" style="margin-top:12px"></div>
+  <div class="fbox">
+    <div class="fform">
+      <label>Paguei o freezer (R$)<input type="number" step="0.01" inputmode="decimal" id="gl-pg-valor" value="300" style="width:110px"></label>
+      <label>De onde saiu
+        <select id="gl-pg-forma" style="font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:190px">
+          <option value="" selected disabled>escolha…</option><option value="PIX Itaú">PIX Itaú</option><option value="PIX Nubank">PIX Nubank</option><option value="Caixa">Caixa (gaveta)</option><option value="Dinheiro">Dinheiro reserva</option><option value="Sobra">Sobra de caixa</option><option value="Victor">Recurso próprio (Victor)</option>
+        </select></label>
+      <label>Dia<input type="date" id="gl-pg-data"></label>
+      <button id="gl-pg-add">Lançar pagamento</button>
+    </div>
+    <div class="fres" id="gl-pg-msg"></div>
+  </div>
+  <span class="stamp" id="gl-stamp"></span>
+</section>
+
+<section class="card" id="card-tabaco">
+  <div class="eyebrow">Estoque · cigarro avulso, picado e seda</div>
+  <h2>🚬 Baixa dos maços</h2>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Mesma regra do whisky, só que com o <strong>maço</strong>: cigarro avulso, fumo picado e seda não saem do estoque sozinhos — quem sai é o maço, e só <strong>inteiro</strong>: <strong>20 porções fecham 1 maço</strong> e <strong>33 sedas fecham 1 caixa</strong>. O que ainda não fechou fica guardado aqui embaixo e entra na próxima. O avulso não diz a marca, então ele é <strong>dividido entre as marcas na proporção do que você compra</strong> (últimos 90 dias). Roda sozinho quando você abre o painel, de hora em hora — balcão <strong>e</strong> delivery.</p></details>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    <button id="tb-rodar">Descontar agora</button>
+    <span class="note" id="tb-stamp" style="margin:0"></span>
+  </div>
+  <div id="tb-msg"></div>
+  <div class="tblwrap" id="tb-saldo"></div>
+</section>
+
+<section class="card" id="card-drinks">
+  <div class="eyebrow">Estoque · copão, dose e combo</div>
+  <h2>🥃 Baixa das garrafas</h2>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">A garrafa sai sozinha, <strong>na hora da venda</strong>, pela receita de cada item no GestãoGPT. <strong>Copão</strong>: garrafa de 1 litro a cada 10 copos e de 700/750 ml a cada 8, mais 1 gelo, 1 copo e 400 ml de Jack Power. <strong>Dose</strong>: só a garrafa. <strong>Combo</strong>: a garrafa inteira e os extras. Por isso o estoque de garrafa pode aparecer quebrado (11,30 = 11 fechadas e 30% da aberta).</p></details>
+  <p class="note" id="dk-stamp" style="margin:0"></p>
 </section>
 
 <datalist id="dl-produtos"></datalist>
 </div><!-- /view-estoque -->
 
-<!-- ============ FINANCEIRO ============ -->
-<!-- ============ VISÃO CONTAS (tudo que falta pagar, mês a mês) ============ -->
-<div id="view-contas" hidden>
-<section class="card">
-  <div class="eyebrow">Contas a pagar · mapa até dezembro</div>
-  <h2>Tudo que falta pagar — mês a mês</h2>
-  <div id="mapa-kpis" style="margin:8px 0"></div>
-  <p class="note">Uma tabela só com <strong>tudo que ainda não foi pago</strong>: cada linha é uma categoria — inclusive <strong>Mercadoria (notas)</strong>, que são as notas de compra e os boletos do DDA que você me passa — e cada coluna é um mês, <strong>até dezembro</strong>. A primeira coluna, em vermelho, é o que já está <strong>atrasado</strong>; a coluna do mês de agora vem destacada.</p>
-  <p class="note"><strong>Clique na linha</strong> pra abrir os itens e pagar: confira o campo <strong>"pago R$"</strong> (já vem com o previsto — se teve juros ou veio diferente, é só ajustar), escolha <strong>de onde saiu o dinheiro</strong> e clique <strong>paguei</strong>. Ele sai daqui na hora, com o valor real, e entra no <strong>total gasto no mês</strong> logo abaixo. O <strong>✕</strong> exclui item lançado errado ou boleto de golpe.</p>
-  <div class="tblwrap" id="tbl-mapa"></div>
-  <span class="stamp" id="mapa-stamp"></span>
-  <p class="note">💰 Lembrete do cofre: primeiro depósito <strong>R$ 2.000 na segunda 27/07</strong>, depois R$ 1.700 toda segunda.</p>
-</section>
-
-<section class="card">
-  <div class="eyebrow">Contas · lançar</div>
-  <div class="lc-atalho"><button class="lc-btn" data-lc="saida:pago" type="button">↓ Lançar gasto já pago</button><button class="lc-btn ghost" data-lc="saida:apagar" type="button">Conta a pagar (pode repetir ou parcelar)</button><button class="lc-btn ghost" data-lc="extrato" type="button">🏦 Conferir extrato</button></div>
-  <p class="note">Também pelo botão <b>＋ Lançar</b>, no canto da tela, em qualquer aba.</p>
-</section>
-<section class="card" id="card-gasto-mes">
-  <div class="eyebrow">Fechamento do mês · o que já saiu</div>
-  <h2>Total gasto no mês — <span id="gm-mes"></span></h2>
-  <div id="gasto-mes-topo" style="margin:8px 0"></div>
-  <p class="note">Soma tudo que <strong>já saiu no mês</strong>: as despesas que você paga na mão (motoca, Biel, retiradas, lanches, gastos) <strong>+ as compras de mercadoria</strong>. É o "quanto já gastei" pra bater com o faturamento no fechamento. Vai <strong>somando sozinho</strong> conforme você paga (o motoca de toda semana entra aqui). Ficam de fora: ajuste de caixa (quebra), saque e <strong>o que você paga com recurso próprio</strong> (esse fica na aba <strong>💰 Financeiro</strong>, separado).</p>
-</section>
-
-<section class="card" id="card-ultima-atualizacao">
-  <div class="eyebrow">Contas a pagar · até quando está atualizado</div>
-  <div id="ua-box">
-    <div class="note" style="margin:0">carregando…</div>
-  </div>
-</section>
-
-</div><!-- /view-contas -->
-
-<div id="view-financeiro" hidden>
-<section class="card" id="card-recurso-proprio">
-  <div class="eyebrow">Recurso próprio · dinheiro do Victor</div>
-  <h2>Pago com recurso próprio — <span id="rp-mes"></span></h2>
-  <div id="rp-total-box" style="margin:8px 0"></div>
-  <p class="note">Pagamentos que você fez com o <strong>seu dinheiro</strong>. Fica <strong>separado de propósito</strong>: NÃO entra no caixa, nem no banco, nem no "Total gasto no mês" da loja (aba 🧾 Contas) — é só pra você saber quanto colocou do bolso. <strong>Só no painel</strong> (não criei nada no GestãoGPT).</p>
-  <div class="tblwrap" id="tbl-rp" style="margin:8px 0"></div>
-  <div class="lc-atalho" style="margin-top:10px"><button class="lc-btn mini" data-lc="saida:pago" type="button">↓ Lançar pagamento do meu bolso</button>
-  <span class="note" style="margin:0">no <b>＋ Lançar → Saída</b>, escolha "Do meu bolso" em <b>de onde saiu</b>.</span></div>
-</section>
-
-</div><!-- /view-financeiro -->
-
-<!-- ============ FIADO (acompanhamento; lançar é no GestãoGPT · 29/10/2026) ============ -->
-<div id="view-fiado" hidden>
+<!-- ============ CLIENTES (fiado + delivery, 11/11/2026) ============ -->
+<div id="view-clientes" hidden>
+<h3 class="secao">📒 Fiado</h3>
+<div id="view-fiado">
 <section class="kpis" id="fi-kpis"></section>
 <section class="card">
   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
@@ -763,7 +783,7 @@ body.lc-aberto{overflow:hidden}
     <label class="note" style="display:flex;gap:6px;align-items:center;margin:0;cursor:pointer"><input type="checkbox" id="fi-todos"> mostrar quem não deve nada</label>
   </div>
   <div class="tblwrap" id="fi-tbl"><p class="note">carregando…</p></div>
-  <p class="note">Clique no cliente pra abrir o que ele comprou: dia, produtos e valor. Só acompanhamento: o <b>pagamento</b> e o <b>fiado novo</b> são lançados no <b>GestãoGPT</b>, e aqui atualiza sozinho (em até 1 minuto, ou no botão Atualizar). Compra paga some da lista. A dívida aparece como <b>atrasada</b> quando passa do vencimento.</p>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">Clique no cliente pra abrir o que ele comprou: dia, produtos e valor. Só acompanhamento: o <b>pagamento</b> e o <b>fiado novo</b> são lançados no <b>GestãoGPT</b>, e aqui atualiza sozinho (em até 1 minuto, ou no botão Atualizar). Compra paga some da lista. A dívida aparece como <b>atrasada</b> quando passa do vencimento.</p></details>
 </section>
 <section class="card">
   <div class="eyebrow">Consumo dos sócios</div>
@@ -772,19 +792,22 @@ body.lc-aberto{overflow:hidden}
   <p class="note">Fica <b>fora</b> do "a receber" dos clientes: é o que cada um consumiu da loja. Cada sócio na sua linha, sem somar.</p>
 </section>
 <span class="stamp" id="fi-stamp"></span>
-</div><!-- /view-fiado -->
+</div>
 
-<!-- ============ VISÃO DELIVERY (Anota AI) ============ -->
-<div id="view-delivery" hidden>
+<h3 class="secao">🛵 Delivery</h3>
+<div id="view-delivery">
 <section class="kpis" id="d-kpis"></section>
-
-<section class="card">
-  <div class="eyebrow">Delivery · robô</div>
-  <h2>Pedidos do app entrando sozinhos</h2>
-  <p class="note">O robô puxa os pedidos do Anota AI e lança no sistema já com nota fiscal, de 10 em 10 minutos. Agora ele roda <strong>na nuvem</strong> — não depende mais de computador ligado. Abrir o painel também dispara uma busca.</p>
-  <div id="d-robo" style="margin:10px 0"></div>
-  <button id="btn-sync">Puxar pedidos agora</button>
-  <span class="stamp" id="d-robo-stamp"></span>
+<section class="card" id="card-clientes">
+  <div class="eyebrow">Delivery · clientes do app</div>
+  <h2>Quem pede no app</h2>
+  <div id="cl-kpis" style="margin-top:8px"></div>
+  <div class="cardtabs" role="tablist" aria-label="Escolher lista" style="margin-top:12px">
+    <button id="cl-t-sumiram" class="on" role="tab" aria-selected="true" data-cl="sumiram">Sumiram</button>
+    <button id="cl-t-melhores" role="tab" aria-selected="false" data-cl="melhores">Melhores</button>
+    <button id="cl-t-novos" role="tab" aria-selected="false" data-cl="novos">Novos</button>
+  </div>
+  <div id="cl-lista"><p class="note">carregando…</p></div>
+  <details class="ajuda"><summary>Como funciona</summary><p class="note">O Anota só guarda o pedido por uns 7 dias, então o painel vai anotando sozinho quem pediu, quantas vezes e quando foi a última. A lista começou em 04/11 e vai enchendo com o tempo. <b>Sumiram</b>: quem já pediu 2 vezes ou mais e está há 3 semanas sem pedir (ou o dobro do ritmo dele). <b>Melhores</b>: quem mais gastou. O botão abre o WhatsApp com uma mensagem pronta, você revisa antes de mandar.</p></details>
 </section>
 
 <section class="card">
@@ -803,6 +826,15 @@ body.lc-aberto{overflow:hidden}
 </section>
 
 <section class="card">
+  <div class="eyebrow">Delivery · robô</div>
+  <h2>Pedidos do app entrando sozinhos</h2>
+  <p class="note">O robô puxa os pedidos do Anota AI e lança no <strong>GestãoGPT</strong> de 10 em 10 minutos, na nuvem. A <strong>nota fiscal do delivery ainda não sai sozinha</strong>: a integração do GestãoGPT não emite NFC-e.</p>
+  <div id="d-robo" style="margin:10px 0"></div>
+  <button id="btn-sync">Puxar pedidos agora</button>
+  <span class="stamp" id="d-robo-stamp"></span>
+</section>
+
+<section class="card" hidden>
   <div class="eyebrow">Delivery · nota fiscal</div>
   <h2>NFC-e dos pedidos do app</h2>
   <p class="note">Toda venda de delivery precisa de nota. O robô emite na hora do pedido e, uma vez por dia, uma varredura confere os últimos 7 dias e pega o que escapou. Se aparecer coisa em vermelho aqui, me avise.</p>
@@ -810,22 +842,21 @@ body.lc-aberto{overflow:hidden}
   <button id="btn-notas">Conferir as notas agora</button>
   <span class="stamp" id="d-notas-stamp"></span>
 </section>
-</div><!-- /view-delivery -->
+</div>
+</div><!-- /view-clientes -->
 
 <!-- ============ MENU DE BAIXO (só no celular) ============ -->
 <nav class="nav-baixo" id="nav-baixo" aria-label="Menu">
   <button data-aba="inicio" class="on"><span class="ic">🏠</span>Início</button>
-  <button data-aba="loja"><span class="ic">🏪</span>Loja</button>
+  <button data-aba="loja"><span class="ic">💵</span>Caixa</button>
   <button class="nb-lancar" id="nb-lancar" aria-label="Lançar">＋</button>
   <button data-aba="contas"><span class="ic">🧾</span>Contas</button>
   <button id="nb-mais" aria-haspopup="true" aria-expanded="false"><span class="ic">☰</span>Mais</button>
 </nav>
 <div class="nav-mais" id="nav-mais" role="menu">
-  <button data-aba="acomp" role="menuitem">📊 Acompanhamento</button>
+  <button data-aba="acomp" role="menuitem">📊 Resultados</button>
   <button data-aba="estoque" role="menuitem">📦 Estoque</button>
-  <button data-aba="financeiro" role="menuitem">💰 Financeiro</button>
-  <button data-aba="fiado" role="menuitem">📒 Fiado</button>
-  <button data-aba="delivery" role="menuitem">🛵 Delivery</button>
+  <button data-aba="clientes" role="menuitem">👥 Clientes</button>
 </div>
 
 <!-- ============ CENTRAL DE LANÇAMENTOS (aparece em todas as abas) ============ -->
@@ -842,7 +873,7 @@ body.lc-aberto{overflow:hidden}
 </div>
 
 <footer>
-Use os botões no topo (<strong>Loja · Acompanhamento · Estoque · Financeiro · Delivery</strong>) pra trocar de visão. <strong>Loja</strong> = balcão (GestãoGPT); <strong>Delivery</strong> = relatório do Anota AI. Para atualizar os números: me peça "atualiza o painel" — ou mande o fechamento do dia / relatório do Anota / print novo do DDA, que eu regenero. Rotinas ativas, todas <strong>na nuvem</strong> (não dependem de computador ligado): pedidos do app de 10 em 10 min · baixa dos maços · gráficos do dia. A <strong>entrada das notas de fornecedor continua manual</strong> — me mande os XMLs.
+<strong>Início</strong> = o dia e o placar da semana · <strong>Caixa</strong> = fechamento, reserva, sobra e moedas · <strong>Contas</strong> = o que falta pagar e o que já saiu · <strong>Resultados</strong> = lucro e vendas mês a mês · <strong>Estoque</strong> = compra, contagem e gelo · <strong>Clientes</strong> = fiado e delivery. Rodam sozinhos na nuvem: pedidos do app de 10 em 10 minutos, clientes do app, baixa dos maços e gráficos do dia. As notas de fornecedor entram por mim: me mande os XMLs.
 </footer>
 </div>
 
@@ -933,7 +964,7 @@ const dbr = s => s.slice(8,10)+'/'+s.slice(5,7);
 })();
 
 document.getElementById('gerado').textContent =
-  'Gerado em '+dbr(D.gerado_em)+'/2026 · loja e caixa até '+(D.dia_mes.length?dbr(D.dia_mes[D.dia_mes.length-1].data):'—')+' · boletos DDA de 15/07';
+  'Gráficos de '+dbr(D.gerado_em)+' · o resto é ao vivo do GestãoGPT';
 
 // KPIs — acompanhamento do mês atual
 const k = D.kpis, MA = D.mes_atual;
@@ -944,8 +975,8 @@ const pctBE = Math.round((MA.proj/MA.be_mes-1)*100);
 document.getElementById('kpis').innerHTML = [
  [mesCap+' até agora ('+MA.dias+' dias)','R$ '+fmt(MA.fat_mtd), 'média R$ '+fmt(MA.media_dia)+'/dia · ticket R$ '+fmt(k.ticket)+(MA.pct_saque?' · '+MA.pct_saque+'% veio de saque':'')],
  ['Projeção de '+mesLow,'R$ '+fmt(MA.proj), pctBE>=0 ? '▲ '+pctBE+'% acima do equilíbrio mensal' : '▼ '+(-pctBE)+'% ABAIXO do equilíbrio'],
- ['Resultado projetado ('+mesLow+')',(MA.resultado_proj>=0?'+':'')+'R$ '+fmt(MA.resultado_proj), 'já com sua retirada de R$ 1.500 paga'],
- ['Equilíbrio do mês','R$ '+fmt0(MA.be_mes), 'R$ '+fmt0(MA.be_mes_sem_retirada)+' sem retirada de sócio'],
+ ['Resultado projetado ('+mesLow+')',(MA.resultado_proj>=0?'+':'')+'R$ '+fmt(MA.resultado_proj), 'estimativa: vendas × margem − fixos'],
+ ['Empate do mês','R$ '+fmt0(MA.be_mes), 'o mínimo pra não fechar no vermelho'],
 ].map(x=>'<div class="kpi"><div class="lbl">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('');
 
 // ---- régua anual: faturamento × gastos por mês ----
@@ -1161,6 +1192,7 @@ function loadABC(f){ return fetch('/api/abc'+(f?'?fresh=1':'')).then(r=>r.json()
 
 // ---- notas de compra (rotina de segunda) ----
 (function(){
+  if(!document.getElementById('nt-stamp')) return;     // quadro saiu da tela em 11/11/2026
   const R = D.notasrel || {notas:[],custos:[],sugestoes:[],alertas:[],status:'',ultima_rodada:'',gerado_em:''};
   document.getElementById('nt-stamp').textContent =
     'gerado ' + (R.gerado_em||'—') + ' · última rodada aplicada ' + (R.ultima_rodada||'—');
@@ -1587,9 +1619,12 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
 
 // ============ TOGGLE LOJA/DELIVERY + BOTÃO ATUALIZAR ============
 (function(){
-  const VIEWS={inicio:'view-inicio',loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',financeiro:'view-financeiro',fiado:'view-fiado',delivery:'view-delivery'};
-  const TABS={inicio:'tab-inicio',loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',contas:'tab-contas',financeiro:'tab-financeiro',fiado:'tab-fiado',delivery:'tab-deliv'};
+  const VIEWS={inicio:'view-inicio',loja:'view-loja',acomp:'view-acomp',estoque:'view-estoque',contas:'view-contas',clientes:'view-clientes'};
+  const TABS={inicio:'tab-inicio',loja:'tab-loja',acomp:'tab-acomp',estoque:'tab-estoque',contas:'tab-contas',clientes:'tab-clientes'};
+  // abas que juntaram (11/11/2026): link velho continua abrindo no lugar novo
+  const ALIAS={financeiro:'contas',fiado:'clientes',delivery:'clientes'};
   function sel(which){
+    which=ALIAS[which]||which;
     if(!VIEWS[which]) which='inicio';
     for(const k in VIEWS){
       const v=document.getElementById(VIEWS[k]), t=document.getElementById(TABS[k]);
@@ -1603,7 +1638,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     try{window.scrollTo(0,0);}catch(e){}
   }
   for(const k in TABS){ const t=document.getElementById(TABS[k]); if(t) t.addEventListener('click',()=>sel(k)); }
-  const _h=(location.hash||'').replace('#',''); if(VIEWS[_h]) sel(_h);
+  const _h=(location.hash||'').replace('#',''); if(VIEWS[_h]||ALIAS[_h]) sel(_h);
   window.selAba=sel;
   // menu de baixo (celular)
   document.querySelectorAll('[data-aba]').forEach(b=>b.addEventListener('click',()=>sel(b.dataset.aba)));
@@ -1671,18 +1706,17 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<span class="pill pok" id="live-badge">● lendo do sistema…</span>'+
         '<span class="note" id="live-stamp" style="margin:0"></span>'+
       '</div>'+
-      '<section class="kpis" id="live-kpis" style="margin-bottom:16px">'+
-        kpiCard('Produtos ativos','k-prod','')+
-        kpiCard('Em estoque (custo)','k-val','')+
-        kpiCard('Estoque negativo','k-neg','')+
-        kpiCard('A pagar em aberto','k-pagar','k-pagar-sub')+
+      // 11/11/2026: aqui ficam só as vendas de hoje. Reserva, sobra e contas já têm quadro próprio;
+      // os números do estoque foram pra aba Estoque.
+      '<section class="kpis" id="live-kpis" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
         kpiCard('Faturamento total hoje','k-hoje-t','k-hoje-t-sub')+
-        kpiCard('Dinheiro reserva','k-reserva','')+
-        kpiCard('Sobra de caixa','k-sobra','')+
         kpiCard('Vendas hoje (balcão)','k-hoje','k-hoje-sub')+
         kpiCard('Vendas hoje (delivery)','k-hoje-d','k-hoje-d-sub')+
       '</section>';
   }
+  const ek=g('estoque-kpis');
+  if(ek) ek.innerHTML=kpiCard('Produtos ativos','k-prod','')+kpiCard('Em estoque (custo)','k-val','')+
+    '<div class="kpi"><div class="lbl">Estoque negativo</div><div class="val" id="k-neg">…</div><div class="sub">item negativo = nota que não entrou</div></div>';
   /* ---------- baixa das garrafas dos copões ---------- */
   function loadDrinks(){ return fetch('/api/drinks-status').then(r=>r.json()).then(d=>{
       const st=g('dk-stamp'); if(!st) return;
@@ -1899,6 +1933,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
             '<td>'+prods+'</td><td class="num">R$ '+fmt(c.valor)+'</td><td>'+pags+'</td>'+
             '<td><button class="linkx cph-del" data-id="'+c.id+'" data-cod="'+esc(c.codigo||'')+'" title="apagar e devolver o estoque">✕</button></td></tr>';
         }).join('')+'</tbody></table>';
+      if(window.limitaLinhas) window.limitaLinhas(box,8);
       const st=g('cph-stamp'); if(st) st.textContent='atualizado '+d.gerado_em;
       box.querySelectorAll('.cph-del').forEach(b=>b.addEventListener('click',()=>{
         if(!confirm('Apagar a compra '+b.dataset.cod+'? O estoque volta ao que era e o pagamento é apagado.')) return;
@@ -2203,6 +2238,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<td class="num" style="color:'+(pos?'var(--good)':'var(--crit)')+'">'+(pos?'+':'−')+'R$ '+fmt(Math.abs(m.valor))+'</td>'+
         '<td class="num"><button class="res-del" data-id="'+m.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button></td></tr>';}).join('')+
       '</tbody></table>';
+    limitaLinhas(box,8);
     box.querySelectorAll('.res-del').forEach(b=>b.addEventListener('click',()=>{
       if(!confirm('Excluir esse movimento da reserva?')) return;
       b.disabled=true; b.textContent='…';
@@ -2248,6 +2284,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<td class="num" style="color:'+(pos?'var(--good)':'var(--crit)')+'">'+(pos?'+':'−')+'R$ '+fmt(Math.abs(m.valor))+'</td>'+
         '<td class="num"><button class="sob-del" data-id="'+m.id+'" title="excluir" style="font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--crit);padding:3px 7px;border-radius:6px;cursor:pointer">✕</button></td></tr>';}).join('')+
       '</tbody></table>';
+    limitaLinhas(box,8);
     box.querySelectorAll('.sob-del').forEach(b=>b.addEventListener('click',()=>{
       if(!confirm('Excluir esse movimento da sobra de caixa?')) return;
       b.disabled=true; b.textContent='…';
@@ -2291,6 +2328,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   /* ---------- MAPA: tudo que falta pagar, categoria x mês (aba Contas) ---------- */
   const PREV_POT=[['PIX Itaú','PIX Itaú'],['PIX Nubank','PIX Nubank'],['Caixa','Caixa (gaveta)'],['Dinheiro','Dinheiro reserva'],['Sobra','Sobra de caixa'],['Victor','Recurso próprio (Victor)']];
   const PREV_OPTS='<option value="" selected disabled>de onde saiu…</option>'+PREV_POT.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');
+  let MAPA_ZEROS=false;
+  // tabela comprida (reserva, sobra): mostra as últimas N linhas e um 'ver tudo' (11/11/2026)
+  function limitaLinhas(box,n){ const trs=[...box.querySelectorAll('tbody tr')]; if(trs.length<=n+2) return;
+    trs.slice(n).forEach(t=>t.hidden=true);
+    box.insertAdjacentHTML('beforeend','<button type="button" class="lc-link" style="margin-top:6px">ver os outros '+(trs.length-n)+'</button>');
+    const b=box.lastElementChild; b.addEventListener('click',()=>{ trs.forEach(t=>t.hidden=false); b.remove(); }); }
+  window.limitaLinhas=limitaLinhas;
   function loadMapa(f){ return fetch('/api/mapa'+qf(f)).then(r=>r.json()).then(d=>{
     if(g('k-pagar')) g('k-pagar').textContent='R$ '+fmt(d.total||0);
     if(g('k-pagar-sub')) g('k-pagar-sub').innerHTML=((d.tot_atrasado||0)>0
@@ -2310,7 +2354,8 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     let rows='';
     (d.linhas||[]).forEach((L,ci)=>{
       const has=L.n>0;
-      rows+='<tr class="mp-cat'+(has?' clic':'')+'" data-ci="'+ci+'" style="'+(has?'cursor:pointer':'opacity:.5')+'">'+
+      // categoria sem conta em aberto fica escondida (11/11/2026): só ocupava espaço; o botão embaixo mostra
+      rows+='<tr class="mp-cat'+(has?' clic':' mp-zero')+'" data-ci="'+ci+'" style="'+(has?'cursor:pointer':'opacity:.5')+'"'+(has||MAPA_ZEROS?'':' hidden')+'>'+
         '<td class="nome">'+(has?'<span class="chev" style="display:inline-block;width:12px;color:var(--accent)">▸</span>':'<span style="display:inline-block;width:12px"></span>')+
           esc(L.cat)+(has?' <span style="color:var(--muted);font-size:.72rem">'+L.n+'</span>':'')+'</td>'+
         cel(L.atrasado,' style="font-weight:700;color:var(--crit)"')+
@@ -2349,6 +2394,12 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         (temDep?'<td class="num" style="font-weight:800">R$ '+fmt(d.tot_depois||0)+'</td>':'')+
         '<td class="num" style="font-weight:800">R$ '+fmt(d.total||0)+'</td></tr>'+
       '</tbody></table>';
+    const nz=(d.linhas||[]).filter(L=>!(L.n>0)).length;
+    if(nz){ wrap.insertAdjacentHTML('beforeend','<button type="button" class="lc-link" id="mp-zeros" style="margin-top:8px">'+
+        (MAPA_ZEROS?'esconder as categorias sem conta':'mostrar as '+nz+' categorias sem conta em aberto')+'</button>');
+      g('mp-zeros').addEventListener('click',()=>{ MAPA_ZEROS=!MAPA_ZEROS;
+        wrap.querySelectorAll('tr.mp-zero').forEach(r=>r.hidden=!MAPA_ZEROS);
+        g('mp-zeros').textContent=MAPA_ZEROS?'esconder as categorias sem conta':'mostrar as '+nz+' categorias sem conta em aberto'; }); }
     const st=g('mapa-stamp'); if(st) st.textContent='📅 Puxado ao vivo do sistema em '+(d.gerado_em||'')+'.';
     wrap.querySelectorAll('tr.mp-cat.clic').forEach(r=>r.addEventListener('click',e=>{
       if(e.target.closest('button,select,input,label')) return;
@@ -2724,8 +2775,113 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       '<div class="v">R$ '+fmt(x.valor)+'</div></div>').join('');
   }
   window.desenhaInicio=()=>{ desenhaMov(); desenhaSobra(); };
+
+  /* ---------- PLACAR DA SEMANA (11/11/2026, ideia do vídeo de gestão que o dono mandou) ----------
+     Toda segunda: vendas contra a meta, poucos números e 1 ou 2 ações pra semana. */
+  const SEM_CURTO=['seg','ter','qua','qui','sex','sáb','dom'];
+  let PL=null;
+  function pintaPlacar(){
+    const d=PL, box=g('pl-box'); if(!d||!box) return;
+    const v=d.vendas, meta=d.meta, emp=d.empate, top=Math.max(meta*1.12, v.semana);
+    const pct=x=>Math.min(100, x/top*100);
+    const cor=v.semana>=meta?'var(--good)':(v.semana>=emp?'var(--series-1)':'var(--warn)');
+    g('pl-periodo').textContent='Semana de '+dbr(d.semana[0])+' a '+dbr(d.semana[1]);
+    g('pl-stamp').textContent='atualizado às '+String(d.gerado_em||'').slice(11);
+    let msg;
+    if(v.semana>=meta) msg='✅ <b>Meta batida!</b> Passou R$ '+fmt0(v.semana-meta)+'.';
+    else{
+      const falta=meta-v.semana, n=v.dias_rest;
+      msg='Faltam <b>R$ '+fmt0(falta)+'</b> pra meta em '+n+' dia'+(n>1?'s':'')+(n>0?': <b>R$ '+fmt0(falta/n)+' por dia</b>.':'.');
+      if(v.semana<emp) msg+=' Pro empate faltam R$ '+fmt0(emp-v.semana)+'.';
+    }
+    const va=v.ant;
+    const ant='Semana passada ('+dbr(d.semana_ant[0])+' a '+dbr(d.semana_ant[1])+'): <b>R$ '+fmt0(va)+'</b>, '+
+      (va>=meta?'<span class="ini-up">bateu a meta</span>':(va>=emp?'passou do empate, faltaram R$ '+fmt0(meta-va)+' pra meta':'<span class="ini-down">ficou abaixo do empate</span>'))+'.';
+    const dias=v.por_dia.map((x,i)=>{ const fut=x.data>d.hoje, hj=x.data===d.hoje;
+      return '<div class="pl-dia'+(hj?' hoje':'')+(fut?' fut':'')+'">'+SEM_CURTO[i]+'<b>'+(fut?'·':moedaCurta(x.valor))+'</b></div>'; }).join('');
+    const card=(lbl,val,sub,corVal)=>'<div class="ini-card"><div class="lbl">'+lbl+'</div><div class="val"'+(corVal?' style="color:'+corVal+'"':'')+'>'+val+'</div><div class="sub">'+sub+'</div></div>';
+    const dl=d.delivery, q=d.quebra, c7=d.contas7, at=d.atrasado;
+    const desdeCli=dl.desde&&dl.desde>d.semana_ant[0]?' · contando desde '+dbr(dl.desde):'';
+    const qtxt=q.dias?((q.total<0?'−':q.total>0?'+':'')+'R$ '+fmt(Math.abs(q.total))):'—';
+    const qcor=!q.dias?'':(q.total<-5?'var(--crit)':'var(--good)');
+    const falta7=c7.total-d.dinheiro;
+    const delta=(at.segunda!=null)?at.agora-at.segunda:null;
+    const cards=
+      card('🛵 Pedidos no app',String(dl.pedidos),'R$ '+fmt0(dl.valor)+' · semana passada: '+dl.pedidos_ant+' pedidos')+
+      card('🙋 Clientes novos no app',String(dl.novos||0),(dl.voltaram||0)+' voltaram a pedir'+desdeCli)+
+      card('🧮 Quebra de caixa',qtxt,q.dias?'em '+q.dias+' dia'+(q.dias>1?'s':'')+' contado'+(q.dias>1?'s':''):'nenhum fechamento contado ainda',qcor)+
+      card('📅 Vence em 7 dias','R$ '+fmt0(c7.total),c7.n+' conta'+(c7.n!==1?'s':'')+' · dinheiro hoje R$ '+fmt0(d.dinheiro)+(falta7>0?' · <span class="ini-down">falta R$ '+fmt0(falta7)+'</span>':''))+
+      card('⚠️ Atrasado','R$ '+fmt0(at.agora),delta===null?'':(Math.abs(delta)<1?'igual a segunda':(delta<0?'<span class="ini-up">desceu R$ '+fmt0(-delta)+'</span> desde segunda':'<span class="ini-down">subiu R$ '+fmt0(delta)+'</span> desde segunda')),at.agora>0?'var(--crit)':'');
+    const acao=(x,i,sem)=>'<div class="pl-acao'+(x[1]?' ok':'')+'"><input type="checkbox" '+(x[1]?'checked ':'')+'data-pl-ok="'+i+'" data-sem="'+sem+'" aria-label="feito"><span class="t">'+esc(x[0])+'</span>'+
+      '<button class="linkx" type="button" data-pl-del="'+i+'" data-sem="'+sem+'" title="apagar" aria-label="apagar">✕</button></div>';
+    const ac=d.acoes||[], aa=d.acoes_ant||[];
+    box.innerHTML='<div class="pl-top"><div><div class="pl-lbl">Vendas da semana</div><div class="pl-val">R$ '+fmt0(v.semana)+' <small>de R$ '+fmt0(meta)+'</small></div></div></div>'+
+      '<div class="pl-bar" role="img" aria-label="Vendas da semana: R$ '+fmt0(v.semana)+' de R$ '+fmt0(meta)+'"><div class="f" style="width:'+pct(v.semana)+'%;background:'+cor+'"></div>'+
+        '<div class="pl-mk" style="left:'+pct(emp)+'%"><span>empate</span></div><div class="pl-mk" style="left:'+pct(meta)+'%"><span>meta</span></div></div>'+
+      '<div class="pl-msg">'+msg+'</div><div class="note" style="margin-top:4px">'+ant+'</div>'+
+      '<div class="pl-dias">'+dias+'</div>'+
+      '<div class="pl-grid">'+cards+'</div>'+
+      '<div class="pl-acoes"><div class="pl-lbl">✍️ Ações da semana</div>'+
+        (ac.length?ac.map((x,i)=>acao(x,i,d.semana[0])).join(''):'<p class="note">Nenhuma ação anotada. Escreva 1 ou 2 coisas pra fazer esta semana (ex.: cobrar o fiado de quem está atrasado, promoção de long neck na sexta).</p>')+
+        (ac.length<5?'<div class="pl-nova"><input id="pl-txt" maxlength="70" placeholder="o que vai fazer esta semana?" aria-label="nova ação"><button class="lc-btn mini" type="button" id="pl-add">Anotar</button></div>':'')+
+        (aa.length?'<details style="margin-top:10px"><summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--accent)">semana passada: '+aa.filter(x=>x[1]).length+' de '+aa.length+' feitas</summary>'+aa.map((x,i)=>acao(x,i,d.semana_ant[0])).join('')+'</details>':'')+
+        '<div class="lc-msg" id="pl-msg" aria-live="polite"></div></div>'+
+      (d.avisos&&d.avisos.length?'<p class="note" style="color:var(--warn)">Não consegui ler tudo agora: '+esc(d.avisos.join(' · '))+'</p>':'');
+    const add=g('pl-add'), txt=g('pl-txt');
+    if(add){ const go=()=>{ const t=(txt.value||'').trim(); if(!t){ txt.focus(); return; } plAcao({op:'add',semana:d.semana[0],texto:t},add); };
+      add.addEventListener('click',go); txt.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); }); }
+  }
+  function plAcao(body,btn){
+    if(btn) btn.disabled=true;
+    return post('/api/placar/acao',body).then(r=>{ if(btn) btn.disabled=false;
+      if(!r.ok){ const m=g('pl-msg'); if(m) m.innerHTML='<span style="color:var(--crit)">❌ '+esc(r.erro||'não consegui gravar')+'</span>'; return; }
+      if(r.semana===PL.semana[0]) PL.acoes=r.acoes; else PL.acoes_ant=r.acoes;
+      pintaPlacar();
+    }).catch(()=>{ if(btn) btn.disabled=false; const m=g('pl-msg'); if(m) m.innerHTML='<span style="color:var(--crit)">❌ sem conexão</span>'; });
+  }
+  (function(){ const b=g('pl-box'); if(!b) return;
+    b.addEventListener('change',e=>{ const c=e.target.closest('[data-pl-ok]'); if(c) plAcao({op:'ok',semana:c.dataset.sem,i:+c.dataset.plOk}); });
+    b.addEventListener('click',e=>{ const x=e.target.closest('[data-pl-del]'); if(x&&confirm('Apagar esta ação?')) plAcao({op:'del',semana:x.dataset.sem,i:+x.dataset.plDel},x); });
+  })();
+  function loadPlacar(f){ return fetch('/api/placar'+qf(f)).then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>{ PL=d; pintaPlacar(); })
+    .catch(()=>{ const b=g('pl-box'); if(b&&!PL) b.innerHTML='<p class="note">Não consegui montar o placar agora. Clique em Atualizar daqui a pouco.</p>'; }); }
+
+  /* ---------- CLIENTES DO DELIVERY (11/11/2026): quem sumiu, os melhores e os novos ---------- */
+  let CL=null, CL_ABA='sumiram';
+  const primeiroNome=n=>{ const p=String(n||'').trim().split(/\s+/)[0]||''; return p?p.charAt(0).toUpperCase()+p.slice(1).toLowerCase():''; };
+  const MSG_CL={
+    sumiram:n=>'Oi'+(n?', '+n:'')+'! Tudo bem? Aqui é o Victor, da Distribuidora da Praça. Faz um tempinho que você não pede com a gente. Quando bater a vontade, é só chamar no app que a gente entrega rapidinho.',
+    melhores:n=>'Oi'+(n?', '+n:'')+'! Aqui é o Victor, da Distribuidora da Praça. Você é um dos clientes que mais pedem com a gente, valeu demais! Posso te fazer 3 perguntas rápidas? Por que você pede com a gente, o que a gente faz bem e o que podia ser melhor?',
+    novos:n=>'Oi'+(n?', '+n:'')+'! Aqui é o Victor, da Distribuidora da Praça. Obrigado pelo primeiro pedido! O que achou? Qualquer coisa é só chamar por aqui.'
+  };
+  function waLink(f,aba){ const dg=String(f.fone||'').replace(/\D/g,''); if(dg.length<10) return '';
+    return 'https://wa.me/55'+dg+'?text='+encodeURIComponent(MSG_CL[aba](primeiroNome(f.nome))); }
+  function pintaClientes(){
+    const d=CL, box=g('cl-lista'), k=g('cl-kpis'); if(!d||!box) return;
+    if(k) k.innerHTML='<div class="pl-grid" style="margin-top:0">'+
+      '<div class="ini-card"><div class="lbl">Clientes anotados</div><div class="val">'+d.total_clientes+'</div><div class="sub">desde '+dbr(d.desde)+'</div></div>'+
+      '<div class="ini-card"><div class="lbl">Novos esta semana</div><div class="val">'+d.n_novos+'</div><div class="sub">'+d.n_voltaram+' voltaram a pedir</div></div>'+
+      '<div class="ini-card"><div class="lbl">Pediram uma vez só</div><div class="val">'+d.uma_vez+'</div><div class="sub">ainda não voltaram</div></div></div>';
+    const L=d[CL_ABA]||[];
+    const vazio={sumiram:'Ninguém sumiu ainda. A lista começou em '+dbr(d.desde)+': os primeiros devem aparecer perto do fim de novembro.',
+                 melhores:'Ainda sem pedidos anotados.', novos:'Nenhum cliente novo esta semana ainda.'}[CL_ABA];
+    if(!L.length){ box.innerHTML='<p class="note">'+vazio+'</p>'; return; }
+    box.innerHTML=L.map(f=>{ const w=waLink(f,CL_ABA);
+      const ped=f.pedidos+' pedido'+(f.pedidos>1?'s':'');
+      const quando=CL_ABA==='novos'?'primeiro pedido '+dbr(f.primeira):'último '+dbr(f.ultima)+(f.dias_sem>0?' (há '+f.dias_sem+' dia'+(f.dias_sem>1?'s':'')+')':' (hoje)');
+      return '<div class="cl-row"><div style="min-width:0"><div class="q">'+esc(f.nome)+'</div><div class="m">'+ped+' · R$ '+fmt(f.total)+' · '+quando+
+        (f.intervalo?' · pede a cada '+String(f.intervalo).replace('.',',')+' dias':'')+'</div></div>'+
+        (w?'<a class="cl-wa" href="'+w+'" target="_blank" rel="noopener">WhatsApp</a>':'')+'</div>'; }).join('');
+  }
+  document.querySelectorAll('[data-cl]').forEach(b=>b.addEventListener('click',()=>{ CL_ABA=b.dataset.cl;
+    document.querySelectorAll('[data-cl]').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); }); pintaClientes(); }));
+  function loadClientes(f){ return fetch('/api/clientes'+qf(f)).then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>{ CL=d; pintaClientes(); })
+    .catch(()=>{ const b=g('cl-lista'); if(b&&!CL) b.innerHTML='<p class="note">Não consegui ler a lista de clientes agora.</p>'; }); }
+  document.querySelectorAll('#tab-clientes,[data-aba="clientes"]').forEach(b=>b.addEventListener('click',()=>loadClientes()));
+
   function loadInicio(f){
     const q=qf(f);
+    loadPlacar(f);
     const p1=fetch('/api/inicio'+q).then(r=>r.json()).then(d=>{ INI.dados=d; pintaCards(); desenhaMov(); desenhaSobra(); }).catch(()=>{ const b=g('ini-cards'); if(b) b.innerHTML='<div class="ini-card"><div class="sub">Não consegui ler o mês agora. Clique em Atualizar daqui a pouco.</div></div>'; });
     const p2=fetch('/api/como-esta'+q).then(r=>r.json()).then(c=>{ INI.como=c; pintaCards(); pintaContas(); pintaAvisos(); }).catch(()=>{});
     const p3=fetch('/api/gelo'+q).then(r=>r.ok?r.json():null).then(pintaGelo).catch(()=>pintaGelo(null));
@@ -3565,11 +3721,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   }
   vigiaGraficos();
 
-  loadInicio(); loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo();
+  loadInicio(); loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo(); loadClientes();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin'); vigiaGraficos();
-      Promise.all([loadInicio(true),loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadInicio(true),loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true),loadClientes(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados ✓'); }); });
   }
 })();
@@ -3640,7 +3796,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   g('fi-todos').addEventListener('change',pinta);
   carrega(false);
   // abriu a aba de novo: relê (o dono acabou de lançar no GestãoGPT)
-  document.querySelectorAll('#tab-fiado,[data-aba="fiado"]').forEach(b=>b.addEventListener('click',()=>carrega(true)));
+  document.querySelectorAll('#tab-clientes,[data-aba="clientes"]').forEach(b=>b.addEventListener('click',()=>carrega(true)));
   const rb=document.getElementById('btn-refresh'); if(rb) rb.addEventListener('click',()=>carrega(true));
 })();
 </script>
