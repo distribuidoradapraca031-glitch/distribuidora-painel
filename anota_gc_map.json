@@ -6507,5 +6507,147 @@
   "score": 1.0,
   "sugestao": "COPÃO DE GIN BEEFEATER PINK",
   "manual": true
+ },
+ "BALA HALLS SABORES": {
+  "anota_title": "Bala Halls Sabores",
+  "categoria": "Petiscos",
+  "gc_id": "84577926",
+  "gc_nome": "BALA HALLS SABORES",
+  "candidatos": [
+   [
+    0.5,
+    "BALA HALLS SABORES",
+    "84577926"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "BALA HALLS SABORES",
+  "manual": true
+ },
+ "DOCE DE AMENDOIM": {
+  "anota_title": "Doce de Amendoim",
+  "categoria": "Petiscos",
+  "gc_id": "95534520",
+  "gc_nome": "DOCE DE AMENDOIM",
+  "candidatos": [
+   [
+    0.5,
+    "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+    "95406714"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "LICOR DA VAQUINHA 1L DOCE DE LEITE",
+  "manual": true
+ },
+ "MACO DUNHILL CARLTON VERMELHO": {
+  "anota_title": "Maço Dunhill Carlton Vermelho",
+  "categoria": "Tabacaria",
+  "gc_id": "84578004",
+  "gc_nome": "MAÇO DUNHILL CALTON VERMELHO",
+  "candidatos": [
+   [
+    1.0,
+    "MAÇO DUNHILL CALTON VERMELHO",
+    "84578004"
+   ],
+   [
+    0.75,
+    "MAÇO DUNHILL ON VERMELHO (FREE)",
+    "88748569"
+   ],
+   [
+    0.75,
+    "MAÇO DUNHILL CALTON AZUL",
+    "84734028"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MAÇO DUNHILL CALTON VERMELHO",
+  "manual": false
+ },
+ "MARLBORO RED SELECTION": {
+  "anota_title": "Marlboro Red Selection",
+  "categoria": "Tabacaria",
+  "gc_id": "84734275",
+  "gc_nome": "MAÇO MARLBORO VERMELHO (RED)",
+  "candidatos": [
+   [
+    0.67,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "MARLBORO CRAFTED(RED) KS RSP 20",
+  "manual": true
+ },
+ "MARLBORO GOLD SELECTION": {
+  "anota_title": "Marlboro Gold Selection",
+  "categoria": "Tabacaria",
+  "gc_id": "84734274",
+  "gc_nome": "MAÇO MARLBORO BRANCO (GOLD)",
+  "candidatos": [
+   [
+    0.67,
+    "MAÇO MARLBORO BRANCO (GOLD)",
+    "84734274"
+   ],
+   [
+    0.33,
+    "STELLA PURE GOLD",
+    "93348143"
+   ],
+   [
+    0.33,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "MAÇO MARLBORO BRANCO (GOLD)",
+  "manual": true
+ },
+ "CARLTON PICADO": {
+  "anota_title": "Carlton (Picado)",
+  "categoria": "Cigarro Picado",
+  "gc_id": "95428388",
+  "gc_nome": "CIGARRO PICADO 2,00",
+  "candidatos": [
+   [
+    0.5,
+    "CIGARRO PICADO 3,00",
+    "95428389"
+   ],
+   [
+    0.5,
+    "CIGARRO PICADO 2,00",
+    "95428388"
+   ],
+   [
+    0.5,
+    "CIGARRO PICADO 1,50",
+    "95428387"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CIGARRO PICADO 3,00",
+  "manual": true
  }
 }
