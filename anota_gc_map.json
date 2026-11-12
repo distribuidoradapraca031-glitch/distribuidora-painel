@@ -6770,5 +6770,1179 @@
   "score": 1.0,
   "sugestao": "DOCILE BALA CANUDINHO MORANGO",
   "manual": true
+ },
+ "CAIXA C 12 KAISER 473ML": {
+  "anota_title": "Caixa c/12 Kaiser 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577999",
+  "gc_nome": "KAISER LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "KAISER LT 473 ML",
+    "84577999"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "KAISER LT 473 ML",
+  "manual": false
+ },
+ "IMPERIO 473ML": {
+  "anota_title": "Império 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577995",
+  "gc_nome": "IMPERIO LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "IMPERIO LT 473 ML",
+    "84577995"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "IMPERIO LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 IMPERIO 473ML": {
+  "anota_title": "Caixa c/12 Império 473ml",
+  "categoria": "Cervejas",
+  "gc_id": "84577995",
+  "gc_nome": "IMPERIO LT 473 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "IMPERIO LT 473 ML",
+  "manual": true
+ },
+ "MICHELOB ULTRA 473ML": {
+  "anota_title": "Michelob Ultra 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "99998331",
+  "gc_nome": "MICHELOB ULTRA LT 473 ML",
+  "candidatos": [
+   [
+    1.0,
+    "MICHELOB ULTRA LT 473 ML",
+    "99998331"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "MICHELOB ULTRA LT 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 MICHELOB ULTRA 473ML": {
+  "anota_title": "Caixa c/12 Michelob Ultra 473ml",
+  "categoria": "Cervejas",
+  "gc_id": "99998331",
+  "gc_nome": "MICHELOB ULTRA LT 473 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "MICHELOB ULTRA LT 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 ITAIPAVA 473ML": {
+  "anota_title": "Caixa c/12 Itaipava 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577998",
+  "gc_nome": "ITAIPAVA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ITAIPAVA LT 473 ML",
+    "84577998"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "ITAIPAVA LT 473 ML",
+  "manual": false
+ },
+ "STELLA ARTOIS PURE GOLD 473ML": {
+  "anota_title": "Stella Artois Pure Gold 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "98853410",
+  "gc_nome": "STELLA PURE GOLD LT 473 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "STELLA PURE GOLD LT 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 STELLA ARTOIS PURE GOLD 473ML": {
+  "anota_title": "Caixa c/12 Stella Artois Pure Gold 473ml",
+  "categoria": "Cervejas",
+  "gc_id": "98853410",
+  "gc_nome": "STELLA PURE GOLD LT 473 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "STELLA PURE GOLD LT 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 PETRA 473ML": {
+  "anota_title": "Caixa c/12 Petra 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578014",
+  "gc_nome": "PETRA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "PETRA LT 473 ML",
+    "84578014"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "PETRA LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 BRUDER BG 473ML": {
+  "anota_title": "Caixa c/12 Bruder BG 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "85696082",
+  "gc_nome": "BG LATAO 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BG LATAO 473 ML",
+    "85696082"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "BG LATAO 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 BRAHMA 473ML": {
+  "anota_title": "Caixa c/12 Brahma 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577933",
+  "gc_nome": "BRAHMA LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "BRAHMA LT 473 ML",
+    "84577933"
+   ],
+   [
+    1.1,
+    "BRAHMA DUPLO MALTE LT 473 ML",
+    "84577929"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "BRAHMA LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 BOHEMIA 473ML": {
+  "anota_title": "Caixa c/12 Bohemia 473ml",
+  "categoria": "Cervejas",
+  "gc_id": "84577928",
+  "gc_nome": "BOHEMIA LT 473 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "BOHEMIA LT 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 SKOL PILSEN 473ML": {
+  "anota_title": "Caixa c/12 Skol Pilsen 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578035",
+  "gc_nome": "SKOL PILSEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SKOL PILSEN LT 473 ML",
+    "84578035"
+   ],
+   [
+    1.0,
+    "SKOL BEATS GREN MIX LATA",
+    "88750737"
+   ],
+   [
+    1.0,
+    "SKOL BEATS RED MIX LATA",
+    "85750304"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "SKOL PILSEN LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 AMSTEL 473ML": {
+  "anota_title": "Caixa c/12 Amstel 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577925",
+  "gc_nome": "AMSTEL LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "AMSTEL LT 473 ML",
+    "84577925"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "AMSTEL LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 EISENBAHN 473ML": {
+  "anota_title": "Caixa c/12 Eisenbahn 473ml",
+  "categoria": "Cervejas",
+  "gc_id": "86243195",
+  "gc_nome": "EISENBAHN LATAO 473 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "EISENBAHN LATAO 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 ORIGINAL 473ML": {
+  "anota_title": "Caixa c/12 Original 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578012",
+  "gc_nome": "ORIGINAL LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "ORIGINAL LT 473 ML",
+    "84578012"
+   ],
+   [
+    1.0,
+    "MAÇO ROTHMANS VERMELHO ORIGINAL",
+    "88747811"
+   ],
+   [
+    1.0,
+    "MAÇO LUCKY STRIKE ORIGINAL MACO",
+    "84734027"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "ORIGINAL LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 SPATEN 473ML": {
+  "anota_title": "Caixa c/12 Spaten 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578038",
+  "gc_nome": "SPATEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "SPATEN LT 473 ML",
+    "84578038"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "SPATEN LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 BUDWEISER 473ML": {
+  "anota_title": "Caixa c/12 Budweiser 473ml",
+  "categoria": "Cervejas",
+  "gc_id": "84577937",
+  "gc_nome": "BUDWEISER LT 473 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "BUDWEISER LT 473 ML",
+  "manual": true
+ },
+ "CAIXA C 12 STELLA ARTOIS 473ML": {
+  "anota_title": "Caixa c/12 Stella Artois 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84578042",
+  "gc_nome": "STELLA LT ARTOIS 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "STELLA LT ARTOIS 473 ML",
+    "84578042"
+   ],
+   [
+    0.5,
+    "STELLA PURE GOLD",
+    "93348143"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "STELLA LT ARTOIS 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 HEINEKEN 473ML": {
+  "anota_title": "Caixa c/12 Heineken 473ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577991",
+  "gc_nome": "HEINEKEN LT 473 ML",
+  "candidatos": [
+   [
+    1.1,
+    "HEINEKEN LT 473 ML",
+    "84577991"
+   ]
+  ],
+  "mult": 12,
+  "score": 1.1,
+  "sugestao": "HEINEKEN LT 473 ML",
+  "manual": false
+ },
+ "CAIXA C 12 BRAHMA MALZBIER 350ML": {
+  "anota_title": "Caixa c/12 Brahma Malzbier 350ml",
+  "categoria": "Cervejas",
+  "gc_id": "84577934",
+  "gc_nome": "BRAHMA MALZBIER LT 350 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "BRAHMA MALZBIER LT 350 ML",
+  "manual": true
+ },
+ "CARACU 350ML": {
+  "anota_title": "Caracu 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "84577944",
+  "gc_nome": "CARACU LT 350 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CARACU LT 350 ML",
+  "manual": true
+ },
+ "CAIXA C 12 CARACU 350ML": {
+  "anota_title": "Caixa c/12 Caracu 350ml",
+  "categoria": "Cervejas",
+  "gc_id": "84577944",
+  "gc_nome": "CARACU LT 350 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "CARACU LT 350 ML",
+  "manual": true
+ },
+ "HEINEKEN ULTIMATE 350ML": {
+  "anota_title": "Heineken Ultimate 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "96941242",
+  "gc_nome": "HEINEKEN ULTRA LT 350 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "HEINEKEN ULTRA LT 350 ML",
+  "manual": true
+ },
+ "CAIXA C 12 HEINEKEN ULTIMATE 350ML": {
+  "anota_title": "Caixa c/12 Heineken Ultimate 350ml",
+  "categoria": "Cervejas",
+  "gc_id": "96941242",
+  "gc_nome": "HEINEKEN ULTRA LT 350 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "HEINEKEN ULTRA LT 350 ML",
+  "manual": true
+ },
+ "IMPERIO ULTRA 350ML": {
+  "anota_title": "Império Ultra 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "98311221",
+  "gc_nome": "IMPERIO ULTRA LT 350 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "IMPERIO ULTRA LT 350 ML",
+  "manual": true
+ },
+ "CAIXA C 12 IMPERIO ULTRA 350ML": {
+  "anota_title": "Caixa c/12 Império Ultra 350ml",
+  "categoria": "Cervejas",
+  "gc_id": "98311221",
+  "gc_nome": "IMPERIO ULTRA LT 350 ML",
+  "candidatos": [],
+  "mult": 12,
+  "score": 1.0,
+  "sugestao": "IMPERIO ULTRA LT 350 ML",
+  "manual": true
+ },
+ "COPAO JACK DANIEL S TRADICIONAL": {
+  "anota_title": "Copão Jack Daniel's Tradicional",
+  "categoria": "Copão Whisky",
+  "gc_id": "95541464",
+  "gc_nome": "COPAO WHISKY JACK DANIELS N7",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS N7",
+  "manual": true
+ },
+ "COPAO JACK DANIEL S MACA VERDE": {
+  "anota_title": "Copão Jack Daniel's Maçã Verde",
+  "categoria": "Copão Whisky",
+  "gc_id": "95404682",
+  "gc_nome": "COPAO WHISKY JACK DANIELS APPLE",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY JACK DANIELS APPLE",
+  "manual": true
+ },
+ "COPAO BUCHANAN S 12 ANOS": {
+  "anota_title": "Copão Buchanan's 12 Anos",
+  "categoria": "Copão Whisky",
+  "gc_id": "85750275",
+  "gc_nome": "COPAO WHISKY BUCHANANS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COPAO WHISKY BUCHANANS",
+  "manual": true
+ },
+ "COMBO WHITE HORSE CAVALINHO 1L": {
+  "anota_title": "Combo White Horse (Cavalinho) 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799757",
+  "gc_nome": "COMBO WHISKY CAVALO BRANCO",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL WHISKY CAVALO BRANCO",
+    "95407214"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY CAVALO BRANCO",
+    "86799757"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY CAVALO BRANCO",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S TRADICIONAL 1L": {
+  "anota_title": "Combo Jack Daniel's Tradicional 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799752",
+  "gc_nome": "COMBO WHISKY JACK DANIELS",
+  "candidatos": [
+   [
+    0.43,
+    "GIN ROCK´S 1L SABORES",
+    "84577983"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.4,
+    "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+    "95407240"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "GIN ROCK´S 1L SABORES",
+  "manual": true
+ },
+ "COMBO BLACK LABEL 1L": {
+  "anota_title": "Combo Black Label 1L",
+  "categoria": "Whiskys",
+  "gc_id": "95397930",
+  "gc_nome": "COMBO WHISKY BLACK LABEL",
+  "candidatos": [
+   [
+    1.0,
+    "COMBO RED BULL WHISKY BLACK LABEL",
+    "95407243"
+   ],
+   [
+    1.0,
+    "COMBO WHISKY BLACK LABEL",
+    "95397930"
+   ],
+   [
+    0.75,
+    "COMBO RED BULL WHISKY RED LABEL",
+    "95407219"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BLACK LABEL",
+  "manual": true
+ },
+ "COMBO BUCHANAN S 12 ANOS 1L": {
+  "anota_title": "Combo Buchanan's 12 Anos 1L",
+  "categoria": "Whiskys",
+  "gc_id": "86799799",
+  "gc_nome": "COMBO WHISKY BUCHANANS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO WHISKY BUCHANANS",
+  "manual": true
+ },
+ "IMPERIO ULTRA LONG NECK 275ML": {
+  "anota_title": "Império Ultra Long Neck 275ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "95534338",
+  "gc_nome": "IMPERIO ULTRA 275ML",
+  "candidatos": [
+   [
+    0.6,
+    "AMSTEL  ULTRA 275ML",
+    "84733432"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "AMSTEL  ULTRA 275ML",
+  "manual": true
+ },
+ "STELLA ARTOIS PURE GOLD LONG NECK 330ML": {
+  "anota_title": "Stella Artois Pure Gold Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "93348143",
+  "gc_nome": "STELLA PURE GOLD",
+  "candidatos": [
+   [
+    1.0,
+    "STELLA PURE GOLD",
+    "93348143"
+   ],
+   [
+    0.33,
+    "MAÇO MARLBORO BRANCO (GOLD)",
+    "84734274"
+   ],
+   [
+    0.33,
+    "STELLA LT ARTOIS 473 ML",
+    "84578042"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "STELLA PURE GOLD",
+  "manual": false
+ },
+ "HEINEKEN ULTIMATE LONG NECK 330ML": {
+  "anota_title": "Heineken Ultimate Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "96338924",
+  "gc_nome": "HEINEKEN ULTRA LONG NECK 330 ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "HEINEKEN ULTRA LONG NECK 330 ML",
+  "manual": true
+ },
+ "HEINEKEN ZERO ALCOOL LONG NECK 330ML": {
+  "anota_title": "Heineken Zero Álcool Long Neck 330ml",
+  "categoria": "Cervejas Long Neck 330ml",
+  "gc_id": "84577992",
+  "gc_nome": "HENEKEN ZERO LONG NECK 330 ML",
+  "candidatos": [
+   [
+    0.85,
+    "HEINEKEN LONG NECK 330 ML ZERIO",
+    "86243152"
+   ],
+   [
+    0.85,
+    "HENEKEN ZERO LONG NECK 330 ML",
+    "84577992"
+   ],
+   [
+    0.85,
+    "HEINEKEN LONG NECK 330 ML",
+    "84577989"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.85,
+  "sugestao": "HEINEKEN LONG NECK 330 ML ZERIO",
+  "manual": true
+ },
+ "CORONA ZERO ALCOOL 350ML": {
+  "anota_title": "Corona Zero Álcool 350ml",
+  "categoria": "Cervejas Latão 473ml",
+  "gc_id": "88678728",
+  "gc_nome": "CORONA LT 350 ML ZERO",
+  "candidatos": [
+   [
+    0.77,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.77,
+  "sugestao": "CORONA LT 350 ML ZERO",
+  "manual": true
+ },
+ "AMSTEL ZERO ALCOOL 350ML": {
+  "anota_title": "Amstel Zero Álcool 350ml",
+  "categoria": "Cerveja sem Álcool",
+  "gc_id": "519",
+  "gc_nome": "AMSTEL LT 350 ML ZERO",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "AMSTEL LT 350 ML ZERO",
+  "manual": true
+ },
+ "ENERGETICO MONSTER ZERO ACUCAR 473ML": {
+  "anota_title": "Energético Monster Zero Açúcar 473ml",
+  "categoria": "Energéticos",
+  "gc_id": "84577973",
+  "gc_nome": "ENERGY MONSTER LT 473 ML SABORES",
+  "candidatos": [
+   [
+    1.1,
+    "ENERGY MONSTER LT 473 ML SABORES",
+    "84577973"
+   ],
+   [
+    0.35,
+    "ENERGY  BALY LT 473 ML",
+    "84577969"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "ENERGY MONSTER LT 473 ML SABORES",
+  "manual": false
+ },
+ "TONICA ANTARCTICA LATA 350ML": {
+  "anota_title": "Tônica Antarctica Lata 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577923",
+  "gc_nome": "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+  "candidatos": [
+   [
+    0.6,
+    "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+    "84577923"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+  "manual": true
+ },
+ "TONICA ANTARCTICA ZERO LATA 350ML": {
+  "anota_title": "Tônica Antarctica Zero Lata 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84577923",
+  "gc_nome": "ÁGUA TÔNICA ANTARCTICA LT 350 ML",
+  "candidatos": [
+   [
+    0.43,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "CORONA LT 350 ML ZERO",
+  "manual": true
+ },
+ "COCA COLA LATA 350ML": {
+  "anota_title": "Coca-Cola Lata 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "84658530",
+  "gc_nome": "COCA LATA 350ML",
+  "candidatos": [
+   [
+    0.6,
+    "COCA LATA 350ML",
+    "84658530"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.6,
+  "sugestao": "COCA LATA 350ML",
+  "manual": true
+ },
+ "COCA COLA ZERO LATA 350ML": {
+  "anota_title": "Coca-Cola Zero Lata 350ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "95534339",
+  "gc_nome": "COCA LATA 350ML ZERO",
+  "candidatos": [
+   [
+    0.43,
+    "CORONA LT 350 ML ZERO",
+    "88678728"
+   ],
+   [
+    0.43,
+    "BUDWEISER LT 350 ML ZERO",
+    "88678698"
+   ],
+   [
+    0.43,
+    "HEINEKEN  LT 350 ML ZERO",
+    "88673315"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.43,
+  "sugestao": "CORONA LT 350 ML ZERO",
+  "manual": true
+ },
+ "FANTA LARANJA 2L RETORNAVEL": {
+  "anota_title": "Fanta Laranja 2L (Retornável)",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "85768199",
+  "gc_nome": "FANTA  RETORNAVEL   2L",
+  "candidatos": [
+   [
+    1.1,
+    "FANTA  RETORNAVEL   2L",
+    "85768199"
+   ],
+   [
+    0.6,
+    "FANTA   2L",
+    "84658571"
+   ],
+   [
+    0.6,
+    "REFRI COCA COLA RETORNAVEL  2L",
+    "84658554"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.1,
+  "sugestao": "FANTA  RETORNAVEL   2L",
+  "manual": false
+ },
+ "SKOL BEATS GREEN MIX 269ML": {
+  "anota_title": "Skol Beats Green Mix 269ml",
+  "categoria": "Drink's",
+  "gc_id": "88750737",
+  "gc_nome": "SKOL BEATS GREEN MIX LATA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SKOL BEATS GREEN MIX LATA",
+  "manual": true
+ },
+ "SKOL BEATS PINK LEMONADE 269ML": {
+  "anota_title": "Skol Beats Pink Lemonade 269ml",
+  "categoria": "Drink's",
+  "gc_id": "99998401",
+  "gc_nome": "SKOL BEATS PINK LEMONADE LATA 269 ML",
+  "candidatos": [
+   [
+    1.0,
+    "SKOL BEATS PINK LEMONADE LATA 269 ML",
+    "99998401"
+   ]
+  ],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SKOL BEATS PINK LEMONADE LATA 269 ML",
+  "manual": true
+ },
+ "SKOL BEATS SENSES LONG NECK 269ML": {
+  "anota_title": "Skol Beats Senses Long Neck 269ml",
+  "categoria": "Drink's",
+  "gc_id": "84578033",
+  "gc_nome": "SKOL BEATS SENSES LONG NECK 269 ML",
+  "candidatos": [
+   [
+    0.9,
+    "SKOL BEATS SENSES LONG NECK 269 ML",
+    "84578033"
+   ],
+   [
+    0.9,
+    "SKOL BEATS GT LONG NECK 269 ML",
+    "84578031"
+   ],
+   [
+    0.8,
+    "SKOL BEATS RED MIX LONG NECK",
+    "85696279"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.9,
+  "sugestao": "SKOL BEATS SENSES LONG NECK 269 ML",
+  "manual": true
+ },
+ "CACHACA VILA OURO AMARELA 500ML": {
+  "anota_title": "Cachaça Vila Ouro Amarela 500ml",
+  "categoria": "Cachaças",
+  "gc_id": "84577918",
+  "gc_nome": "1/2 VILA OURO 500 ML",
+  "candidatos": [
+   [
+    0.35,
+    "1/2 VILA OURO 500 ML",
+    "84577918"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.35,
+  "sugestao": "1/2 VILA OURO 500 ML",
+  "manual": true
+ },
+ "CACHACA VILA OURO BRANCA 500ML": {
+  "anota_title": "Cachaça Vila Ouro Branca 500ml",
+  "categoria": "Cachaças",
+  "gc_id": "84577918",
+  "gc_nome": "1/2 VILA OURO 500 ML",
+  "candidatos": [
+   [
+    0.35,
+    "1/2 VILA OURO 500 ML",
+    "84577918"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.35,
+  "sugestao": "1/2 VILA OURO 500 ML",
+  "manual": true
+ },
+ "RUFFLES CHURRASCO 40G": {
+  "anota_title": "Ruffles Churrasco 40g",
+  "categoria": "Petiscos",
+  "gc_id": "84577958",
+  "gc_nome": "CHIPS RUFFLES PEQ",
+  "candidatos": [
+   [
+    0.4,
+    "CHIPS RUFFLES PEQ",
+    "84577958"
+   ],
+   [
+    0.4,
+    "CHIPS RUFFLES GRA",
+    "84577957"
+   ],
+   [
+    0.2,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.4,
+  "sugestao": "CHIPS RUFFLES PEQ",
+  "manual": true
+ },
+ "RUFFLES TRADICIONAL 40G": {
+  "anota_title": "Ruffles Tradicional 40g",
+  "categoria": "Petiscos",
+  "gc_id": "84577958",
+  "gc_nome": "CHIPS RUFFLES PEQ",
+  "candidatos": [
+   [
+    0.4,
+    "CHIPS RUFFLES PEQ",
+    "84577958"
+   ],
+   [
+    0.4,
+    "CHIPS RUFFLES GRA",
+    "84577957"
+   ],
+   [
+    0.2,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.4,
+  "sugestao": "CHIPS RUFFLES PEQ",
+  "manual": true
+ },
+ "RUFFLES CEBOLA E SALSA 40G": {
+  "anota_title": "Ruffles Cebola e Salsa 40g",
+  "categoria": "Petiscos",
+  "gc_id": "84577958",
+  "gc_nome": "CHIPS RUFFLES PEQ",
+  "candidatos": [
+   [
+    0.33,
+    "CHIPS RUFFLES PEQ",
+    "84577958"
+   ],
+   [
+    0.33,
+    "CHIPS RUFFLES GRA",
+    "84577957"
+   ],
+   [
+    0.17,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "CHIPS RUFFLES PEQ",
+  "manual": true
+ },
+ "CEBOLITOS 36G": {
+  "anota_title": "Cebolitos 36g",
+  "categoria": "Petiscos",
+  "gc_id": "95932685",
+  "gc_nome": "CHIPS CEBOLITOS PEQ",
+  "candidatos": [
+   [
+    0.67,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ],
+   [
+    0.67,
+    "CHIPS CEBOLITOS PEQ",
+    "84577950"
+   ],
+   [
+    0.33,
+    "CHIPS TORCIDA PEQ",
+    "84577959"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "CHIPS CEBOLITOS GDE",
+  "manual": true,
+  "obs": "15/09/2026: id antigo 84577950 foi excluído do GC — reapontado pro cadastro atual"
+ },
+ "CHEETOS ONDA REQUEIJAO 45G": {
+  "anota_title": "Cheetos Onda Requeijão 45g",
+  "categoria": "Petiscos",
+  "gc_id": "84577952",
+  "gc_nome": "CHIPS CHEETOS PEQ",
+  "candidatos": [
+   [
+    0.5,
+    "CHIPS CHEETOS PEQ",
+    "84577952"
+   ],
+   [
+    0.5,
+    "CHIPS CHEETOS GRA",
+    "84577951"
+   ],
+   [
+    0.25,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "CHIPS CHEETOS PEQ",
+  "manual": true
+ },
+ "DORITOS QUEIJO NACHO 37G": {
+  "anota_title": "Doritos Queijo Nacho 37g",
+  "categoria": "Petiscos",
+  "gc_id": "84577954",
+  "gc_nome": "CHIPS DORITOS PEQ",
+  "candidatos": [
+   [
+    0.33,
+    "CHIPS DORITOS PEQ",
+    "84577954"
+   ],
+   [
+    0.33,
+    "CHIPS DORITOS GRA",
+    "84577953"
+   ],
+   [
+    0.17,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.33,
+  "sugestao": "CHIPS DORITOS PEQ",
+  "manual": true
+ },
+ "FANDANGOS PRESUNTO 37G": {
+  "anota_title": "Fandangos Presunto 37g",
+  "categoria": "Petiscos",
+  "gc_id": "84577956",
+  "gc_nome": "CHIPS FANDANGOS PEQ",
+  "candidatos": [
+   [
+    0.4,
+    "CHIPS FANDANGOS PEQ",
+    "84577956"
+   ],
+   [
+    0.4,
+    "CHIPS FANDANGOS GRA",
+    "84577955"
+   ],
+   [
+    0.2,
+    "CHIPS CEBOLITOS GDE",
+    "85768203"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.4,
+  "sugestao": "CHIPS FANDANGOS PEQ",
+  "manual": true
+ },
+ "MACO MARLBORO RED SELECTION": {
+  "anota_title": "Maço Marlboro Red Selection",
+  "categoria": "Tabacaria",
+  "gc_id": "84734275",
+  "gc_nome": "MAÇO MARLBORO VERMELHO (RED)",
+  "candidatos": [
+   [
+    0.67,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+    "95407247"
+   ],
+   [
+    0.33,
+    "COMBO RED BULL WHISKY BUCHANANS",
+    "95407245"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "MARLBORO CRAFTED(RED) KS RSP 20",
+  "manual": true
+ },
+ "MACO MARLBORO GOLD SELECTION": {
+  "anota_title": "Maço Marlboro Gold Selection",
+  "categoria": "Tabacaria",
+  "gc_id": "84734274",
+  "gc_nome": "MAÇO MARLBORO BRANCO (GOLD)",
+  "candidatos": [
+   [
+    0.67,
+    "MAÇO MARLBORO BRANCO (GOLD)",
+    "84734274"
+   ],
+   [
+    0.33,
+    "STELLA PURE GOLD",
+    "93348143"
+   ],
+   [
+    0.33,
+    "MARLBORO CRAFTED(RED) KS RSP 20",
+    "89451629"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.67,
+  "sugestao": "MAÇO MARLBORO BRANCO (GOLD)",
+  "manual": true
+ },
+ "MACO DJARUM BLACK ICE": {
+  "anota_title": "Maço Djarum Black Ice",
+  "categoria": "Tabacaria",
+  "gc_id": "95534346",
+  "gc_nome": "MAÇO DJARUM BLACK ICE",
+  "candidatos": [
+   [
+    0.5,
+    "ICE SYN  300 ML SABORES",
+    "84577994"
+   ],
+   [
+    0.33,
+    "WHISKY BLACK JOCKER 1L SABORES",
+    "84578051"
+   ],
+   [
+    0.33,
+    "ICE CABARÉ  LNECK 275 ML SABORES",
+    "84577993"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "ICE SYN  300 ML SABORES",
+  "manual": true
+ },
+ "CAIXA DE SEDA ZOMO ALFAFA": {
+  "anota_title": "Caixa de Seda Zomo Alfafa",
+  "categoria": "Tabacaria",
+  "gc_id": "88750632",
+  "gc_nome": "CAIXA SEDA ZOMO ALFALFA",
+  "candidatos": [
+   [
+    0.75,
+    "CAIXA SEDA ZOMO ALFALFA",
+    "88750632"
+   ],
+   [
+    0.75,
+    "CAIXA SEDA ZOMO PRETA",
+    "84578009"
+   ],
+   [
+    0.5,
+    "PICADO SEDA ZOMO ALFALFA",
+    "88995258"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.75,
+  "sugestao": "CAIXA SEDA ZOMO ALFALFA",
+  "manual": true
  }
 }
