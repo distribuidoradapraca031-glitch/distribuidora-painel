@@ -7944,5 +7944,55 @@
   "score": 0.75,
   "sugestao": "CAIXA SEDA ZOMO ALFALFA",
   "manual": true
+ },
+ "RUFFLES TRADICIONAL 68G": {
+  "anota_title": "Ruffles Tradicional 68g",
+  "categoria": "Salgadinhos",
+  "gc_id": "84577957",
+  "gc_nome": "CHIPS RUFFLES GRA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHIPS RUFFLES GRA",
+  "manual": true
+ },
+ "RUFFLES CHURRASCO 68G": {
+  "anota_title": "Ruffles Churrasco 68g",
+  "categoria": "Salgadinhos",
+  "gc_id": "84577957",
+  "gc_nome": "CHIPS RUFFLES GRA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHIPS RUFFLES GRA",
+  "manual": true
+ },
+ "RUFFLES CEBOLA E SALSA 68G": {
+  "anota_title": "Ruffles Cebola e Salsa 68g",
+  "categoria": "Salgadinhos",
+  "gc_id": "84577957",
+  "gc_nome": "CHIPS RUFFLES GRA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CHIPS RUFFLES GRA",
+  "manual": true
+ },
+ "GULAO CHEDDAR 120G": {
+  "anota_title": "Gulão Cheddar 120g",
+  "categoria": "Petiscos",
+  "gc_id": "84916066",
+  "gc_nome": "SALGADINHO GULOZITOS GULAO",
+  "candidatos": [
+   [
+    0.5,
+    "SALGADINHO GULOZITOS GULAO",
+    "84916066"
+   ]
+  ],
+  "mult": 1,
+  "score": 0.5,
+  "sugestao": "SALGADINHO GULOZITOS GULAO",
+  "manual": true
  }
 }
