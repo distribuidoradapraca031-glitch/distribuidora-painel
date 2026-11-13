@@ -3013,31 +3013,15 @@
   "manual": false
  },
  "COMBO GIN INTENCION TRADICIONAL 900ML": {
-  "anota_title": "COMBO GIN Intencion Tradicional 900ml",
-  "categoria": "Gin",
-  "gc_id": "84577982",
-  "gc_nome": "GIN INTENCION 900 ML SABORES",
-  "candidatos": [
-   [
-    1.1,
-    "GIN INTENCION 900 ML SABORES",
-    "84577982"
-   ],
-   [
-    0.75,
-    "COMBO RED BULL GIN INTENCION",
-    "95407206"
-   ],
-   [
-    0.75,
-    "COMBO DE GIN INTENCION",
-    "86799820"
-   ]
-  ],
+  "anota_title": "Combo Gin Intencion Tradicional 900ml",
+  "categoria": "Combos",
+  "gc_id": "86799820",
+  "gc_nome": "COMBO DE GIN INTENCION",
+  "candidatos": [],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "GIN INTENCION 900 ML SABORES",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN INTENCION",
+  "manual": true
  },
  "GIN INTENCION TRADICIONAL 900ML": {
   "anota_title": "GIN Intencion Tradicional 900ml",
@@ -3067,31 +3051,15 @@
   "manual": false
  },
  "COMBO GIN INTENCION MELANCIA 900ML": {
-  "anota_title": "COMBO GIN Intencion Melancia 900ml",
-  "categoria": "Gin",
-  "gc_id": "84577982",
-  "gc_nome": "GIN INTENCION 900 ML SABORES",
-  "candidatos": [
-   [
-    1.1,
-    "GIN INTENCION 900 ML SABORES",
-    "84577982"
-   ],
-   [
-    0.75,
-    "COMBO RED BULL GIN INTENCION",
-    "95407206"
-   ],
-   [
-    0.75,
-    "COMBO DE GIN INTENCION",
-    "86799820"
-   ]
-  ],
+  "anota_title": "Combo Gin Intencion Melancia 900ml",
+  "categoria": "Combos",
+  "gc_id": "86799820",
+  "gc_nome": "COMBO DE GIN INTENCION",
+  "candidatos": [],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "GIN INTENCION 900 ML SABORES",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN INTENCION",
+  "manual": true
  },
  "GIN INTENCION MELANCIA 900ML": {
   "anota_title": "GIN Intencion Melancia 900ml",
@@ -3121,31 +3089,15 @@
   "manual": false
  },
  "COMBO GIN INTENCION MACA VERDE 900ML": {
-  "anota_title": "COMBO GIN Intencion Maça Verde 900ml",
-  "categoria": "Gin",
-  "gc_id": "84577982",
-  "gc_nome": "GIN INTENCION 900 ML SABORES",
-  "candidatos": [
-   [
-    1.1,
-    "GIN INTENCION 900 ML SABORES",
-    "84577982"
-   ],
-   [
-    0.6,
-    "COMBO RED BULL GIN INTENCION",
-    "95407206"
-   ],
-   [
-    0.6,
-    "COMBO DE GIN INTENCION",
-    "86799820"
-   ]
-  ],
+  "anota_title": "Combo Gin Intencion Maçã Verde 900ml",
+  "categoria": "Combos",
+  "gc_id": "86799820",
+  "gc_nome": "COMBO DE GIN INTENCION",
+  "candidatos": [],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "GIN INTENCION 900 ML SABORES",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN INTENCION",
+  "manual": true
  },
  "GIN INTENCION MACA VERDE 900ML": {
   "anota_title": "GIN Intencion Maça Verde 900ml",
@@ -3175,31 +3127,15 @@
   "manual": false
  },
  "COMBO GIN INTENCION MORANGO 900ML": {
-  "anota_title": "COMBO GIN Intencion Morango 900ml",
-  "categoria": "Gin",
-  "gc_id": "84577982",
-  "gc_nome": "GIN INTENCION 900 ML SABORES",
-  "candidatos": [
-   [
-    1.1,
-    "GIN INTENCION 900 ML SABORES",
-    "84577982"
-   ],
-   [
-    0.75,
-    "COMBO RED BULL GIN INTENCION",
-    "95407206"
-   ],
-   [
-    0.75,
-    "COMBO DE GIN INTENCION",
-    "86799820"
-   ]
-  ],
+  "anota_title": "Combo Gin Intencion Morango 900ml",
+  "categoria": "Combos",
+  "gc_id": "86799820",
+  "gc_nome": "COMBO DE GIN INTENCION",
+  "candidatos": [],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "GIN INTENCION 900 ML SABORES",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN INTENCION",
+  "manual": true
  },
  "GIN INTENCION MORANGO 900ML": {
   "anota_title": "GIN Intencion Morango 900ml",
@@ -3229,31 +3165,15 @@
   "manual": false
  },
  "COMBO GIN GORDON S 750ML": {
-  "anota_title": "COMBO GIN Gordon´s 750ml",
-  "categoria": "Gin",
-  "gc_id": "84577981",
-  "gc_nome": "GIN GORDON´S 750 ML SABORES",
-  "candidatos": [
-   [
-    1.1,
-    "GIN GORDON´S 750 ML SABORES",
-    "84577981"
-   ],
-   [
-    0.6,
-    "GIN TANQUERAY 750 ML SABORES",
-    "84577985"
-   ],
-   [
-    0.5,
-    "COMBO RED BULL GIN TANQUERAY",
-    "95407228"
-   ]
-  ],
+  "anota_title": "Combo Gin Gordon's 750ml",
+  "categoria": "Combos",
+  "gc_id": "86799906",
+  "gc_nome": "COMBO DE GIN GORDONS",
+  "candidatos": [],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "GIN GORDON´S 750 ML SABORES",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN GORDONS",
+  "manual": true
  },
  "GIN GORDON S 750ML": {
   "anota_title": "GIN Gordon's 750ml",
@@ -3283,31 +3203,15 @@
   "manual": false
  },
  "COMBO GIN TANQUERAY 750ML": {
-  "anota_title": "COMBO GIN Tanqueray 750ml",
-  "categoria": "Gin",
-  "gc_id": "84577985",
-  "gc_nome": "GIN TANQUERAY 750 ML SABORES",
-  "candidatos": [
-   [
-    1.1,
-    "GIN TANQUERAY 750 ML SABORES",
-    "84577985"
-   ],
-   [
-    1.0,
-    "COMBO RED BULL GIN TANQUERAY",
-    "95407228"
-   ],
-   [
-    1.0,
-    "COMBO DE GIN TANQUERAY",
-    "86799902"
-   ]
-  ],
+  "anota_title": "Combo Gin Tanqueray 750ml",
+  "categoria": "Combos",
+  "gc_id": "86799902",
+  "gc_nome": "COMBO DE GIN TANQUERAY",
+  "candidatos": [],
   "mult": 1,
-  "score": 1.1,
-  "sugestao": "GIN TANQUERAY 750 ML SABORES",
-  "manual": false
+  "score": 1.0,
+  "sugestao": "COMBO DE GIN TANQUERAY",
+  "manual": true
  },
  "GIN TANQUERAY 750ML": {
   "anota_title": "GIN Tanqueray 750ml",
@@ -7993,6 +7897,215 @@
   "mult": 1,
   "score": 0.5,
   "sugestao": "SALGADINHO GULOZITOS GULAO",
+  "manual": true
+ },
+ "COMBO GIN INTENCION MACA VERDE 900ML COM RED BULL": {
+  "anota_title": "Combo Gin Intencion Maçã Verde 900ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407206",
+  "gc_nome": "COMBO RED BULL GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN INTENCION",
+  "manual": true
+ },
+ "COMBO GIN INTENCION MELANCIA 900ML COM RED BULL": {
+  "anota_title": "Combo Gin Intencion Melancia 900ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407206",
+  "gc_nome": "COMBO RED BULL GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN INTENCION",
+  "manual": true
+ },
+ "COMBO GIN INTENCION MORANGO 900ML COM RED BULL": {
+  "anota_title": "Combo Gin Intencion Morango 900ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407206",
+  "gc_nome": "COMBO RED BULL GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN INTENCION",
+  "manual": true
+ },
+ "COMBO GIN INTENCION TRADICIONAL 900ML COM RED BULL": {
+  "anota_title": "Combo Gin Intencion Tradicional 900ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407206",
+  "gc_nome": "COMBO RED BULL GIN INTENCION",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN INTENCION",
+  "manual": true
+ },
+ "COMBO CHANCELER 1L COM RED BULL": {
+  "anota_title": "Combo Chanceler 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407203",
+  "gc_nome": "COMBO RED BULL WHISKY CHANCELER",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY CHANCELER",
+  "manual": true
+ },
+ "COMBO GIN ROCK S 1L COM RED BULL": {
+  "anota_title": "Combo Gin Rock's 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "97906591",
+  "gc_nome": "COMBO RED BULL GIN ROCKS TRADICIONAL",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN ROCKS TRADICIONAL",
+  "manual": true
+ },
+ "COMBO GIN GORDON S 750ML COM RED BULL": {
+  "anota_title": "Combo Gin Gordon's 750ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407212",
+  "gc_nome": "COMBO RED BULL GIN GORDONS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN GORDONS",
+  "manual": true
+ },
+ "COMBO WHITE HORSE CAVALINHO 1L COM RED BULL": {
+  "anota_title": "Combo White Horse (Cavalinho) 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407214",
+  "gc_nome": "COMBO RED BULL WHISKY WHITE HORSE CAVALINHO",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY WHITE HORSE CAVALINHO",
+  "manual": true
+ },
+ "COMBO BALLANTINE S 750ML COM RED BULL": {
+  "anota_title": "Combo Ballantine's 750ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "98323659",
+  "gc_nome": "COMBO RED BULL WHISKY BALLANTINES 750ML",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BALLANTINES 750ML",
+  "manual": true
+ },
+ "COMBO RED LABEL 1L COM RED BULL": {
+  "anota_title": "Combo Red Label 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407219",
+  "gc_nome": "COMBO RED BULL WHISKY RED LABEL",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY RED LABEL",
+  "manual": true
+ },
+ "COMBO BALLANTINE S SUNSHINE 700ML COM RED BULL": {
+  "anota_title": "Combo Ballantine's Sunshine 700ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407217",
+  "gc_nome": "COMBO RED BULL WHISKY BALLANTINES SUNSHINE",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BALLANTINES SUNSHINE",
+  "manual": true
+ },
+ "COMBO GIN BEEFEATER STRAWBERRY 700ML COM RED BULL": {
+  "anota_title": "Combo Gin Beefeater Strawberry 700ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407224",
+  "gc_nome": "COMBO RED BULL GIN BEEFEATER PINK",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN BEEFEATER PINK",
+  "manual": true
+ },
+ "COMBO GIN TANQUERAY 750ML COM RED BULL": {
+  "anota_title": "Combo Gin Tanqueray 750ml com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407228",
+  "gc_nome": "COMBO RED BULL GIN TANQUERAY",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL GIN TANQUERAY",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S TRADICIONAL 1L COM RED BULL": {
+  "anota_title": "Combo Jack Daniel's Tradicional 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407235",
+  "gc_nome": "COMBO RED BULL WHISKY JACK DANIELS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY JACK DANIELS",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S MEL 1L COM RED BULL": {
+  "anota_title": "Combo Jack Daniel's Mel 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407238",
+  "gc_nome": "COMBO RED BULL WHISKY JACK DANIELS HONEY",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY JACK DANIELS HONEY",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S MACA VERDE 1L COM RED BULL": {
+  "anota_title": "Combo Jack Daniel's Maçã Verde 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407240",
+  "gc_nome": "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY JACK DANIELS APPLE",
+  "manual": true
+ },
+ "COMBO JACK DANIEL S BLACKBERRY 1L COM RED BULL": {
+  "anota_title": "Combo Jack Daniel's Blackberry 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407247",
+  "gc_nome": "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY JACK DANIELS BLACKBERRY",
+  "manual": true
+ },
+ "COMBO BLACK LABEL 1L COM RED BULL": {
+  "anota_title": "Combo Black Label 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407243",
+  "gc_nome": "COMBO RED BULL WHISKY BLACK LABEL",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BLACK LABEL",
+  "manual": true
+ },
+ "COMBO BUCHANAN S 12 ANOS 1L COM RED BULL": {
+  "anota_title": "Combo Buchanan's 12 Anos 1L com Red Bull",
+  "categoria": "Combos com Red Bull",
+  "gc_id": "95407245",
+  "gc_nome": "COMBO RED BULL WHISKY BUCHANANS",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "COMBO RED BULL WHISKY BUCHANANS",
   "manual": true
  }
 }
