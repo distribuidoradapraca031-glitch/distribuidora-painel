@@ -34,6 +34,11 @@ GG_CONSUMIDOR = 1
 VIRADA = "2026-10-30"                 # pedido de antes disso ficou no GestãoClick
 GG_MAP = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ggpt_map.json")))
 DIAS_JANELA = 4                       # quantos dias de venda o dedupe olha no GC
+# Copão com Red Bull ou Monster (opção paga do grupo "Energético Copão" do app): o energético entra como
+# item próprio da venda (baixa a lata) e o Jack Power que a receita do copão tirou volta pro estoque.
+ENERGETICO_PAGO = (("REDBULL", "84577970"), ("RED BULL", "84577970"),   # RED BULL LT 250 ML SABORES
+                   ("MONSTER", "84577973"))                              # ENERGY MONSTER LT 473 ML SABORES
+JACK_POWER_GG = 4                     # ENERGY JACK POWER 2L SABORES no GestãoGPT
 
 
 def _env(nome):
@@ -105,6 +110,30 @@ def payment_forma(p):
     if p.get("prepaid"):
         return GC_FORMAS["pix"], "PIX"
     return None, None
+
+
+def _energetico_pago(sub):
+    """Opção paga de energético dentro do item (Red Bull/Monster no copão) -> id do produto, senão None.
+    Opção de preço zero (Jack Power do copão, sabor do Red Bull do combo) segue como era."""
+    if float(sub.get("price") or 0) <= 0:
+        return None
+    n = norm(sub.get("name") or sub.get("title") or "")
+    return next((pid for chave, pid in ENERGETICO_PAGO if chave in n), None)
+
+
+def _devolve_jack_power(ref, gc_id, copos, nome):
+    """O copão saiu com Red Bull/Monster no lugar do Jack Power, mas a receita dele já tirou o Jack Power
+    do estoque (0,2 por copo hoje): devolve o que a receita tirou. Receita sem Jack Power: não faz nada."""
+    gid = GG_MAP.get(str(gc_id))
+    comp = gg._req("GET", f"/produto/{gid}/composicao").get("items") or []
+    jp = sum(float(c.get("QTDE") or 0) for c in comp if c.get("ID_PRODUTOCOMP") == JACK_POWER_GG)
+    if jp <= 0:
+        return 0
+    q = round(jp * copos, 4)
+    tipo = "Monster" if "MONSTER" in norm(nome) else "Red Bull"
+    gg._req("POST", f"/produto/{JACK_POWER_GG}/estoque/movimentar",
+            {"tipo": "entrada", "qtde": q, "obs": f"ANOTA-{ref} copão com {tipo}: Jack Power volta"[:60]})
+    return q
 
 
 def _hoje_brt():
@@ -221,13 +250,19 @@ def rodar(post=True, dias=3):
             if data_brt and data_brt < limite:
                 continue                       # pedido velho: não reabre histórico
 
-            produtos, faltando, soma = [], [], 0.0
+            produtos, faltando, soma, trocas = [], [], 0.0, []
             for it in det.get("items", []):
                 qty = float(it.get("quantity") or 1)
                 price = float(it.get("price") or 0)
+                extras = []        # Red Bull/Monster pago no copão: vira item próprio
                 for sub in it.get("subItems") or []:
-                    price += float(sub.get("price") or 0) * float(sub.get("quantity") or 1)
-                soma += qty * price
+                    sq, sp = float(sub.get("quantity") or 1), float(sub.get("price") or 0)
+                    eg = _energetico_pago(sub)
+                    if eg:
+                        extras.append((eg, sq, sp, sub.get("name") or sub.get("title") or "energético"))
+                    else:
+                        price += sp * sq
+                soma += qty * (price + sum(sq * sp for _, sq, sp, _ in extras))
                 m = pmap.get(norm(it.get("name") or ""))
                 if not m or not m.get("gc_id"):
                     faltando.append(it.get("name"))
@@ -237,6 +272,12 @@ def rodar(post=True, dias=3):
                     "produto_id": m["gc_id"], "quantidade": qty * mult,
                     "valor_venda": round(price / mult, 4),
                     "detalhes": f"Anota AI #{ref}: {it.get('name')}"}})
+                for eg, sq, sp, nome in extras:
+                    produtos.append({"produto": {
+                        "produto_id": eg, "quantidade": qty * sq, "valor_venda": round(sp, 4),
+                        "detalhes": f"Anota AI #{ref}: {nome} no {it.get('name')}"}})
+                if extras:
+                    trocas.append((m["gc_id"], qty * mult, " e ".join(str(x[3]) for x in extras)))
             if faltando:
                 res["pendentes"].append({"ref": ref, "motivo": "produto sem cadastro: "
                                          + ", ".join(str(x) for x in faltando)})
@@ -277,6 +318,12 @@ def rodar(post=True, dias=3):
                 res["erros"].append({"ref": ref, "erro": str(e)[:180]})
                 continue
             refs.add(ref); oids.add(oid)
+            for gc_id, copos, nome in trocas:      # venda já lançada: erro aqui só avisa, nunca relança
+                try:
+                    _devolve_jack_power(ref, gc_id, copos, nome)
+                except Exception as e:
+                    res["erros"].append({"ref": ref, "erro": "venda lançada, mas o Jack Power do copão com "
+                                         f"Red Bull/Monster não voltou pro estoque: {str(e)[:100]}"})
             # NFC-e: a API do GestãoGPT não emite. Fica pendente pra emitir na tela deles.
             res["novos"].append({"ref": ref, "data": data_brt, "total": total, "venda": vid,
                                  "nfce": None, "forma": forma_nome})
