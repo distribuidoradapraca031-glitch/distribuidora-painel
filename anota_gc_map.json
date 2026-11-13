@@ -188,8 +188,8 @@
  "CX 12 UNID KAISER LATAO 473ML": {
   "anota_title": "CX/12 UNID KAISER LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577999",
-  "gc_nome": "KAISER LT 473 ML",
+  "gc_id": "527",
+  "gc_nome": "CAIXA C/12 KAISER LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -197,10 +197,10 @@
     "84577999"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "KAISER LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 KAISER LT 473 ML",
+  "manual": true
  },
  "ITAIPAVA 473ML": {
   "anota_title": "Itaipava 473ml",
@@ -222,8 +222,8 @@
  "CX 12 UNID ITAIPAVA LATAO 473ML": {
   "anota_title": "CX/12 UNID ITAIPAVA LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577998",
-  "gc_nome": "ITAIPAVA LT 473 ML",
+  "gc_id": "528",
+  "gc_nome": "CAIXA C/12 ITAIPAVA LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -231,10 +231,10 @@
     "84577998"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "ITAIPAVA LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 ITAIPAVA LT 473 ML",
+  "manual": true
  },
  "LAUT PILSEN 473ML": {
   "anota_title": "Laut Pilsen 473ml",
@@ -278,8 +278,8 @@
  "CX 12 UNID PETRA LATAO 473ML": {
   "anota_title": "CX/12 UNID PETRA LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578014",
-  "gc_nome": "PETRA LT 473 ML",
+  "gc_id": "530",
+  "gc_nome": "CAIXA C/12 PETRA LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -287,10 +287,10 @@
     "84578014"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "PETRA LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 PETRA LT 473 ML",
+  "manual": true
  },
  "BRUDER BG BAIXA GASTRONOMIA 473ML": {
   "anota_title": "Bruder BG (Baixa Gastronomia) 473ml",
@@ -312,8 +312,8 @@
  "CX 12 UNID BG LATAO 473ML": {
   "anota_title": "CX/12 UNID BG LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "85696082",
-  "gc_nome": "BG LATAO 473 ML",
+  "gc_id": "531",
+  "gc_nome": "CAIXA C/12 BG LATAO 473 ML",
   "candidatos": [
    [
     1.1,
@@ -321,10 +321,10 @@
     "85696082"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "BG LATAO 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 BG LATAO 473 ML",
+  "manual": true
  },
  "BRAHMA 473ML": {
   "anota_title": "Brahma 473ml",
@@ -351,8 +351,8 @@
  "CX 12 UNID BRAHMA LATAO 473ML": {
   "anota_title": "CX/12 UNID BRAHMA LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577933",
-  "gc_nome": "BRAHMA LT 473 ML",
+  "gc_id": "534",
+  "gc_nome": "CAIXA C/12 BRAHMA LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -365,10 +365,10 @@
     "84577929"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "BRAHMA LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 BRAHMA LT 473 ML",
+  "manual": true
  },
  "BOHEMIA 473ML": {
   "anota_title": "Bohemia 473ml",
@@ -417,8 +417,8 @@
  "CX 12 UNID SKOL LATAO 473ML": {
   "anota_title": "CX/12 UNID SKOL LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578035",
-  "gc_nome": "SKOL PILSEN LT 473 ML",
+  "gc_id": "535",
+  "gc_nome": "CAIXA C/12 SKOL PILSEN LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -436,10 +436,10 @@
     "85750304"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "SKOL PILSEN LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 SKOL PILSEN LT 473 ML",
+  "manual": true
  },
  "AMSTEL 473ML": {
   "anota_title": "Amstel 473ml",
@@ -461,8 +461,8 @@
  "CX 12 UNID AMSTEL LATAO 473ML": {
   "anota_title": "CX/12 UNID AMSTEL LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577925",
-  "gc_nome": "AMSTEL LT 473 ML",
+  "gc_id": "532",
+  "gc_nome": "CAIXA C/12 AMSTEL LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -470,10 +470,10 @@
     "84577925"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "AMSTEL LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 AMSTEL LT 473 ML",
+  "manual": true
  },
  "EISENBAHN 473ML": {
   "anota_title": "Eisenbahn 473ml",
@@ -522,8 +522,8 @@
  "CX 12 UNID ORIGINAL LATAO 473ML": {
   "anota_title": "CX/12 UNID ORIGINAL LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578012",
-  "gc_nome": "ORIGINAL LT 473 ML",
+  "gc_id": "538",
+  "gc_nome": "CAIXA C/12 ORIGINAL LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -541,10 +541,10 @@
     "84734027"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "ORIGINAL LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 ORIGINAL LT 473 ML",
+  "manual": true
  },
  "SPATEN 473ML": {
   "anota_title": "Spaten 473ml",
@@ -566,8 +566,8 @@
  "CX 12 UNID SPATEN LATAO 473ML": {
   "anota_title": "CX/12 UNID SPATEN LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578038",
-  "gc_nome": "SPATEN LT 473 ML",
+  "gc_id": "539",
+  "gc_nome": "CAIXA C/12 SPATEN LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -575,10 +575,10 @@
     "84578038"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "SPATEN LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 SPATEN LT 473 ML",
+  "manual": true
  },
  "BUDWEISER 473ML": {
   "anota_title": "Budweiser 473ml",
@@ -622,8 +622,8 @@
  "CX 12 UNID STELLA ARTOIS LATAO 473ML": {
   "anota_title": "CX/12 UNID STELLA ARTOIS LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578042",
-  "gc_nome": "STELLA LT ARTOIS 473 ML",
+  "gc_id": "540",
+  "gc_nome": "CAIXA C/12 STELLA LT ARTOIS 473 ML",
   "candidatos": [
    [
     1.1,
@@ -636,10 +636,10 @@
     "93348143"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "STELLA LT ARTOIS 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 STELLA LT ARTOIS 473 ML",
+  "manual": true
  },
  "HEINEKEN 473ML": {
   "anota_title": "Heineken 473ml",
@@ -661,8 +661,8 @@
  "CX 12 UNID HEINEKEN LATAO 473ML": {
   "anota_title": "CX/12 UNID HEINEKEN LATÃO 473ML",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577991",
-  "gc_nome": "HEINEKEN LT 473 ML",
+  "gc_id": "542",
+  "gc_nome": "CAIXA C/12 HEINEKEN LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -670,10 +670,10 @@
     "84577991"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "HEINEKEN LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 HEINEKEN LT 473 ML",
+  "manual": true
  },
  "BRAHMA MALZBIER 350ML": {
   "anota_title": "Brahma malzbier 350ml",
@@ -6653,67 +6653,67 @@
  "CX 12 UNID IMPERIO LATAO 473ML": {
   "anota_title": "CX/12 UNID IMPERIO LATÃO 473ML",
   "categoria": "Cervejas",
-  "gc_id": "84577995",
-  "gc_nome": "IMPERIO LT 473 ML",
+  "gc_id": "529",
+  "gc_nome": "CAIXA C/12 IMPERIO LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "IMPERIO LT 473 ML",
+  "sugestao": "CAIXA C/12 IMPERIO LT 473 ML",
   "manual": true
  },
  "CX 12 UNID MICHELOB ULTRA LATAO 473ML": {
   "anota_title": "CX/12 UNID MICHELOB ULTRA LATÃO 473ML",
   "categoria": "Cervejas",
-  "gc_id": "99998331",
-  "gc_nome": "MICHELOB ULTRA LT 473 ML",
+  "gc_id": "541",
+  "gc_nome": "CAIXA C/12 MICHELOB ULTRA LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "MICHELOB ULTRA LT 473 ML",
+  "sugestao": "CAIXA C/12 MICHELOB ULTRA LT 473 ML",
   "manual": true
  },
  "CX 12 UNID STELLA PURE GOLD LATAO 473ML": {
   "anota_title": "CX/12 UNID STELLA PURE GOLD LATÃO 473ML",
   "categoria": "Cervejas",
-  "gc_id": "98853410",
-  "gc_nome": "STELLA PURE GOLD LT 473 ML",
+  "gc_id": "543",
+  "gc_nome": "CAIXA C/12 STELLA PURE GOLD LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "STELLA PURE GOLD LT 473 ML",
+  "sugestao": "CAIXA C/12 STELLA PURE GOLD LT 473 ML",
   "manual": true
  },
  "CX 12 UNID BOHEMIA LATAO 473ML": {
   "anota_title": "CX/12 UNID BOHEMIA LATÃO 473ML",
   "categoria": "Cervejas",
-  "gc_id": "84577928",
-  "gc_nome": "BOHEMIA LT 473 ML",
+  "gc_id": "533",
+  "gc_nome": "CAIXA C/12 BOHEMIA LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "BOHEMIA LT 473 ML",
+  "sugestao": "CAIXA C/12 BOHEMIA LT 473 ML",
   "manual": true
  },
  "CX 12 UNID EISENBAHN LATAO 473ML": {
   "anota_title": "CX/12 UNID EISENBAHN LATÃO 473ML",
   "categoria": "Cervejas",
-  "gc_id": "86243195",
-  "gc_nome": "EISENBAHN LATAO 473 ML",
+  "gc_id": "537",
+  "gc_nome": "CAIXA C/12 EISENBAHN LATAO 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "EISENBAHN LATAO 473 ML",
+  "sugestao": "CAIXA C/12 EISENBAHN LATAO 473 ML",
   "manual": true
  },
  "CX 12 UNID BUDWEISER LATAO 473ML": {
   "anota_title": "CX/12 UNID BUDWEISER LATÃO 473ML",
   "categoria": "Cervejas",
-  "gc_id": "84577937",
-  "gc_nome": "BUDWEISER LT 473 ML",
+  "gc_id": "536",
+  "gc_nome": "CAIXA C/12 BUDWEISER LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "BUDWEISER LT 473 ML",
+  "sugestao": "CAIXA C/12 BUDWEISER LT 473 ML",
   "manual": true
  },
  "CX 12 UNID BRAHMA MALZBIER LATA 350ML": {
@@ -6741,12 +6741,12 @@
  "CX 12 UNID HEINEKEN ULTIMATE LATA 350ML": {
   "anota_title": "CX/12 UNID HEINEKEN ULTIMATE LATA 350ML",
   "categoria": "Cervejas",
-  "gc_id": "96941242",
-  "gc_nome": "HEINEKEN ULTRA LT 350 ML",
+  "gc_id": "544",
+  "gc_nome": "CAIXA C/12 HEINEKEN ULTRA LT 350 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "HEINEKEN ULTRA LT 350 ML",
+  "sugestao": "CAIXA C/12 HEINEKEN ULTRA LT 350 ML",
   "manual": true
  },
  "CX 12 UNID IMPERIO ULTRA LATA 350ML": {
@@ -6774,8 +6774,8 @@
  "CAIXA C 12 KAISER 473ML": {
   "anota_title": "Caixa c/12 Kaiser 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577999",
-  "gc_nome": "KAISER LT 473 ML",
+  "gc_id": "527",
+  "gc_nome": "CAIXA C/12 KAISER LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6783,10 +6783,10 @@
     "84577999"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "KAISER LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 KAISER LT 473 ML",
+  "manual": true
  },
  "IMPERIO 473ML": {
   "anota_title": "Império 473ml",
@@ -6808,12 +6808,12 @@
  "CAIXA C 12 IMPERIO 473ML": {
   "anota_title": "Caixa c/12 Império 473ml",
   "categoria": "Cervejas",
-  "gc_id": "84577995",
-  "gc_nome": "IMPERIO LT 473 ML",
+  "gc_id": "529",
+  "gc_nome": "CAIXA C/12 IMPERIO LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "IMPERIO LT 473 ML",
+  "sugestao": "CAIXA C/12 IMPERIO LT 473 ML",
   "manual": true
  },
  "MICHELOB ULTRA 473ML": {
@@ -6836,19 +6836,19 @@
  "CAIXA C 12 MICHELOB ULTRA 473ML": {
   "anota_title": "Caixa c/12 Michelob Ultra 473ml",
   "categoria": "Cervejas",
-  "gc_id": "99998331",
-  "gc_nome": "MICHELOB ULTRA LT 473 ML",
+  "gc_id": "541",
+  "gc_nome": "CAIXA C/12 MICHELOB ULTRA LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "MICHELOB ULTRA LT 473 ML",
+  "sugestao": "CAIXA C/12 MICHELOB ULTRA LT 473 ML",
   "manual": true
  },
  "CAIXA C 12 ITAIPAVA 473ML": {
   "anota_title": "Caixa c/12 Itaipava 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577998",
-  "gc_nome": "ITAIPAVA LT 473 ML",
+  "gc_id": "528",
+  "gc_nome": "CAIXA C/12 ITAIPAVA LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6856,10 +6856,10 @@
     "84577998"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "ITAIPAVA LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 ITAIPAVA LT 473 ML",
+  "manual": true
  },
  "STELLA ARTOIS PURE GOLD 473ML": {
   "anota_title": "Stella Artois Pure Gold 473ml",
@@ -6875,19 +6875,19 @@
  "CAIXA C 12 STELLA ARTOIS PURE GOLD 473ML": {
   "anota_title": "Caixa c/12 Stella Artois Pure Gold 473ml",
   "categoria": "Cervejas",
-  "gc_id": "98853410",
-  "gc_nome": "STELLA PURE GOLD LT 473 ML",
+  "gc_id": "543",
+  "gc_nome": "CAIXA C/12 STELLA PURE GOLD LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "STELLA PURE GOLD LT 473 ML",
+  "sugestao": "CAIXA C/12 STELLA PURE GOLD LT 473 ML",
   "manual": true
  },
  "CAIXA C 12 PETRA 473ML": {
   "anota_title": "Caixa c/12 Petra 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578014",
-  "gc_nome": "PETRA LT 473 ML",
+  "gc_id": "530",
+  "gc_nome": "CAIXA C/12 PETRA LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6895,16 +6895,16 @@
     "84578014"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "PETRA LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 PETRA LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 BRUDER BG 473ML": {
   "anota_title": "Caixa c/12 Bruder BG 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "85696082",
-  "gc_nome": "BG LATAO 473 ML",
+  "gc_id": "531",
+  "gc_nome": "CAIXA C/12 BG LATAO 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6912,16 +6912,16 @@
     "85696082"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "BG LATAO 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 BG LATAO 473 ML",
+  "manual": true
  },
  "CAIXA C 12 BRAHMA 473ML": {
   "anota_title": "Caixa c/12 Brahma 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577933",
-  "gc_nome": "BRAHMA LT 473 ML",
+  "gc_id": "534",
+  "gc_nome": "CAIXA C/12 BRAHMA LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6934,27 +6934,27 @@
     "84577929"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "BRAHMA LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 BRAHMA LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 BOHEMIA 473ML": {
   "anota_title": "Caixa c/12 Bohemia 473ml",
   "categoria": "Cervejas",
-  "gc_id": "84577928",
-  "gc_nome": "BOHEMIA LT 473 ML",
+  "gc_id": "533",
+  "gc_nome": "CAIXA C/12 BOHEMIA LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "BOHEMIA LT 473 ML",
+  "sugestao": "CAIXA C/12 BOHEMIA LT 473 ML",
   "manual": true
  },
  "CAIXA C 12 SKOL PILSEN 473ML": {
   "anota_title": "Caixa c/12 Skol Pilsen 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578035",
-  "gc_nome": "SKOL PILSEN LT 473 ML",
+  "gc_id": "535",
+  "gc_nome": "CAIXA C/12 SKOL PILSEN LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6972,16 +6972,16 @@
     "85750304"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "SKOL PILSEN LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 SKOL PILSEN LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 AMSTEL 473ML": {
   "anota_title": "Caixa c/12 Amstel 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577925",
-  "gc_nome": "AMSTEL LT 473 ML",
+  "gc_id": "532",
+  "gc_nome": "CAIXA C/12 AMSTEL LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -6989,27 +6989,27 @@
     "84577925"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "AMSTEL LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 AMSTEL LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 EISENBAHN 473ML": {
   "anota_title": "Caixa c/12 Eisenbahn 473ml",
   "categoria": "Cervejas",
-  "gc_id": "86243195",
-  "gc_nome": "EISENBAHN LATAO 473 ML",
+  "gc_id": "537",
+  "gc_nome": "CAIXA C/12 EISENBAHN LATAO 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "EISENBAHN LATAO 473 ML",
+  "sugestao": "CAIXA C/12 EISENBAHN LATAO 473 ML",
   "manual": true
  },
  "CAIXA C 12 ORIGINAL 473ML": {
   "anota_title": "Caixa c/12 Original 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578012",
-  "gc_nome": "ORIGINAL LT 473 ML",
+  "gc_id": "538",
+  "gc_nome": "CAIXA C/12 ORIGINAL LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -7027,16 +7027,16 @@
     "84734027"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "ORIGINAL LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 ORIGINAL LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 SPATEN 473ML": {
   "anota_title": "Caixa c/12 Spaten 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578038",
-  "gc_nome": "SPATEN LT 473 ML",
+  "gc_id": "539",
+  "gc_nome": "CAIXA C/12 SPATEN LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -7044,27 +7044,27 @@
     "84578038"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "SPATEN LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 SPATEN LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 BUDWEISER 473ML": {
   "anota_title": "Caixa c/12 Budweiser 473ml",
   "categoria": "Cervejas",
-  "gc_id": "84577937",
-  "gc_nome": "BUDWEISER LT 473 ML",
+  "gc_id": "536",
+  "gc_nome": "CAIXA C/12 BUDWEISER LT 473 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "BUDWEISER LT 473 ML",
+  "sugestao": "CAIXA C/12 BUDWEISER LT 473 ML",
   "manual": true
  },
  "CAIXA C 12 STELLA ARTOIS 473ML": {
   "anota_title": "Caixa c/12 Stella Artois 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84578042",
-  "gc_nome": "STELLA LT ARTOIS 473 ML",
+  "gc_id": "540",
+  "gc_nome": "CAIXA C/12 STELLA LT ARTOIS 473 ML",
   "candidatos": [
    [
     1.1,
@@ -7077,16 +7077,16 @@
     "93348143"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "STELLA LT ARTOIS 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 STELLA LT ARTOIS 473 ML",
+  "manual": true
  },
  "CAIXA C 12 HEINEKEN 473ML": {
   "anota_title": "Caixa c/12 Heineken 473ml",
   "categoria": "Cervejas Latão 473ml",
-  "gc_id": "84577991",
-  "gc_nome": "HEINEKEN LT 473 ML",
+  "gc_id": "542",
+  "gc_nome": "CAIXA C/12 HEINEKEN LT 473 ML",
   "candidatos": [
    [
     1.1,
@@ -7094,10 +7094,10 @@
     "84577991"
    ]
   ],
-  "mult": 12,
+  "mult": 1,
   "score": 1.1,
-  "sugestao": "HEINEKEN LT 473 ML",
-  "manual": false
+  "sugestao": "CAIXA C/12 HEINEKEN LT 473 ML",
+  "manual": true
  },
  "CAIXA C 12 BRAHMA MALZBIER 350ML": {
   "anota_title": "Caixa c/12 Brahma Malzbier 350ml",
@@ -7146,12 +7146,12 @@
  "CAIXA C 12 HEINEKEN ULTIMATE 350ML": {
   "anota_title": "Caixa c/12 Heineken Ultimate 350ml",
   "categoria": "Cervejas",
-  "gc_id": "96941242",
-  "gc_nome": "HEINEKEN ULTRA LT 350 ML",
+  "gc_id": "544",
+  "gc_nome": "CAIXA C/12 HEINEKEN ULTRA LT 350 ML",
   "candidatos": [],
-  "mult": 12,
+  "mult": 1,
   "score": 1.0,
-  "sugestao": "HEINEKEN ULTRA LT 350 ML",
+  "sugestao": "CAIXA C/12 HEINEKEN ULTRA LT 350 ML",
   "manual": true
  },
  "IMPERIO ULTRA 350ML": {
