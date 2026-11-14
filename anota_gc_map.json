@@ -8107,5 +8107,27 @@
   "score": 1.0,
   "sugestao": "COMBO RED BULL WHISKY BUCHANANS",
   "manual": true
+ },
+ "SUCO DEL VALLE UVA LATA 290ML": {
+  "anota_title": "Suco Del Valle Uva Lata 290ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "546",
+  "gc_nome": "SUCO DEL VALLE LT 290 ML SABORES",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SUCO DEL VALLE LT 290 ML SABORES",
+  "manual": true
+ },
+ "SUCO DEL VALLE PESSEGO LATA 290ML": {
+  "anota_title": "Suco Del Valle Pêssego Lata 290ml",
+  "categoria": "Refrigerantes / Sucos / Águas / Isotônicos",
+  "gc_id": "546",
+  "gc_nome": "SUCO DEL VALLE LT 290 ML SABORES",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "SUCO DEL VALLE LT 290 ML SABORES",
+  "manual": true
  }
 }
