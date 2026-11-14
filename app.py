@@ -2563,8 +2563,10 @@ def _pluggy_transacoes(chave, conta, de, ate):
             url = u.path + "?" + u.query
         elif n.startswith("/"):
             url = n
+        elif n.startswith("?"):         # 14/11/2026: a Pluggy manda só "?accountId=...&after=..."
+            url = "/v2/transactions" + n
         else:
-            url = base + "&cursor=" + urllib.parse.quote(n)
+            url = base + "&after=" + urllib.parse.quote(n)
     return out
 
 def _pluggy_le(cfg, dias):
