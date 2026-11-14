@@ -763,6 +763,7 @@ CATEGORIAS_PREV = [
     ("Retirada Victor", "33015638"),
     ("Motoboy / entrega", "33015664"),
     ("Anota AI", "33015654"),
+    ("GestãoGPT (sistema)", "33015654"),     # mensalidade do sistema, desde nov/2026 (dia 09)
     ("DAS (Simples)", "35981822"),
     ("Parcelamento Simples (PARCSN)", "35981822"),
     ("Taxas / alvará (PBH)", "33015650"),
@@ -1999,10 +2000,11 @@ _EXT_DINHEIRO = {"6055919", GUARDADO_FORMA_ID, RP_FORMA_ID}
 _EXT_TOL = {"lancado": 3, "aberta": 12, "parecido": 1}
 EXT_MAX_ACOES = 25        # gravações por leitura; o resto vai na próxima (a tela chama de novo)
 _ext_trava = threading.Lock()
-# PIX pra conta do Victor ou do Igor = retirada (o dono mandou em 28/10/2026). Vale o nome
-# de QUEM RECEBEU, não o texto todo do banco.
-_EXT_RETIRADA = [(re.compile(r"\bIGOR\b"), "Igor (pró-labore / retirada)"),
-                 (re.compile(r"\bLUCCHESI\b|^VICTOR\b"), "Retirada do sócio (Victor)")]
+# PIX pra conta do Victor = retirada (o dono mandou em 28/10/2026). Vale o nome de QUEM
+# RECEBEU, não o texto todo do banco. 14/11/2026: PIX pra Karine (esposa do Victor) também é
+# retirada dele; o Igor saiu da sociedade em 26/10, então PIX pra ele vai pro Não identificado
+# (o de 07/11 era pagamento de compra, não retirada).
+_EXT_RETIRADA = [(re.compile(r"\bLUCCHESI\b|^VICTOR\b|\bKARINE\b"), "Retirada do sócio (Victor)")]
 
 def _ni_ler(p):
     """A linha do banco guardada num registro [NI]/[NIX], ou None."""
@@ -2129,8 +2131,8 @@ def _ext_retirada(quem):
 
 def _ext_classifica(ctx, l):
     """O que fazer com uma saída do extrato. Ordem: marca gravada → Não identificado de
-    antes → já lançado → conta aberta → não é gasto → pago em dinheiro (dúvida) →
-    retirada do Victor/Igor → Não identificado."""
+    antes → já lançado → conta aberta (menos PIX pro sócio) → não é gasto → pago em dinheiro
+    (dúvida) → retirada do Victor/Igor → Não identificado."""
     livres = [x for x in ctx["nis"] if x["rid"] not in ctx["nis_usados"]]
     p = ctx["marcas"].get(l["id"])
     if p is not None and str(p.get("id")) not in ctx["usados"]:
@@ -2158,9 +2160,12 @@ def _ext_classifica(ctx, l):
     p = _ext_pega(ctx, _ext_cands(ctx, l, "lancado"))
     if p is not None:
         return {"status": "lancado", "p": p}
-    p = _ext_pega(ctx, _ext_cands(ctx, l, "aberta"), unica=True)
-    if p is not None:
-        return {"status": "baixa", "p": p}
+    # PIX pra conta do sócio nunca paga conta aberta: 14/11/2026 um PIX de R$ 250 pro Victor
+    # casou com a conta do Anota do mesmo valor. Dinheiro pra ele é retirada (regra do dono).
+    if not _ext_retirada(l["quem"]):
+        p = _ext_pega(ctx, _ext_cands(ctx, l, "aberta"), unica=True)
+        if p is not None:
+            return {"status": "baixa", "p": p}
     fora = _ext_fora(l["memo"])
     if fora:
         return {"status": "fora", "motivo": fora}

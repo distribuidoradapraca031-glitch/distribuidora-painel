@@ -374,7 +374,8 @@ details.ajuda>p{margin-top:6px}
 <section class="ini-hero">
   <div><h2>Olá, Victor! 👋</h2><p>Veja como está a loja hoje.</p></div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="ini-mes" id="ini-mes">…</span>
-    <button class="lc-btn" type="button" data-lc="inicio">＋ Lançar</button></div>
+    <button class="lc-btn" type="button" data-lc="inicio">＋ Lançar</button>
+    <button class="lc-btn ghost" type="button" data-lc="entrada:saque">💸 Saque</button></div>
 </section>
 <section class="card ini-avisos" id="ini-avisos" hidden aria-live="polite"></section>
 <section class="ini-cards" id="ini-cards"><div class="ini-card"><div class="sub">carregando…</div></div></section>
@@ -435,6 +436,7 @@ details.ajuda>p{margin-top:6px}
 
 <!-- ============ CAIXA (era "Loja"; a chave continua "loja") ============ -->
 <div id="view-loja" hidden>
+<div class="lc-atalho" style="margin:0 0 12px"><button class="lc-btn" data-lc="entrada:saque" type="button">💸 Lançar saque</button><button class="lc-btn ghost" data-lc="entrada:troca" type="button">Troca de PIX</button><span class="note" style="margin:0">cliente troca cartão por dinheiro (ou dinheiro por PIX)</span></div>
 <div id="live-wrap"></div>
 
 <section class="card">
@@ -3093,12 +3095,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<button class="lc-big saida" data-t="saida"><span class="ic">↓</span><span><b>Saída</b><span class="s">dinheiro que saiu ou vai sair</span></span></button>'+
         '<button class="lc-big entrada" data-t="entrada"><span class="ic">↑</span><span><b>Entrada</b><span class="s">dinheiro que entrou e não é venda</span></span></button></div>'+
         '<div class="lc-tiles">'+
+        '<button class="lc-tile" data-t="entrada" data-a="saque">💸<b>Saque</b><span>cliente troca cartão por dinheiro</span></button>'+
         '<button class="lc-tile" data-t="mover">🔁<b>Mover dinheiro</b><span>entre gaveta, reserva, sobra e banco</span></button>'+
         '<button class="lc-tile" data-t="extrato">🏦<b>Conferir extrato</b><span>Itaú ou Nubank: concilia sozinho</span></button>'+
         '<button class="lc-tile" data-t="naoident">❓<b>Não identificado</b><span>gasto do banco que ninguém lançou</span></button>'+
         '<button class="lc-tile" data-t="lista">📋<b>Meus lançamentos</b><span>tudo que foi lançado no mês</span></button>'+
         '<button class="lc-tile" data-t="categorias">🏷️<b>Minhas categorias</b><span>criar, renomear ou esconder</span></button></div>';
-      body.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.t)));
+      body.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.t,b.dataset.a)));
     };
 
     /* ---- SAÍDA ---- */
