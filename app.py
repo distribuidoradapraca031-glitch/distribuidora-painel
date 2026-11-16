@@ -2475,6 +2475,11 @@ def _ni_resolver(body):
             return jsonify({"ok": True})
         if ni["ignorado"]:
             return jsonify({"ok": False, "erro": "essa linha está nas ignoradas: volte ela antes"}), 400
+        # 16/11/2026: o dono escreve o que foi (o banco às vezes manda o PIX sem o nome de quem
+        # recebeu). Vai na descrição do lançamento, na frente do nome do banco.
+        obs = re.sub(r"\s+", " ", str(body.get("obs") or "")).strip()[:80]
+        if obs:
+            l["quem"] = f"{obs} ({ni['quem']})" if ni["quem"] else obs
         try:
             if acao == "categoria":
                 cat = str(body.get("categoria") or "").strip()[:60]

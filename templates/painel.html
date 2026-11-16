@@ -3591,8 +3591,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           x.contas.map(c=>'<option value="'+esc(String(c.id))+'">'+esc(((c.cat?c.cat+' · ':'')+c.desc).slice(0,60))+' · vence '+dbr(c.venc)+' · R$ '+fmt(c.valor)+'</option>').join('')+
           '</select> <button class="lc-btn ghost mini ni-baixa" type="button">Dar baixa nela</button></div>':'')+
         '<div class="ni-outros"><button class="lc-link ni-ja" type="button">Já está lançado</button> · <button class="lc-link ni-nao" type="button">Não é gasto da loja</button></div></div>';
-      const linha=x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
-        '<div class="m">'+dbr(x.data)+' · '+esc(x.banco)+' · '+esc(x.memo)+'</div>'+extra(x)+'</div><div class="a">'+acoes(x)+'</div>'+mais(x)+'</div>';
+      // 16/11/2026: o banco às vezes manda o PIX sem o nome de quem recebeu. O dono escreve o que foi
+      // e isso vai junto no lançamento (categoria ou mercadoria).
+      const obs=x=>x.feito?'':'<input class="lc-in ni-obs" type="text" maxlength="80" placeholder="o que foi? (ex.: gelo, motoboy, almoço)" aria-label="O que foi esse pagamento" style="margin-top:6px">';
+      const linha=x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+(x.quem?esc(x.quem):'<span style="color:var(--warn)">Pagamento sem nome no banco</span>')+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
+        '<div class="m">'+dbr(x.data)+' · '+esc(x.banco)+' · '+esc(x.memo)+'</div>'+extra(x)+obs(x)+'</div><div class="a">'+acoes(x)+'</div>'+mais(x)+'</div>';
       h+=its.map(linha).join('');
       if(ign.length) h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">🙈 Marcadas como não é gasto ('+ign.length+')</summary>'+
         ign.map(x=>'<div class="lc-row" data-rid="'+esc(x.rid)+'"><div style="flex:1 1 260px;min-width:0"><div class="q">'+esc(x.quem)+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
@@ -3600,6 +3603,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
           (x.feito?'<span style="color:var(--good);font-weight:700">✅ '+x.feito+'</span>':'<button class="lc-btn ghost mini ni-volta" type="button">Voltar pro Não identificado</button>')+'</div></div>').join('')+'</details>';
       body.innerHTML=h;
       const pega=b=>its.concat(ign).find(x=>x.rid===b.closest('.lc-row').dataset.rid);
+      const oque=b=>{ const i=b.closest('.lc-row').querySelector('.ni-obs'); return i?i.value.trim():''; };
       const manda=(b,pl,okTxt,quais)=>{ const x=pega(b); trava(b,'…');
         post('/api/nao-identificado',pl).then(res=>{
           if(res.ok){ x.feito=okTxt; pintaNI(d); if(quais.length) recarrega(quais); }
@@ -3608,12 +3612,13 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       body.querySelectorAll('.ni-lanc').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b), cat=b.closest('.a').querySelector('.ni-cat').value;
         if(!cat){ toast('❌ escolha a categoria dessa linha'); return; }
-        manda(b,{rid:x.rid, acao:'categoria', categoria:cat},'lançado em '+esc(cat)+' (PIX '+esc(x.banco)+')',['gasto']);
+        const o=oque(b);
+        manda(b,{rid:x.rid, acao:'categoria', categoria:cat, obs:o},'lançado em '+esc(cat)+(o?' · '+esc(o):'')+' (PIX '+esc(x.banco)+')',['gasto']);
       }));
       body.querySelectorAll('.ni-merc').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b);
         if(!confirm('Lançar R$ '+fmt(x.valor)+' como compra de mercadoria SEM itens?\n\nEntra no gasto do mês e no resultado, mas o ESTOQUE não muda. Se você tem a lista do que veio, prefira "Lançar no Gerar compra".')) return;
-        manda(b,{rid:x.rid, acao:'mercadoria'},'lançado como mercadoria (sem estoque)',['gasto']);
+        manda(b,{rid:x.rid, acao:'mercadoria', obs:oque(b)},'lançado como mercadoria (sem estoque)',['gasto']);
       }));
       body.querySelectorAll('.ni-baixa').forEach(b=>b.addEventListener('click',()=>{
         const x=pega(b), cid=b.closest('.ni-contas').querySelector('.ni-conta').value;
