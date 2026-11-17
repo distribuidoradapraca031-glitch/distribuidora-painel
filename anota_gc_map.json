@@ -8195,5 +8195,16 @@
   "score": 1.0,
   "sugestao": "CUIA PEQUENA",
   "manual": true
+ },
+ "TABACO ACREMA 20G": {
+  "anota_title": "Tabaco Acrema 20g",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "561",
+  "gc_nome": "TABACO ACREMA 20 G",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "TABACO ACREMA 20 G",
+  "manual": true
  }
 }
