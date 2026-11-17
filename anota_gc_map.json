@@ -8129,5 +8129,71 @@
   "score": 1.0,
   "sugestao": "SUCO DEL VALLE LT 290 ML SABORES",
   "manual": true
+ },
+ "CAIXA DE SEDA SADHU LONGA SLIM": {
+  "anota_title": "Caixa de Seda Sadhu Longa Slim",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "555",
+  "gc_nome": "CAIXA SEDA SADHU LONGA SLIM",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CAIXA SEDA SADHU LONGA SLIM",
+  "manual": true
+ },
+ "PITEIRA SADHU MEGA LARGE MORNING": {
+  "anota_title": "Piteira Sadhu Mega Large Morning",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "556",
+  "gc_nome": "PITEIRA SADHU MEGA LARGE MORNING",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "PITEIRA SADHU MEGA LARGE MORNING",
+  "manual": true
+ },
+ "TABACO AMSTERDAM 25G": {
+  "anota_title": "Tabaco Amsterdam 25g",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "557",
+  "gc_nome": "TABACO AMSTERDAM 25 G",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "TABACO AMSTERDAM 25 G",
+  "manual": true
+ },
+ "DICHAVADOR DE FIBRA DE COCO": {
+  "anota_title": "Dichavador de Fibra de Coco",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "558",
+  "gc_nome": "DICHAVADOR FIBRA DE COCO",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "DICHAVADOR FIBRA DE COCO",
+  "manual": true
+ },
+ "TESOURA DOBRAVEL DE PLASTICO": {
+  "anota_title": "Tesoura Dobrável de Plástico",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "559",
+  "gc_nome": "TESOURA DOBRAVEL PLASTICO",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "TESOURA DOBRAVEL PLASTICO",
+  "manual": true
+ },
+ "CUIA PEQUENA": {
+  "anota_title": "Cuia Pequena",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "560",
+  "gc_nome": "CUIA PEQUENA",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CUIA PEQUENA",
+  "manual": true
  }
 }
