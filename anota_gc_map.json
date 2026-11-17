@@ -8185,17 +8185,6 @@
   "sugestao": "TESOURA DOBRAVEL PLASTICO",
   "manual": true
  },
- "CUIA PEQUENA": {
-  "anota_title": "Cuia Pequena",
-  "categoria": "Cigarros e Tabacaria",
-  "gc_id": "560",
-  "gc_nome": "CUIA PEQUENA",
-  "candidatos": [],
-  "mult": 1,
-  "score": 1.0,
-  "sugestao": "CUIA PEQUENA",
-  "manual": true
- },
  "TABACO ACREMA 20G": {
   "anota_title": "Tabaco Acrema 20g",
   "categoria": "Cigarros e Tabacaria",
@@ -8205,6 +8194,17 @@
   "mult": 1,
   "score": 1.0,
   "sugestao": "TABACO ACREMA 20 G",
+  "manual": true
+ },
+ "CUIA GRANDE ABDUZIDO": {
+  "anota_title": "Cuia Grande Abduzido",
+  "categoria": "Cigarros e Tabacaria",
+  "gc_id": "560",
+  "gc_nome": "CUIA GRANDE ABDUZIDO",
+  "candidatos": [],
+  "mult": 1,
+  "score": 1.0,
+  "sugestao": "CUIA GRANDE ABDUZIDO",
   "manual": true
  }
 }
