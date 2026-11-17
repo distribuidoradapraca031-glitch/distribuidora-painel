@@ -2176,6 +2176,16 @@ def _ext_classifica(ctx, l):
         return {"status": "retirada", "cat": cat}
     return {"status": "ni"}
 
+# gasto que o próprio extrato lançou (_ext_lanca): "[cat:X] <quem> · extrato Itaú #ext:..." ou
+# "Compra de <quem> — sem nota, extrato Itaú #ext:...". Esse dá pra trocar no lugar.
+_EXT_GASTO_RE = re.compile(r"(?: · |, | — sem nota, )extrato (?:Itaú|Nubank)\s*#ext:[0-9a-f]{8}\s*$")
+
+def _ext_texto_gasto(desc):
+    """O <quem> (com o "o que foi" do dono) de um gasto lançado pelo extrato."""
+    d = EXT_MARCA_RE.sub("", _sem_cat(desc or "")).strip()
+    d = re.sub(r"(?: · |, | — sem nota, )extrato (?:Itaú|Nubank)$", "", d).strip()
+    return re.sub(r"^Compra de ", "", d).strip()
+
 def _ext_lanca(nb, l, cat=None, mercadoria=False):
     """Gasto já pago no PIX do banco, com a marca da linha (o mesmo corpo do /api/gasto)."""
     pot = POTES[f"PIX {nb}"]
@@ -2257,18 +2267,18 @@ def _ext_invalida():
     _invalida("pagar", "resumo", "previsoes", "gastos_mes", "mapa", "como_esta", "inicio",
               "hoje", "saldos_bancos", "ultima_atualizacao", "lancamentos_" + _hoje()[:7])
 
-def _ext_concilia(banco, nb, linhas, saldo=None, simular=False):
+def _ext_concilia(banco, nb, linhas, saldo=None, simular=False, pgs=None):
     """Concilia as linhas de um banco com o sistema e grava o que tem de gravar (simular=True
     só mostra o que faria). Serve pro arquivo do extrato e pro Open Finance. Quem chama
-    segura a _ext_trava."""
+    segura a _ext_trava. pgs = os pagamentos já lidos (a tela do extrato do mês)."""
     saidas = sorted((l for l in linhas if l["valor"] < 0), key=lambda x: (x["data"], x["id"]))
     entradas = [l for l in linhas if l["valor"] > 0]
     datas = [l["data"] for l in linhas]
     out, feitas, erro = [], 0, None
     try:
-        ctx = _ext_contexto(gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01",
-                                                          "data_fim": "2027-12-31"}), nb,
-                            {l["id"] for l in linhas})
+        if pgs is None:
+            pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"})
+        ctx = _ext_contexto(pgs, nb, {l["id"] for l in linhas})
         for l in saidas:
             r = _ext_classifica(ctx, l)
             st = r["status"]
@@ -2276,6 +2286,12 @@ def _ext_concilia(banco, nb, linhas, saldo=None, simular=False):
                     "memo": l["memo"][:140], "quem": l["quem"][:80], "status": st}
             if r.get("p") is not None:
                 item["match"] = _ext_resumo_p(r["p"])
+                # 17/11/2026 (tela do extrato do mês): de onde veio o lançamento casado, pra saber
+                # o que o botão "Trocar" pode fazer com ele
+                dp = r["p"].get("descricao") or ""
+                item["marcado"] = f"#ext:{l['id']}" in dp
+                item["gasto_ext"] = bool(item["marcado"] and _EXT_GASTO_RE.search(dp))
+                item["tag_cat"] = bool(CAT_TAG_RE.match(dp) or CAT_TAG_RP_RE.match(dp))
             if r.get("ni"):
                 item["rid"], item["motivo"] = r["ni"]["rid"], r["ni"]["motivo"]
             if st == "fora":
@@ -2574,15 +2590,16 @@ def _pluggy_transacoes(chave, conta, de, ate):
             url = base + "&after=" + urllib.parse.quote(n)
     return out
 
-def _pluggy_le(cfg, dias):
+def _pluggy_le(cfg, dias, de=None, ate=None):
     """Lê a conta de cada banco (corrente/poupança; cartão fica de fora: a fatura sai da conta
     e aparece lá). Devolve as linhas no MESMO formato do arquivo do extrato, o saldo e se o
-    banco está em dia com o Open Finance."""
+    banco está em dia com o Open Finance. de/ate (AAAA-MM-DD) = um período fechado (a tela do
+    extrato do mês); sem eles, os últimos `dias`."""
     import hashlib
     chave = _pluggy_req("POST", "/auth", {"clientId": cfg["cid"], "clientSecret": cfg["sec"]})["apiKey"]
     hoje = datetime.date.fromisoformat(_hoje())
-    de = (hoje - datetime.timedelta(days=dias)).isoformat()
-    ate = (hoje + datetime.timedelta(days=1)).isoformat()
+    de = de or (hoje - datetime.timedelta(days=dias)).isoformat()
+    ate = ate or (hoje + datetime.timedelta(days=1)).isoformat()
     out = {}
     for nb, item_id in cfg["itens"]:
         item = _pluggy_req("GET", f"/items/{item_id}", chave=chave)
@@ -2711,6 +2728,170 @@ def api_banco_ler():
         return jsonify({"ok": False, "erro": str(e)[:200]}), 502
     finally:
         _pluggy.update(rodando=False, quando=time.strftime("%d/%m %H:%M"))
+
+# ---- EXTRATO DO MÊS (17/11/2026, pedido do dono) ----
+# "Não tem lugar nenhum que eu consigo conferir tudo": a tela mostra TODA saída do banco no mês,
+# o que cada uma virou no sistema e um botão "Trocar" pra ele dizer o que foi de verdade. Só
+# leitura até ele clicar: a lista é a conciliação em modo simulação (nada é gravado ao abrir).
+# Trocar = desfaz o que a linha virou (a conta volta a ficar aberta, ou o gasto que o extrato
+# lançou é apagado) e passa pelo MESMO caminho do Não identificado. Categoria de um gasto que o
+# extrato lançou, ou de um gasto que o dono lançou com categoria, muda no próprio lançamento.
+_bx_linhas = {}         # (banco, id da linha) -> (mês, linha): o Trocar só mexe em linha que a tela mostrou
+
+def _bx_invalida():
+    for k in [k for k in _cache if k.startswith("banco_extrato_")]:
+        _cache.pop(k, None)
+
+@app.route("/api/banco/extrato")
+@login_required
+def api_banco_extrato():
+    cfg = _pluggy_cfg()
+    if not cfg:
+        return jsonify({"ok": False, "erro": "o Open Finance ainda não está ligado"}), 400
+    hoje = _hoje()
+    mes = (request.args.get("mes") or hoje[:7])[:7]
+    if not re.fullmatch(r"20\d\d-(0[1-9]|1[0-2])", mes) or mes > hoje[:7]:
+        return jsonify({"ok": False, "erro": "mês inválido"}), 400
+    y, m = int(mes[:4]), int(mes[5:7])
+    fim = f"{mes}-{calendar.monthrange(y, m)[1]:02d}"
+    ate = min(fim, hoje)
+    def build():
+        lido = _pluggy_le(cfg, 0, de=f"{mes}-01",
+                          ate=(datetime.date.fromisoformat(ate) + datetime.timedelta(days=1)).isoformat())
+        out = {}
+        with _ext_trava:
+            pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"})
+            for nb, b in lido.items():
+                banco = next(k for k, v in BANCOS_EXTRATO.items() if v == nb)
+                linhas = [l for l in b["linhas"] if l["data"][:7] == mes]
+                r = _ext_concilia(banco, nb, linhas, simular=True, pgs=pgs)
+                ctx = _ext_contexto(pgs, nb, {l["id"] for l in linhas})
+                por_id = {l["id"]: l for l in linhas}
+                for x in r["saidas"]:
+                    _bx_linhas[(nb, x["id"])] = (mes, por_id[x["id"]])
+                    if x["status"] not in ("lancado", "resolvido"):
+                        x["contas"] = _ext_contas_perto(ctx, por_id[x["id"]])
+                dias = defaultdict(lambda: [0, 0.0])
+                for l in linhas:
+                    if l["valor"] > 0:
+                        dias[l["data"]][0] += 1
+                        dias[l["data"]][1] += l["valor"]
+                out[nb] = {"banco": banco, "status": b["status"], "atualizado": b["atualizado"],
+                           "saldo": b["saldo"], "saidas": sorted(r["saidas"], key=lambda x: (x["data"], x["id"]), reverse=True),
+                           "total_saidas": r["total_saidas"], "contagem": dict(r["contagem"]),
+                           "entradas": {"n": r["entradas"]["n"], "total": r["entradas"]["total"],
+                                        "dias": [{"data": d, "n": v[0], "total": round(v[1], 2)}
+                                                 for d, v in sorted(dias.items(), reverse=True)]}}
+        return {"ok": True, "mes": mes, "de": f"{mes}-01", "ate": ate, "bancos": out,
+                "gerado_em": datetime.datetime.now(_BRT).strftime("%d/%m %H:%M")}
+    try:
+        return jsonify(cached(f"banco_extrato_{mes}", 180, build))
+    except Exception as e:
+        return jsonify({"ok": False, "erro": "não consegui ler o banco agora (" + str(e)[:120] + ")"}), 502
+
+@app.route("/api/banco/trocar", methods=["POST"])
+@login_required
+def api_banco_trocar():
+    """O dono diz o que uma saída do banco foi de verdade (tela do extrato do mês)."""
+    body = request.get_json(force=True, silent=True) or {}
+    nb = (body.get("banco") or "").strip()
+    lid = str(body.get("id") or "").strip()
+    acao = (body.get("acao") or "").strip()
+    if nb not in BANCOS or not re.fullmatch(r"[0-9a-f]{8}", lid) or acao not in ("categoria", "mercadoria", "conta", "ignorar"):
+        return jsonify({"ok": False, "erro": "não entendi o que trocar"}), 400
+    cat = str(body.get("categoria") or "").strip()[:60]
+    if acao == "categoria" and not cat:
+        return jsonify({"ok": False, "erro": "escolha a categoria"}), 400
+    obs = re.sub(r"\s+", " ", str(body.get("obs") or "")).strip()[:80]
+    guardado = _bx_linhas.get((nb, lid))
+    if not guardado:
+        return jsonify({"ok": False, "erro": "abra o extrato de novo: essa linha não está mais na tela"}), 404
+    mes, l = guardado
+    banco = next(k for k, v in BANCOS_EXTRATO.items() if v == nb)
+    rid = None
+    with _ext_trava:
+        try:
+            pgs = gcapi.get_all("/pagamentos", {"data_inicio": "2026-01-01", "data_fim": "2027-12-31"})
+            mes_linhas = [x for (b2, _), (m2, x) in list(_bx_linhas.items()) if b2 == nb and m2 == mes]
+            r = _ext_concilia(banco, nb, mes_linhas, simular=True, pgs=pgs)
+            it = next((x for x in r["saidas"] if x["id"] == lid), None)
+            if it is None:
+                return jsonify({"ok": False, "erro": "abra o extrato de novo: não achei essa linha"}), 404
+            st, rid = it["status"], it.get("rid")
+            pid = (it.get("match") or {}).get("id") if st in ("lancado", "resolvido") else None
+            if pid:
+                p = _pagamento(pid)
+                d = p.get("descricao") or ""
+                marcado = f"#ext:{lid}" in d
+                gasto_ext = marcado and bool(_EXT_GASTO_RE.search(d))
+                base = {"valor": p.get("valor") or p.get("valor_total") or "0",
+                        "plano_contas_id": p.get("plano_contas_id") or "",
+                        "data_vencimento": (p.get("data_vencimento") or _hoje())[:10],
+                        "data_competencia": (p.get("data_competencia") or _hoje())[:10],
+                        "fornecedor_id": p.get("fornecedor_id") or ""}
+                pago = dict(base, liquidado="1", data_liquidacao=(p.get("data_liquidacao") or l["data"])[:10],
+                            conta_bancaria_id=p.get("conta_bancaria_id") or "",
+                            forma_pagamento_id=p.get("forma_pagamento_id") or "")
+                no_lugar = None
+                if gasto_ext and acao in ("categoria", "mercadoria"):
+                    quem = f"{obs} ({l['quem']})" if obs and l["quem"] else (obs or _ext_texto_gasto(d) or l["quem"])
+                    if acao == "mercadoria":
+                        texto, plano = f"Compra de {quem} — sem nota, extrato {nb}", CATS["Outros"]
+                    else:
+                        c2 = _cat_nome(cat)
+                        texto, plano = f"[cat:{c2}] {quem} · extrato {nb}", _plano_cat(c2)
+                    no_lugar = dict(pago, descricao=f"{texto[:165]} #ext:{lid}", plano_contas_id=plano)
+                elif not marcado:
+                    # lançamento que o próprio dono fez e casou pelo valor: só a categoria muda
+                    if acao == "categoria" and str(p.get("liquidado")) == "1" and (CAT_TAG_RE.match(d) or CAT_TAG_RP_RE.match(d)):
+                        c2 = _cat_nome(cat)
+                        if CAT_TAG_RP_RE.match(d):
+                            nd = CAT_TAG_RP_RE.sub(lambda mm: f"{mm.group(1)}[cat:{c2}] ", d, count=1)
+                        else:
+                            nd = CAT_TAG_RE.sub(f"[cat:{c2}] ", d, count=1)
+                        if obs:
+                            nd = f"{nd} · {obs}"
+                        no_lugar = dict(pago, descricao=nd[:180], plano_contas_id=_plano_cat(c2))
+                    else:
+                        return jsonify({"ok": False, "erro": "essa saída bateu com um lançamento que você fez: "
+                                        + (it["match"].get("desc") or "")[:80] + ". Se ele está errado, "
+                                        "mude por lá (Meus lançamentos ou o mapa de contas)."}), 400
+                if no_lugar is not None:
+                    gcapi.put(f"/pagamentos/{pid}", no_lugar)
+                    if rid:
+                        try:
+                            gcapi.delete(f"/pagamentos/{rid}")
+                        except Exception:
+                            pass
+                    _ext_invalida(); _bx_invalida()
+                    return jsonify({"ok": True, "id": pid})
+                # desfaz o que a linha virou (igual ao "Não é essa conta" / "Não é retirada")
+                if gasto_ext:
+                    if str(p.get("liquidado")) == "1":
+                        gcapi.put(f"/pagamentos/{pid}", dict(base, liquidado="0", descricao=d))
+                    gcapi.delete(f"/pagamentos/{pid}")
+                else:
+                    limpo = EXT_MARCA_RE.sub("", d).replace(f" (PIX {nb})", "").strip()
+                    gcapi.put(f"/pagamentos/{pid}", dict(base, liquidado="0", descricao=limpo[:180],
+                                                         forma_pagamento_id=BOLETO_FORMA_ID))
+                if not rid:
+                    rid = _ni_cria(nb, l)
+            elif st == "ignorado" and rid:
+                if acao == "ignorar":
+                    return jsonify({"ok": True})
+                gcapi.put(f"/pagamentos/{rid}", _ni_corpo(_ni_desc(NI_TAG, nb, l), l["data"]))
+            elif not rid:
+                rid = _ni_cria(nb, l)          # ainda não estava gravada (baixa/retirada/fora/ni)
+        except Exception as e:
+            return jsonify({"ok": False, "erro": "o sistema não respondeu (" + str(e)[:120] + "). "
+                            "Abra o extrato de novo antes de repetir."}), 502
+        finally:
+            _ext_invalida(); _bx_invalida()
+    if not rid:
+        return jsonify({"ok": False, "erro": "não consegui guardar a linha. Abra o extrato de novo."}), 502
+    # o resto é o mesmo caminho da tela do Não identificado
+    return _ni_resolver({"rid": rid, "acao": acao, "categoria": cat, "obs": obs,
+                         "conta_id": body.get("conta_id"), "motivo": body.get("motivo") or "não é gasto da loja"})
 
 # ---- MEUS LANÇAMENTOS (tudo que foi lançado no mês, num lugar só) ----
 _LANC_SO_PAINEL = (RES_DEP_TAG, RES_OUT_TAG, SOB_DEP_TAG, SOB_OUT_TAG)

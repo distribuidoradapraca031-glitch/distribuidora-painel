@@ -379,6 +379,13 @@ details.ajuda>p{margin-top:6px}
 </section>
 <section class="card ini-avisos" id="ini-avisos" hidden aria-live="polite"></section>
 <section class="ini-cards" id="ini-cards"><div class="ini-card"><div class="sub">carregando…</div></div></section>
+<section class="card" id="card-banco">
+  <div class="head-row" style="align-items:center;flex-wrap:wrap;gap:8px">
+    <div><div class="eyebrow">Banco · Open Finance</div><h2>🏦 Saldo da conta</h2></div>
+    <button class="lc-btn mini" type="button" data-lc="extrato">Ver o extrato do banco</button>
+  </div>
+  <div id="bx-ini" style="margin-top:8px"><p class="note">carregando…</p></div>
+</section>
 <section class="card" id="card-pend" hidden>
   <div class="eyebrow">Pra os números valerem</div>
   <h2>🧹 O que falta lançar ou conferir</h2>
@@ -558,7 +565,7 @@ details.ajuda>p{margin-top:6px}
   <div class="eyebrow">Contas a pagar · mapa até dezembro</div>
   <h2>Tudo que falta pagar — mês a mês</h2>
   <div id="mapa-kpis" style="margin:8px 0"></div>
-  <div class="lc-atalho" style="margin-bottom:4px"><button class="lc-btn" data-lc="saida:pago" type="button">↓ Lançar gasto já pago</button><button class="lc-btn ghost" data-lc="saida:apagar" type="button">Conta a pagar (pode repetir ou parcelar)</button><button class="lc-btn ghost" data-lc="extrato" type="button">🏦 Conferir extrato</button></div>
+  <div class="lc-atalho" style="margin-bottom:4px"><button class="lc-btn" data-lc="saida:pago" type="button">↓ Lançar gasto já pago</button><button class="lc-btn ghost" data-lc="saida:apagar" type="button">Conta a pagar (pode repetir ou parcelar)</button><button class="lc-btn ghost" data-lc="extrato" type="button">🏦 Extrato do banco</button></div>
   <details class="ajuda"><summary>Como funciona</summary><p class="note">Uma tabela só com <strong>tudo que ainda não foi pago</strong>: cada linha é uma categoria — inclusive <strong>Mercadoria (notas)</strong>, que são as notas de compra e os boletos do DDA que você me passa — e cada coluna é um mês, <strong>até dezembro</strong>. A primeira coluna, em vermelho, é o que já está <strong>atrasado</strong>; a coluna do mês de agora vem destacada.</p></details>
   <details class="ajuda"><summary>Como pagar uma conta</summary><p class="note"><strong>Clique na linha</strong> pra abrir os itens e pagar: confira o campo <strong>"pago R$"</strong> (já vem com o previsto — se teve juros ou veio diferente, é só ajustar), escolha <strong>de onde saiu o dinheiro</strong> e clique <strong>paguei</strong>. Ele sai daqui na hora, com o valor real, e entra no <strong>total gasto no mês</strong> logo abaixo. O <strong>✕</strong> exclui item lançado errado ou boleto de golpe.</p></details>
   <div class="tblwrap" id="tbl-mapa"></div>
@@ -2377,6 +2384,16 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     box.insertAdjacentHTML('beforeend','<button type="button" class="lc-link" style="margin-top:6px">ver os outros '+(trs.length-n)+'</button>');
     const b=box.lastElementChild; b.addEventListener('click',()=>{ trs.forEach(t=>t.hidden=false); b.remove(); }); }
   window.limitaLinhas=limitaLinhas;
+  /* saldo do banco no Início (17/11/2026): o Open Finance guarda o saldo a cada leitura */
+  function loadSaldoBanco(f){ return fetch('/api/saldo-banco'+qf(f)).then(r=>r.json()).then(d=>{
+    const box=g('bx-ini'); if(!box) return;
+    const B=d.bancos||{}, nomes=['Itaú','Nubank'].filter(n=>B[n]&&(n==='Itaú'||Math.abs(B[n].saldo)>0.004));
+    if(!nomes.length){ box.innerHTML='<p class="note">Ainda não tenho o saldo do banco.</p>'; return; }
+    box.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap">'+nomes.map(n=>{ const s=B[n];
+      return '<div class="ini-card" style="flex:1 1 160px"><div class="lbl">'+esc(n)+'</div><div class="val" style="font-size:1.35rem">R$ '+fmt(s.saldo)+'</div>'+
+        '<div class="sub">'+(String(s.origem||'').indexOf('open finance')>=0?'o banco mandou em ':'informado em ')+dbr(s.data)+'</div></div>'; }).join('')+'</div>'+
+      '<p class="note" style="margin-top:8px">O banco atualiza 1 vez por dia: o que saiu hoje pode aparecer só amanhã.</p>';
+  }).catch(()=>{ const box=g('bx-ini'); if(box) box.innerHTML='<p class="note">Não consegui ler o saldo agora.</p>'; }); }
   function loadMapa(f){ return fetch('/api/mapa'+qf(f)).then(r=>r.json()).then(d=>{
     if(g('k-pagar')) g('k-pagar').textContent='R$ '+fmt(d.total||0);
     if(g('k-pagar-sub')) g('k-pagar-sub').innerHTML=((d.tot_atrasado||0)>0
@@ -2741,8 +2758,9 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
       '<div class="ini-card" style="flex:1 1 140px"><div class="lbl">Próximos 30 dias</div><div class="val" style="font-size:1.2rem">R$ '+fmt(prox)+'</div></div></div>'+
       '<p class="note" style="margin-top:10px;color:var(--ink)">'+((c.falta_atrasado||0)>0?'O dinheiro de hoje não cobre o atrasado: <b class="ini-down">faltam R$ '+fmt(c.falta_atrasado)+'</b>.'
         :(c.falta_em?'O dinheiro de hoje paga as contas até <b>'+dbr(c.cobre_ate)+'</b>.':'O dinheiro de hoje paga tudo que vence em 90 dias.'))+'</p>'+
-      '<div class="lc-acts" style="margin-top:8px"><button class="lc-btn mini" type="button" id="ini-ir-contas">Abrir o mapa de contas</button><button class="lc-btn ghost mini" type="button" id="ini-ir-loja">Ver o dinheiro de hoje</button></div>';
+      '<div class="lc-acts" style="margin-top:8px"><button class="lc-btn mini" type="button" id="ini-ir-contas">Abrir o mapa de contas</button><button class="lc-btn ghost mini" type="button" id="ini-ir-ext">🏦 Extrato do banco</button><button class="lc-btn ghost mini" type="button" id="ini-ir-loja">Ver o dinheiro de hoje</button></div>';
     g('ini-ir-contas').addEventListener('click',()=>window.selAba&&window.selAba('contas'));
+    g('ini-ir-ext').addEventListener('click',()=>window.abreLancar&&window.abreLancar('extrato'));
     g('ini-ir-loja').addEventListener('click',()=>{ window.selAba&&window.selAba('loja'); const cc=g('card-como'); if(cc) cc.scrollIntoView({behavior:'smooth'}); });
   }
   /* avisos do topo (fase 2, 20/10/2026): contas que vencem em até 3 dias, as atrasadas e as
@@ -2785,11 +2803,12 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
     }
     h+='<div class="lc-acts" style="margin-top:10px">'+((ven.length||atr.length)?'<button class="lc-btn mini" type="button" id="av-pagar">Pagar uma conta</button>'+
       '<button class="lc-btn ghost mini" type="button" id="av-mapa">Abrir o mapa de contas</button>':'')+
-      (ni.n?'<button class="lc-btn mini" type="button" id="av-ni">Resolver o Não identificado</button>':'')+
+      (ni.n?'<button class="lc-btn mini" type="button" id="av-ni">Resolver o Não identificado</button><button class="lc-btn ghost mini" type="button" id="av-ext">🏦 Ver o extrato do banco</button>':'')+
       (tet.length?'<button class="lc-btn ghost mini" type="button" id="av-cats">Ver os tetos</button>':'')+'</div>';
     box.innerHTML=h; box.hidden=false;
     const b1=g('av-pagar'), b2=g('av-mapa'), b3=g('av-cats'), b4=g('av-ni');
     if(b4) b4.addEventListener('click',()=>window.abreLancar&&window.abreLancar('naoident'));
+    const b5=g('av-ext'); if(b5) b5.addEventListener('click',()=>window.abreLancar&&window.abreLancar('extrato'));
     if(b1) b1.addEventListener('click',()=>window.abreLancar&&window.abreLancar('saida','conta'));
     if(b2) b2.addEventListener('click',()=>window.selAba&&window.selAba('contas'));
     if(b3) b3.addEventListener('click',()=>window.abreLancar&&window.abreLancar('categorias'));
@@ -3097,7 +3116,7 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
         '<div class="lc-tiles">'+
         '<button class="lc-tile" data-t="entrada" data-a="saque">💸<b>Saque</b><span>cliente troca cartão por dinheiro</span></button>'+
         '<button class="lc-tile" data-t="mover">🔁<b>Mover dinheiro</b><span>entre gaveta, reserva, sobra e banco</span></button>'+
-        '<button class="lc-tile" data-t="extrato">🏦<b>Conferir extrato</b><span>Itaú ou Nubank: concilia sozinho</span></button>'+
+        '<button class="lc-tile" data-t="extrato">🏦<b>Extrato do banco</b><span>saldo e tudo que saiu, com o que cada gasto virou</span></button>'+
         '<button class="lc-tile" data-t="naoident">❓<b>Não identificado</b><span>gasto do banco que ninguém lançou</span></button>'+
         '<button class="lc-tile" data-t="lista">📋<b>Meus lançamentos</b><span>tudo que foi lançado no mês</span></button>'+
         '<button class="lc-tile" data-t="categorias">🏷️<b>Minhas categorias</b><span>criar, renomear ou esconder</span></button></div>';
@@ -3421,16 +3440,114 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
        Desde 28/10/2026 o extrato concilia SOZINHO (pedido do dono): o que já está lançado fica,
        conta aberta igual leva baixa, PIX pro Victor ou pro Igor vira retirada e o resto vai pro
        Não identificado. O que foi feito sozinho dá pra desfazer aqui mesmo. */
-    TELAS.extrato=()=>{
-      cab('Conferir extrato','o banco conciliado com o que está lançado');
-      body.innerHTML='<div id="lc-of"><p class="note">vendo se o Open Finance está ligado…</p></div>'+
+    /* ---- EXTRATO DO MÊS (17/11/2026, pedido do dono) ----
+       Toda saída do banco no mês, o que ela virou no sistema e um botão pra trocar. Abrir não
+       grava nada (é a conciliação em simulação); só o "Trocar" grava. */
+    const MESES_N=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const nomeM=m=>MESES_N[+m.slice(5,7)-1];
+    const mesAnt=m=>{ const y=+m.slice(0,4), mm=+m.slice(5,7); return mm===1?(y-1)+'-12':y+'-'+String(mm-1).padStart(2,'0'); };
+    let BX_FILTRO='todas';
+    function carregaBX(mes){
+      const box=g('bx'); if(!box) return;
+      box.innerHTML='<p class="note">lendo o banco de '+nomeM(mes)+'… (leva uns segundos)</p>';
+      fetch('/api/banco/extrato?mes='+mes).then(r=>r.json()).then(d=>{
+        if(!g('bx')) return;
+        if(!d.ok){ box.innerHTML='<p class="note">'+esc(d.erro||'Não consegui ler o banco agora.')+'</p>'; return; }
+        pintaBX(d);
+      }).catch(()=>{ if(g('bx')) box.innerHTML='<p class="note">Não consegui ler o banco agora. Tente de novo em alguns segundos.</p>'; });
+    }
+    function viraBX(x){
+      const m=x.match||{};
+      if(x.status==='lancado'||x.status==='resolvido') return '✅ '+esc((m.cat?m.cat+' · ':'')+(m.desc||''))+(m.forma?' <span style="color:var(--muted)">('+esc(m.forma)+')</span>':'');
+      if(x.status==='baixa') return '🧾 vai dar baixa em: '+esc((m.cat?m.cat+' · ':'')+(m.desc||''));
+      if(x.status==='retirada') return '👤 vai virar '+esc(x.cat||'retirada');
+      if(x.status==='fora') return '↔️ não é gasto: '+esc(x.motivo||'');
+      if(x.status==='ignorado') return '🙈 não é gasto: '+esc(x.motivo||'');
+      return '<b style="color:var(--warn)">❓ sem explicação</b>';
+    }
+    function pintaBX(d){
+      const box=g('bx'), mes=d.mes, nb=Object.keys(d.bancos)[0];
+      if(!nb){ box.innerHTML='<p class="note">Nenhum banco ligado no Open Finance.</p>'; return; }
+      const B=d.bancos[nb], sai=B.saidas||[];
+      const semExp=sai.filter(x=>['ni','pendente'].includes(x.status));
+      const meses=[hojeL.slice(0,7)]; meses.push(mesAnt(meses[0])); meses.push(mesAnt(meses[1]));
+      let h='<div class="kpi" style="padding:12px 14px"><div class="lbl">🏦 Saldo do '+esc(nb)+'</div>'+
+        '<div class="val" style="font-size:1.6rem">R$ '+fmt(B.saldo||0)+'</div>'+
+        '<div class="sub">'+(B.status&&B.status!=='UPDATED'?'<b style="color:var(--crit)">precisa reconectar no Meu Pluggy</b>':'o banco mandou em '+dbr(B.atualizado||d.ate))+
+        ' · o banco atualiza 1 vez por dia</div></div>'+
+        '<div class="lc-seg" role="tablist" style="margin-top:12px">'+meses.map(m=>'<button type="button" role="tab" aria-selected="'+(m===mes)+'" class="'+(m===mes?'on':'')+'" data-bxm="'+m+'">'+nomeM(m)+'</button>').join('')+'</div>'+
+        '<div class="lc-prev" style="margin-top:10px">Em <b>'+nomeM(mes)+'</b>'+(mes===hojeL.slice(0,7)?' até '+dbr(d.ate):'')+': saíram <b>R$ '+fmt(B.total_saidas||0)+'</b> em '+sai.length+' saída'+(sai.length===1?'':'s')+
+          ' · entraram <b>R$ '+fmt((B.entradas||{}).total||0)+'</b> (vendas no PIX e na maquininha).'+
+          (semExp.length?'<br>❓ <b>'+semExp.length+'</b> sem explicação, somando R$ '+fmt(semExp.reduce((t,x)=>t+x.valor,0))+'.':'<br>Tudo que saiu está explicado. ✓')+'</div>'+
+        '<div class="lc-seg" role="tablist" style="margin-top:10px">'+[['todas','Todas as saídas'],['sem','❓ Só as sem explicação']].map(f=>'<button type="button" role="tab" aria-selected="'+(BX_FILTRO===f[0])+'" class="'+(BX_FILTRO===f[0]?'on':'')+'" data-bxf="'+f[0]+'">'+f[1]+'</button>').join('')+'</div>'+
+        '<p class="note">Cada saída mostra o que ela virou no sistema. Se estiver errado, clique em <b>Trocar</b> e diga o que foi.</p>';
+      const lista=BX_FILTRO==='sem'?semExp:sai;
+      let dia='';
+      h+=lista.map(x=>{
+        const manual=(x.status==='lancado'||x.status==='resolvido')&&!x.marcado;
+        const pode=!manual||x.tag_cat, rot=['ni','pendente'].includes(x.status)?'Dizer o que foi':'Trocar';
+        const cab2=x.data!==dia?'<div class="lc-sec" style="margin-top:12px">'+dbr(x.data)+'</div>':''; dia=x.data;
+        return cab2+'<div class="lc-row" data-id="'+x.id+'"><div style="flex:1 1 260px;min-width:0">'+
+          '<div class="q">'+(x.quem?esc(x.quem):'<span style="color:var(--warn)">Pagamento sem nome no banco</span>')+' <span class="v" style="margin-left:6px">R$ '+fmt(x.valor)+'</span></div>'+
+          '<div class="m">'+esc(x.memo)+'</div><div class="m" style="color:var(--ink)">'+viraBX(x)+'</div></div>'+
+          '<div class="a">'+(pode?'<button class="lc-btn ghost mini bx-tr" type="button">'+rot+'</button>':'<span class="m">lançado por você</span>')+'</div>'+
+          '<div class="bx-painel" hidden></div></div>';
+      }).join('')||'<p class="note">Nenhuma saída aqui.</p>';
+      const E=B.entradas||{};
+      if((E.dias||[]).length) h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--accent)">Entradas de '+nomeM(mes)+' dia a dia ('+E.n+', R$ '+fmt(E.total)+')</summary>'+
+        '<p class="note">São as vendas no PIX e na maquininha. Já entram pelas vendas: não lanço nada disso.</p>'+
+        E.dias.map(x=>'<div class="lc-row"><div style="flex:1 1 200px"><div class="q">'+dbr(x.data)+'</div><div class="m">'+x.n+' entrada'+(x.n===1?'':'s')+'</div></div><div class="a"><span class="v">R$ '+fmt(x.total)+'</span></div></div>').join('')+'</details>';
+      h+='<span class="stamp">lido do banco às '+esc(d.gerado_em||'')+'</span>';
+      box.innerHTML=h;
+      box.querySelectorAll('[data-bxm]').forEach(b=>b.addEventListener('click',()=>carregaBX(b.dataset.bxm)));
+      box.querySelectorAll('[data-bxf]').forEach(b=>b.addEventListener('click',()=>{ BX_FILTRO=b.dataset.bxf; pintaBX(d); }));
+      const pega=b=>sai.find(x=>x.id===b.closest('.lc-row').dataset.id);
+      box.querySelectorAll('.bx-tr').forEach(b=>b.addEventListener('click',()=>{
+        const x=pega(b), pn=b.closest('.lc-row').querySelector('.bx-painel');
+        if(!pn.hidden){ pn.hidden=true; return; }
+        const manual=(x.status==='lancado'||x.status==='resolvido')&&!x.marcado;
+        const selC='<select class="bx-cat" aria-label="Categoria"><option value="" selected disabled>categoria…</option>'+
+          CFG.grupos.map(gr=>'<optgroup label="'+esc(gr.grupo)+'">'+gr.cats.map(c=>'<option>'+esc(c)+'</option>').join('')+'</optgroup>').join('')+'</select>';
+        pn.innerHTML='<div class="lc-prev" style="margin-top:8px">'+
+          '<input class="lc-in bx-obs" type="text" maxlength="80" placeholder="o que foi? (ex.: gelo, motoboy, almoço)" aria-label="O que foi esse pagamento" style="width:100%;margin-bottom:8px">'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+selC+'<button class="lc-btn good mini bx-ok" type="button">Salvar nessa categoria</button></div>'+
+          (manual?'<p class="note">Esse foi você que lançou: aqui dá pra trocar só a categoria.</p>':
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><button class="lc-btn ghost mini bx-merc" type="button" title="entra como compra de mercadoria, mas NÃO mexe no estoque">É mercadoria (só o valor)</button></div>'+
+            ((x.contas||[]).length?'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><span class="m">Pagou uma conta aberta?</span><select class="bx-conta" aria-label="Conta aberta"><option value="" selected disabled>escolha a conta…</option>'+
+              x.contas.map(c=>'<option value="'+esc(String(c.id))+'">'+esc(((c.cat?c.cat+' · ':'')+c.desc).slice(0,60))+' · vence '+dbr(c.venc)+' · R$ '+fmt(c.valor)+'</option>').join('')+
+              '</select><button class="lc-btn ghost mini bx-conta-ok" type="button">É essa conta</button></div>':'')+
+            '<div style="margin-top:8px"><button class="lc-link bx-nao" type="button">Não é gasto da loja</button></div>')+
+          '<div class="lc-msg bx-msg" aria-live="polite"></div></div>';
+        pn.hidden=false;
+        const msg=pn.querySelector('.bx-msg'), obs=()=>pn.querySelector('.bx-obs').value.trim();
+        const manda=(bt,pl,okTxt)=>{ trava(bt,'gravando…'); msg.innerHTML='';
+          post('/api/banco/trocar',Object.assign({banco:nb, id:x.id, obs:obs()},pl)).then(res=>{
+            if(res.ok){ toast('✅ '+okTxt); recarrega(['mapa','gasto']); carregaBX(mes); }
+            else { solta(bt); msg.innerHTML=ER(esc(res.erro||'não consegui')); }
+          }).catch(()=>{ solta(bt); msg.innerHTML=ER('Sem resposta do sistema. Abra o extrato de novo antes de repetir.'); });
+        };
+        pn.querySelector('.bx-ok').addEventListener('click',e=>{ const c=pn.querySelector('.bx-cat').value;
+          if(!c){ msg.innerHTML=ER('Escolha a categoria.'); return; } manda(e.currentTarget,{acao:'categoria',categoria:c},'R$ '+fmt(x.valor)+' agora é '+c+'.'); });
+        const bm=pn.querySelector('.bx-merc'); if(bm) bm.addEventListener('click',e=>manda(e.currentTarget,{acao:'mercadoria'},'R$ '+fmt(x.valor)+' agora é mercadoria (sem estoque).'));
+        const bc=pn.querySelector('.bx-conta-ok'); if(bc) bc.addEventListener('click',e=>{ const c=pn.querySelector('.bx-conta').value;
+          if(!c){ msg.innerHTML=ER('Escolha a conta.'); return; } manda(e.currentTarget,{acao:'conta',conta_id:c},'baixa dada na conta.'); });
+        const bn=pn.querySelector('.bx-nao'); if(bn) bn.addEventListener('click',e=>{
+          if(!confirm('R$ '+fmt(x.valor)+' não é gasto da loja?\n\nSai das contas da loja e fica marcado como "não é gasto".')) return;
+          manda(e.currentTarget,{acao:'ignorar'},'marcado como não é gasto da loja.'); });
+      }));
+    }
+    TELAS.extrato=(mes)=>{
+      cab('Extrato do banco','tudo que saiu da conta e o que cada gasto virou');
+      body.innerHTML='<div id="bx"><p class="note">lendo o banco… (leva uns segundos)</p></div>'+
+        '<details class="bx-mais" style="margin-top:18px"><summary style="cursor:pointer;font-size:.84rem;font-weight:600;color:var(--accent)">Ler o banco agora ou subir o arquivo do extrato</summary>'+
+        '<div id="lc-of"><p class="note">vendo se o Open Finance está ligado…</p></div>'+
         '<div class="lc-sec">📄 Ou suba o arquivo do extrato</div><div class="lc-form">'+
         '<label>Banco<select id="lc-banco">'+opts([['itau','Itaú'],['nubank','Nubank']],'escolha o banco…')+'</select></label>'+
         '<label class="lg">Arquivo do extrato<input id="lc-arq" type="file" accept=".ofx,.OFX,.csv,.CSV,.txt"></label></div>'+
         '<p class="note">No app do banco: <b>Extrato → exportar → formato OFX</b> (se não tiver OFX, CSV serve). Um mês por vez. '+
         'Eu <b>concilio sozinho</b>: dou baixa na conta aberta que bate, lanço o PIX pra você ou pro Igor como retirada, e o que eu não souber o que é vai pro <b>Não identificado</b>. Ler o mesmo extrato de novo não lança nada duas vezes.</p>'+
-        '<div class="lc-acts"><button class="lc-btn" id="lc-ler">Ler e conciliar</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div><div id="lc-ext"></div>';
-      quadroOF();
+        '<div class="lc-acts"><button class="lc-btn" id="lc-ler">Ler e conciliar</button></div><div class="lc-msg" id="lc-msg" aria-live="polite"></div><div id="lc-ext"></div></details>';
+      quadroOF(); carregaBX(mes||hojeL.slice(0,7));
       g('lc-ler').addEventListener('click',()=>{
         const banco=val('lc-banco'), arq=(g('lc-arq').files||[])[0], msg=g('lc-msg'), b=g('lc-ler');
         if(!banco){ msg.innerHTML=ER('Escolha o banco.'); return; }
@@ -3816,11 +3933,11 @@ const dbr2 = s => (s&&s.length>=10) ? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice
   }
   vigiaGraficos();
 
-  loadInicio(); loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo(); loadClientes();
+  loadInicio(); loadSaldoBanco(); loadComoEsta(); loadResumo(); loadHoje(); loadHojeDelivery(); loadDelivery(); loadRobo(); loadNotas(); loadEntradas(); loadMoedas(); loadReserva(); loadSobra(); loadGastosMes(); loadRecursoProprio(); loadMapa(); loadSaqueResumo(); loadFechHoje(); loadUltimaAtualizacao(); loadFechamentos(); loadABC(); loadComprasHist(); loadGelo(); loadCatalogoVivo(); loadClientes();
   const rb=g('btn-refresh');
   if(rb){ const nrb=rb.cloneNode(true); rb.parentNode.replaceChild(nrb,rb);
     nrb.addEventListener('click',()=>{ nrb.classList.add('spin'); vigiaGraficos();
-      Promise.all([loadInicio(true),loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true),loadClientes(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
+      Promise.all([loadInicio(true),loadSaldoBanco(true),loadComoEsta(true),loadResumo(true),loadHoje(true),loadHojeDelivery(true),loadDelivery(true),loadReserva(true),loadSobra(true),loadGastosMes(true),loadRecursoProprio(true),loadMapa(true),loadSaqueResumo(true),loadFechHoje(true),loadUltimaAtualizacao(true),loadFechamentos(true),loadABC(true),loadComprasHist(true),loadGelo(true),loadCatalogoVivo(true),loadClientes(true)]).finally(()=>{ setTimeout(()=>nrb.classList.remove('spin'),500);
         toast('Números do sistema atualizados ✓'); }); });
   }
 })();

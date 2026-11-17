@@ -88,7 +88,11 @@ def _todas(caminho):
 
 
 def _txt(s):
-    return (s or "").replace("\x14", "—")
+    # o banco de lá guarda só o byte de baixo de alguns caracteres: "—" volta \x14 e "‖" (o separador
+    # do motivo do "não é gasto" no Não identificado) voltava \x16 e o motivo se perdia (17/11/2026)
+    # no controle (JSON regravado) o mesmo caractere estragado volta escrito como \u0014 / \u0016
+    return ((s or "").replace("\x14", "—").replace("\x16", "‖")
+            .replace("\\u0014", "—").replace("\\u0016", "‖"))
 
 
 def _limpa():
