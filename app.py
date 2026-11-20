@@ -3241,6 +3241,20 @@ def _qtd_no_fator_do_gc(units, valor, fator):
         return None, None
     return q, custo
 
+def _forma_compra_rotulo(p):
+    """Nome da forma de pagamento de uma parcela de compra, do jeito que o dono fala.
+    O financeiro só sabe "PIX" e "Recurso próprio Victor"; o banco e de quem foi o dinheiro
+    ficam escritos na descrição (20/11/2026: Multiverso paga parte no Nubank e parte com o
+    dinheiro do Igor, que o Victor devolve)."""
+    d = p.get("descricao") or ""
+    f = p.get("nome_forma_pagamento") or "—"
+    if d.startswith(RP_TAG):
+        return "Do bolso do Igor" if "IGOR" in d.upper() else "Do bolso do Victor"
+    b = _banco_do_texto(d)
+    if b and f == "PIX":
+        return f"PIX {b}"
+    return f
+
 @app.route("/api/compras-painel")
 @login_required
 def api_compras_painel():
@@ -3264,7 +3278,7 @@ def api_compras_painel():
                     m = re.search(r"Compra de nº\s*(\d+)", p.get("descricao") or "")
                     if m:
                         fin.setdefault(m.group(1), []).append(
-                            {"forma": p.get("nome_forma_pagamento") or "—",
+                            {"forma": _forma_compra_rotulo(p),
                              "valor": _num(p.get("valor"))})
         except Exception:
             fin = {}    # sem o financeiro, vale a cópia da compra (melhor que tela vazia)
